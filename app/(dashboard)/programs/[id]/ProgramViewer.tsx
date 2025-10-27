@@ -29,6 +29,7 @@ interface Module {
   order_index: number
   has_questions: boolean
   is_final_quiz: boolean
+  is_single_question: boolean
 }
 
 interface Program {
@@ -126,9 +127,10 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
     if (status === 'completed') return <CheckCircle className="w-5 h-5 text-green-600" />
     if (status === 'locked') return <Lock className="w-5 h-5 text-gray-400" />
     
-    // Available or in progress
-    if (module.is_final_quiz) return <Award className="w-5 h-5 text-yellow-600" />
-    if (module.type === 'video') return <PlayCircle className="w-5 h-5 text-primary-600" />
+    // Available or in progress - new granular types
+    if (module.is_final_quiz || module.type === 'final_quiz') return <Award className="w-5 h-5 text-yellow-600" />
+    if (module.type === 'video_section') return <PlayCircle className="w-5 h-5 text-primary-600" />
+    if (module.type === 'question') return <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center"><span className="text-green-600 text-xs font-bold">?</span></div>
     return <BookOpen className="w-5 h-5 text-primary-600" />
   }
 
@@ -384,7 +386,16 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
                             </div>
                           )}
                           
-                          {module.has_questions && (
+                          {/* Type label */}
+                          <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                            {module.type === 'content_section' ? 'Opplæringsdel' :
+                             module.type === 'question' ? 'Spørsmål' :
+                             module.type === 'video_section' ? 'Video' :
+                             module.type === 'final_quiz' ? 'Avsluttende Quiz' :
+                             module.type}
+                          </span>
+                          
+                          {module.has_questions && module.type === 'final_quiz' && (
                             <span>
                               {module.content?.questions?.length || 0} spørsmål
                             </span>
@@ -392,7 +403,7 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
                           
                           {module.is_final_quiz && (
                             <span className="text-yellow-600 font-medium">
-                              Avsluttende quiz
+                              {module.content?.passingScore || 80}% krav
                             </span>
                           )}
                         </div>

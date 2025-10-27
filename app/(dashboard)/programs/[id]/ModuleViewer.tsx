@@ -9,7 +9,8 @@ import {
   Clock,
   BookOpen,
   PlayCircle,
-  Award
+  Award,
+  MessageCircleQuestion
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -25,6 +26,7 @@ interface Module {
   order_index: number
   has_questions: boolean
   is_final_quiz: boolean
+  is_single_question: boolean
 }
 
 interface Program {
@@ -72,7 +74,6 @@ export default function ModuleViewer({
   moduleIndex,
   totalModules 
 }: Props) {
-  const [currentSlide, setCurrentSlide] = useState(0)
   const [startTime] = useState(Date.now())
   const [questionAnswers, setQuestionAnswers] = useState<Map<string, number>>(new Map())
   const [showQuestionFeedback, setShowQuestionFeedback] = useState<Map<string, boolean>>(new Map())
@@ -81,15 +82,11 @@ export default function ModuleViewer({
   const [hasStartedProgress, setHasStartedProgress] = useState(false)
 
   const content = module.content || {}
-  const isTextModule = module.type === 'text'
-  const isVideoModule = module.type === 'video'
-  const isFinalQuiz = module.is_final_quiz
+  const isContentSection = module.type === 'content_section'
+  const isVideoSection = module.type === 'video_section'
+  const isSingleQuestion = module.type === 'question'
+  const isFinalQuiz = module.type === 'final_quiz'
 
-  // For text modules, create slides from content
-  const slides = isTextModule && content.text ? 
-    content.text.split('\n\n').filter((slide: string) => slide.trim()) : []
-
-  const totalSlides = isTextModule ? slides.length : 1
   const questions: Question[] = content.questions || []
 
   useEffect(() => {
@@ -139,11 +136,11 @@ export default function ModuleViewer({
 
       if (error) throw error
       
-      toast.success('Modul fullført!')
+      toast.success('Del fullført!')
       onComplete(updateData)
     } catch (error: any) {
       console.error('Error marking module as completed:', error)
-      toast.error('Kunne ikke markere modul som fullført')
+      toast.error('Kunne ikke markere del som fullført')
     }
   }
 
@@ -156,14 +153,10 @@ export default function ModuleViewer({
     setQuestionAnswers(prev => new Map(prev.set(questionId, selectedIndex)))
     setShowQuestionFeedback(prev => new Map(prev.set(questionId, true)))
 
-    // Auto-advance after showing feedback (for inline questions)
-    if (!isFinalQuiz && isCorrect) {
+    // For single questions, auto-complete after showing feedback
+    if (isSingleQuestion && isCorrect) {
       setTimeout(() => {
-        if (currentSlide < totalSlides - 1) {
-          setCurrentSlide(currentSlide + 1)
-        } else {
-          handleModuleComplete()
-        }
+        handleModuleComplete()
       }, 2000)
     }
   }
@@ -174,7 +167,7 @@ export default function ModuleViewer({
       return
     }
 
-    // For text/video modules with questions
+    // For modules with questions
     if (questions.length > 0) {
       const correctAnswers = questions.filter(q => 
         questionAnswers.get(q.id) === q.correctIndex
@@ -191,6 +184,7 @@ export default function ModuleViewer({
         questions_total: questions.length
       })
     } else {
+      // For content sections without questions
       markModuleCompleted()
     }
   }
@@ -228,234 +222,18 @@ export default function ModuleViewer({
     })
   }
 
-  const renderTextSlide = (slideContent: string, slideIndex: number) => {
-    // Find questions for this slide
-    const slideQuestions = questions.filter(q => 
-      q.id.includes(`slide${slideIndex}`) || questions.length <= totalSlides
-    )
-
-    return (
-      <div className="space-y-6">
-        {/* Slide Content */}
-        <div className="prose max-w-none">
-          <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">
-            {slideContent}
-          </div>
-        </div>
-
-        {/* Images if any */}
-        {content.images && content.images.length > 0 && (
-          <div className="space-y-4">
-            {content.images.map((image: any, idx: number) => (
-              <div key={idx} className="text-center">
-                <img 
-                  src={image.url} 
-                  alt={image.alt || 'Bilde'} 
-                  className="max-w-full h-auto rounded-lg shadow-sm mx-auto"
-                />
-                {image.caption && (
-                  <p className="text-sm text-gray-600 mt-2 italic">
-                    {image.caption}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Questions for this slide */}
-        {slideQuestions.map((question) => (
-          <QuestionCard
-            key={question.id}
-            question={question}
-            selectedAnswer={questionAnswers.get(question.id)}
-            showFeedback={showQuestionFeedback.get(question.id) || false}
-            onAnswer={(index) => handleQuestionAnswer(question.id, index)}
-            isFinalQuiz={false}
-          />
-        ))}
-
-        {/* Reading confirmation */}
-        <div className="pt-6 border-t border-gray-200">
-          <div className="flex items-center space-x-2 text-green-600">
-            <CheckCircle className="w-5 h-5" />
-            <span className="text-sm">Lest og forstått</span>
-          </div>
-        </div>
-      </div>
-    )
+  const getModuleTypeIcon = () => {
+    if (isFinalQuiz) return <Award className="w-6 h-6 text-yellow-600" />
+    if (isVideoSection) return <PlayCircle className="w-6 h-6 text-purple-600" />
+    if (isSingleQuestion) return <MessageCircleQuestion className="w-6 h-6 text-green-600" />
+    return <BookOpen className="w-6 h-6 text-blue-600" />
   }
 
-  const renderVideoModule = () => {
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            🎥 {module.title}
-          </h2>
-          
-          <div className="bg-gray-100 rounded-lg p-8 mb-6">
-            <PlayCircle className="w-16 h-16 text-primary-600 mx-auto mb-4" />
-            <p className="text-gray-600 mb-4">Video kommer snart!</p>
-            <p className="text-sm text-gray-500">
-              Varighet: {content.estimatedMinutes} minutter
-            </p>
-          </div>
-
-          <Button onClick={handleModuleComplete} className="mb-6">
-            Marker som sett
-          </Button>
-        </div>
-
-        {/* Questions after video */}
-        {questions.map((question) => (
-          <QuestionCard
-            key={question.id}
-            question={question}
-            selectedAnswer={questionAnswers.get(question.id)}
-            showFeedback={showQuestionFeedback.get(question.id) || false}
-            onAnswer={(index) => handleQuestionAnswer(question.id, index)}
-            isFinalQuiz={false}
-          />
-        ))}
-      </div>
-    )
-  }
-
-  const renderFinalQuiz = () => {
-    if (!quizStarted) {
-      return (
-        <div className="text-center space-y-6">
-          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Award className="w-8 h-8 text-yellow-600" />
-          </div>
-          
-          <h2 className="text-2xl font-bold text-gray-900">
-            📝 Avsluttende Quiz
-          </h2>
-          
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Du har fullført alle modulene! Nå er det tid for den avsluttende testen.
-          </p>
-
-          <div className="bg-blue-50 rounded-lg p-6 max-w-md mx-auto">
-            <h3 className="font-semibold text-blue-900 mb-3">📊 Krav:</h3>
-            <ul className="text-left text-blue-800 space-y-1">
-              <li>• {questions.length} spørsmål</li>
-              <li>• {content.passingScore || 80}% riktig for å bestå</li>
-              <li>• Ubegrenset antall forsøk</li>
-            </ul>
-          </div>
-
-          <div className="flex items-center justify-center space-x-2 text-gray-600">
-            <Clock className="w-4 h-4" />
-            <span>Estimert tid: {content.estimatedMinutes || 10} minutter</span>
-          </div>
-
-          <Button onClick={() => setQuizStarted(true)} size="lg">
-            Start Quiz
-          </Button>
-        </div>
-      )
-    }
-
-    if (quizResults) {
-      return (
-        <div className="text-center space-y-6">
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
-            quizResults.passed ? 'bg-green-100' : 'bg-red-100'
-          }`}>
-            {quizResults.passed ? (
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            ) : (
-              <X className="w-8 h-8 text-red-600" />
-            )}
-          </div>
-          
-          <h2 className="text-2xl font-bold text-gray-900">
-            {quizResults.passed ? '🎉 Gratulerer!' : '😔 Ikke bestått denne gangen'}
-          </h2>
-          
-          <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
-            <h3 className="font-semibold text-gray-900 mb-3">📊 Resultat:</h3>
-            <div className="text-left space-y-2">
-              <p>• {quizResults.correctAnswers} av {quizResults.totalQuestions} riktige svar ({quizResults.score}%)</p>
-              <p>• Krav: {Math.ceil((content.passingScore || 80) / 100 * questions.length)} av {questions.length} ({content.passingScore || 80}%)</p>
-            </div>
-          </div>
-
-          {quizResults.passed ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-center space-x-2 text-yellow-600">
-                <Award className="w-6 h-6" />
-                <span className="font-medium">Badge opptjent!</span>
-              </div>
-              <Button onClick={onBack}>
-                Tilbake til program
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-gray-600">
-                Du trengte {Math.ceil((content.passingScore || 80) / 100 * questions.length) - quizResults.correctAnswers} flere riktige svar for å bestå.
-              </p>
-              <div className="flex space-x-4 justify-center">
-                <Button variant="secondary" onClick={onBack}>
-                  Se moduler igjen
-                </Button>
-                <Button onClick={() => {
-                  setQuizResults(null)
-                  setQuestionAnswers(new Map())
-                  setShowQuestionFeedback(new Map())
-                }}>
-                  Prøv quiz på nytt
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    // Show quiz questions
-    return (
-      <div className="space-y-6">
-        <div className="text-center mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
-            📝 Avsluttende Quiz
-          </h2>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(questionAnswers.size / questions.length) * 100}%` }}
-            />
-          </div>
-          <p className="text-sm text-gray-600 mt-2">
-            {questionAnswers.size} av {questions.length} spørsmål besvart
-          </p>
-        </div>
-
-        {questions.map((question, index) => (
-          <QuestionCard
-            key={question.id}
-            question={question}
-            questionNumber={index + 1}
-            selectedAnswer={questionAnswers.get(question.id)}
-            showFeedback={false}
-            onAnswer={(answerIndex) => handleQuestionAnswer(question.id, answerIndex)}
-            isFinalQuiz={true}
-          />
-        ))}
-
-        {questionAnswers.size === questions.length && (
-          <div className="text-center pt-6">
-            <Button onClick={handleQuizComplete} size="lg">
-              Fullfør Quiz
-            </Button>
-          </div>
-        )}
-      </div>
-    )
+  const getModuleTypeLabel = () => {
+    if (isFinalQuiz) return 'Avsluttende Quiz'
+    if (isVideoSection) return 'Video'
+    if (isSingleQuestion) return 'Spørsmål'
+    return 'Opplæringsdel'
   }
 
   return (
@@ -470,33 +248,27 @@ export default function ModuleViewer({
                 Tilbake
               </Button>
               
-              <div className="text-sm text-gray-600">
-                Modul {moduleIndex + 1}: {module.title}
+              <div className="flex items-center space-x-3">
+                {getModuleTypeIcon()}
+                <div>
+                  <div className="text-sm text-gray-600">
+                    {getModuleTypeLabel()} {moduleIndex + 1} av {totalModules}
+                  </div>
+                  <div className="font-medium text-gray-900">
+                    {module.title}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {!isFinalQuiz && (
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                {isTextModule && (
-                  <>
-                    <span>Slide {currentSlide + 1} av {totalSlides}</span>
-                    <div className="w-32 bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${((currentSlide + 1) / totalSlides) * 100}%` }}
-                      />
-                    </div>
-                  </>
-                )}
-                
-                {content.estimatedMinutes && (
-                  <div className="flex items-center space-x-1">
-                    <Clock className="w-4 h-4" />
-                    <span>~{content.estimatedMinutes} min</span>
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="flex items-center space-x-4 text-sm text-gray-600">
+              {content.estimatedMinutes && (
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-4 h-4" />
+                  <span>~{content.estimatedMinutes} min</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -505,41 +277,217 @@ export default function ModuleViewer({
       <div className="max-w-4xl mx-auto px-6 py-8">
         <Card>
           <CardContent className="p-8">
-            {isFinalQuiz ? (
-              renderFinalQuiz()
-            ) : isVideoModule ? (
-              renderVideoModule()
-            ) : isTextModule ? (
-              renderTextSlide(slides[currentSlide] || '', currentSlide)
-            ) : (
-              <div className="text-center">
-                <p className="text-gray-600">Ukjent modultype</p>
+            {/* Content Section */}
+            {isContentSection && (
+              <div className="space-y-6">
+                <div className="prose max-w-none">
+                  <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">
+                    {content.text}
+                  </div>
+                </div>
+
+                {/* Images if any */}
+                {content.images && content.images.length > 0 && (
+                  <div className="space-y-4">
+                    {content.images.map((image: any, idx: number) => (
+                      <div key={idx} className="text-center">
+                        <img 
+                          src={image.url} 
+                          alt={image.alt || 'Bilde'} 
+                          className="max-w-full h-auto rounded-lg shadow-sm mx-auto"
+                        />
+                        {image.caption && (
+                          <p className="text-sm text-gray-600 mt-2 italic">
+                            {image.caption}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Reading confirmation */}
+                <div className="pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2 text-green-600">
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="text-sm">Lest og forstått</span>
+                    </div>
+                    
+                    <Button onClick={handleModuleComplete}>
+                      Fullfør del
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Navigation for text modules */}
-            {isTextModule && !isFinalQuiz && (
-              <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-                <Button
-                  variant="secondary"
-                  onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}
-                  disabled={currentSlide === 0}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Forrige
-                </Button>
+            {/* Video Section */}
+            {isVideoSection && (
+              <div className="space-y-6 text-center">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  🎥 {module.title}
+                </h2>
+                
+                <div className="bg-gray-100 rounded-lg p-8 mb-6">
+                  <PlayCircle className="w-16 h-16 text-primary-600 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Video kommer snart!</p>
+                  {content.videoUrl && (
+                    <p className="text-sm text-gray-500 mb-4">
+                      URL: {content.videoUrl}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-500">
+                    Varighet: ~{content.estimatedMinutes} minutter
+                  </p>
+                </div>
 
-                {currentSlide < totalSlides - 1 ? (
-                  <Button
-                    onClick={() => setCurrentSlide(currentSlide + 1)}
-                  >
-                    Neste
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                <Button onClick={handleModuleComplete}>
+                  Marker som sett
+                </Button>
+              </div>
+            )}
+
+            {/* Single Question */}
+            {isSingleQuestion && questions.length > 0 && (
+              <div className="space-y-6">
+                <QuestionCard
+                  question={questions[0]}
+                  selectedAnswer={questionAnswers.get(questions[0].id)}
+                  showFeedback={showQuestionFeedback.get(questions[0].id) || false}
+                  onAnswer={(index) => handleQuestionAnswer(questions[0].id, index)}
+                  isFinalQuiz={false}
+                />
+              </div>
+            )}
+
+            {/* Final Quiz */}
+            {isFinalQuiz && (
+              <div className="space-y-6">
+                {!quizStarted ? (
+                  <div className="text-center space-y-6">
+                    <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Award className="w-8 h-8 text-yellow-600" />
+                    </div>
+                    
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      📝 {module.title}
+                    </h2>
+                    
+                    <p className="text-gray-600 max-w-2xl mx-auto">
+                      Du har fullført alle delene! Nå er det tid for den avsluttende testen.
+                    </p>
+
+                    <div className="bg-blue-50 rounded-lg p-6 max-w-md mx-auto">
+                      <h3 className="font-semibold text-blue-900 mb-3">📊 Krav:</h3>
+                      <ul className="text-left text-blue-800 space-y-1">
+                        <li>• {questions.length} spørsmål</li>
+                        <li>• {content.passingScore || 80}% riktig for å bestå</li>
+                        <li>• Ubegrenset antall forsøk</li>
+                      </ul>
+                    </div>
+
+                    <div className="flex items-center justify-center space-x-2 text-gray-600">
+                      <Clock className="w-4 h-4" />
+                      <span>Estimert tid: {content.estimatedMinutes || 10} minutter</span>
+                    </div>
+
+                    <Button onClick={() => setQuizStarted(true)} size="lg">
+                      Start Quiz
+                    </Button>
+                  </div>
+                ) : quizResults ? (
+                  <div className="text-center space-y-6">
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                      quizResults.passed ? 'bg-green-100' : 'bg-red-100'
+                    }`}>
+                      {quizResults.passed ? (
+                        <CheckCircle className="w-8 h-8 text-green-600" />
+                      ) : (
+                        <X className="w-8 h-8 text-red-600" />
+                      )}
+                    </div>
+                    
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {quizResults.passed ? '🎉 Gratulerer!' : '😔 Ikke bestått denne gangen'}
+                    </h2>
+                    
+                    <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
+                      <h3 className="font-semibold text-gray-900 mb-3">📊 Resultat:</h3>
+                      <div className="text-left space-y-2">
+                        <p>• {quizResults.correctAnswers} av {quizResults.totalQuestions} riktige svar ({quizResults.score}%)</p>
+                        <p>• Krav: {Math.ceil((content.passingScore || 80) / 100 * questions.length)} av {questions.length} ({content.passingScore || 80}%)</p>
+                      </div>
+                    </div>
+
+                    {quizResults.passed ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-center space-x-2 text-yellow-600">
+                          <Award className="w-6 h-6" />
+                          <span className="font-medium">Badge opptjent!</span>
+                        </div>
+                        <Button onClick={onBack}>
+                          Tilbake til program
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <p className="text-gray-600">
+                          Du trengte {Math.ceil((content.passingScore || 80) / 100 * questions.length) - quizResults.correctAnswers} flere riktige svar for å bestå.
+                        </p>
+                        <div className="flex space-x-4 justify-center">
+                          <Button variant="secondary" onClick={onBack}>
+                            Se deler igjen  
+                          </Button>
+                          <Button onClick={() => {
+                            setQuizResults(null)
+                            setQuestionAnswers(new Map())
+                            setShowQuestionFeedback(new Map())
+                          }}>
+                            Prøv quiz på nytt
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <Button onClick={handleModuleComplete}>
-                    Fullfør modul
-                  </Button>
+                  // Show quiz questions
+                  <div className="space-y-6">
+                    <div className="text-center mb-8">
+                      <h2 className="text-xl font-bold text-gray-900 mb-2">
+                        📝 {module.title}
+                      </h2>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(questionAnswers.size / questions.length) * 100}%` }}
+                        />
+                      </div>
+                      <p className="text-sm text-gray-600 mt-2">
+                        {questionAnswers.size} av {questions.length} spørsmål besvart
+                      </p>
+                    </div>
+
+                    {questions.map((question, index) => (
+                      <QuestionCard
+                        key={question.id}
+                        question={question}
+                        questionNumber={index + 1}
+                        selectedAnswer={questionAnswers.get(question.id)}
+                        showFeedback={false}
+                        onAnswer={(answerIndex) => handleQuestionAnswer(question.id, answerIndex)}
+                        isFinalQuiz={true}
+                      />
+                    ))}
+
+                    {questionAnswers.size === questions.length && (
+                      <div className="text-center pt-6">
+                        <Button onClick={handleQuizComplete} size="lg">
+                          Fullfør Quiz
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
