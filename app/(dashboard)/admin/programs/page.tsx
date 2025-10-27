@@ -8,11 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { EnhancedTrainingProgram, Theme } from '@/types/enhanced-database.types'
-
-interface Department {
-  id: string
-  name: string
-}
+import { AssignmentSelector } from '@/components/admin/AssignmentSelector'
 
 interface User {
   id: string
@@ -28,7 +24,6 @@ interface Instructor {
 export default function AdminProgramsPage() {
   const [programs, setPrograms] = useState<EnhancedTrainingProgram[]>([])
   const [themes, setThemes] = useState<Theme[]>([])
-  const [departments, setDepartments] = useState<Department[]>([])
   const [instructors, setInstructors] = useState<Instructor[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -43,7 +38,11 @@ export default function AdminProgramsPage() {
     deadlineDays: 14,
     repetitionEnabled: false,
     repetitionInterval: 12,
-    selectedDepartments: [] as string[]
+    assignment: {
+      type: 'department' as 'department' | 'individual',
+      departmentIds: [] as string[],
+      userIds: [] as string[]
+    }
   })
 
   useEffect(() => {
@@ -71,7 +70,6 @@ export default function AdminProgramsPage() {
       await Promise.all([
         fetchPrograms(profile.company_id),
         fetchThemes(profile.company_id),
-        fetchDepartments(profile.company_id),
         fetchInstructors(profile.company_id)
       ])
     } catch (error: any) {
@@ -107,16 +105,6 @@ export default function AdminProgramsPage() {
     setThemes(data || [])
   }
 
-  const fetchDepartments = async (companyId: string) => {
-    const { data, error } = await supabase
-      .from('departments')
-      .select('id, name')
-      .eq('company_id', companyId)
-      .order('name')
-
-    if (error) throw error
-    setDepartments(data || [])
-  }
 
   const fetchInstructors = async (companyId: string) => {
     const { data, error } = await supabase
@@ -171,25 +159,33 @@ export default function AdminProgramsPage() {
         toast.success('Kurs opprettet!')
       }
 
-      // Update program-department assignments
-      if (formData.selectedDepartments.length > 0) {
-        // First delete existing assignments for this program
-        await supabase
-          .from('program_departments')
-          .delete()
-          .eq('program_id', programId)
-
-        // Insert new assignments
-        const assignments = formData.selectedDepartments.map(deptId => ({
-          program_id: programId,
-          department_id: deptId
-        }))
-
-        const { error: assignError } = await supabase
-          .from('program_departments')
-          .insert(assignments)
-
-        if (assignError) throw assignError
+      // Create assignments
+      if (formData.assignment.departmentIds.length > 0 || formData.assignment.userIds.length > 0) {
+        if (formData.assignment.type === 'department') {
+          // Department assignments
+          for (const departmentId of formData.assignment.departmentIds) {
+            const { error: funcError } = await supabase.rpc('assign_program_to_department', {
+              p_program_id: programId,
+              p_department_id: departmentId,
+              p_assigned_by: user.id,
+              p_notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs'
+            })
+            
+            if (funcError) throw funcError
+          }
+        } else {
+          // Individual assignments
+          for (const userId of formData.assignment.userIds) {
+            const { error: funcError } = await supabase.rpc('assign_program_to_user', {
+              p_program_id: programId,
+              p_user_id: userId,
+              p_assigned_by: user.id,
+              p_notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs'
+            })
+            
+            if (funcError) throw funcError
+          }
+        }
       }
 
       resetForm()
@@ -209,7 +205,11 @@ export default function AdminProgramsPage() {
       deadlineDays: program.deadline_days || 14,
       repetitionEnabled: program.repetition_enabled || false,
       repetitionInterval: program.repetition_interval_months || 12,
-      selectedDepartments: [] // TODO: Fetch existing assignments
+      assignment: {
+        type: 'department',
+        departmentIds: [],
+        userIds: []
+      } // TODO: Fetch existing assignments when editing
     })
     setShowForm(true)
   }
@@ -247,7 +247,11 @@ export default function AdminProgramsPage() {
       deadlineDays: 14,
       repetitionEnabled: false,
       repetitionInterval: 12,
-      selectedDepartments: []
+      assignment: {
+        type: 'department',
+        departmentIds: [],
+        userIds: []
+      }
     })
   }
 
@@ -390,33 +394,18 @@ export default function AdminProgramsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tildel til avdelinger
+                    Tildel kurs til
                   </label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-3">
-                    {departments.map(dept => (
-                      <label key={dept.id} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.selectedDepartments.includes(dept.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFormData(prev => ({
-                                ...prev,
-                                selectedDepartments: [...prev.selectedDepartments, dept.id]
-                              }))
-                            } else {
-                              setFormData(prev => ({
-                                ...prev,
-                                selectedDepartments: prev.selectedDepartments.filter(id => id !== dept.id)
-                              }))
-                            }
-                          }}
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">{dept.name}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <AssignmentSelector
+                    companyId={user?.company_id || ''}
+                    onSelectionChange={(selection) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        assignment: selection
+                      }))
+                    }}
+                    initialSelection={formData.assignment}
+                  />
                 </div>
 
                 <div className="flex space-x-3 pt-4">
