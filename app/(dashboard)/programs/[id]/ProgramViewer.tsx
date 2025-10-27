@@ -199,13 +199,13 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
           setTimeout(() => {
             setCurrentModuleIndex(nextIndex)
             toast.success(`Neste: ${sortedModules[nextIndex].title}`)
-          }, 1500)
+          }, 800)
         } else {
           // No more modules - go back to overview
           setTimeout(() => {
             setCurrentModuleIndex(null)
             toast.success('🎉 Alle deler fullført!')
-          }, 1500)
+          }, 800)
         }
       }
     } catch (error) {

@@ -64,6 +64,22 @@ interface Question {
   explanation?: string
 }
 
+// Helper function to convert YouTube URL to embed URL
+const getYouTubeEmbedUrl = (url: string): string => {
+  // Handle different YouTube URL formats
+  let videoId = ''
+  
+  if (url.includes('youtube.com/watch?v=')) {
+    videoId = url.split('v=')[1]?.split('&')[0]
+  } else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0]
+  } else if (url.includes('youtube.com/embed/')) {
+    return url // Already embed format
+  }
+  
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : url
+}
+
 export default function ModuleViewer({ 
   module, 
   program, 
@@ -179,7 +195,7 @@ export default function ModuleViewer({
     if (isSingleQuestion && isCorrect) {
       setTimeout(() => {
         handleModuleComplete()
-      }, 2000)
+      }, 1200)
     }
   }
 
@@ -328,7 +344,7 @@ export default function ModuleViewer({
                   </div>
                 )}
 
-                {/* Reading confirmation */}
+                {/* Standard navigation buttons */}
                 <div className="pt-6 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2 text-green-600">
@@ -351,31 +367,60 @@ export default function ModuleViewer({
 
             {/* Video Section */}
             {isVideoSection && (
-              <div className="space-y-6 text-center">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold text-gray-900 text-center mb-6">
                   🎥 {module.title}
                 </h2>
                 
-                <div className="bg-gray-100 rounded-lg p-8 mb-6">
-                  <PlayCircle className="w-16 h-16 text-primary-600 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-4">Video kommer snart!</p>
-                  {content.videoUrl && (
-                    <p className="text-sm text-gray-500 mb-4">
-                      URL: {content.videoUrl}
-                    </p>
-                  )}
-                  <p className="text-sm text-gray-500">
-                    Varighet: ~{content.estimatedMinutes} minutter
-                  </p>
-                </div>
+                {content.videoUrl ? (
+                  <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
+                    {content.videoUrl.includes('youtube.com') || content.videoUrl.includes('youtu.be') ? (
+                      <iframe
+                        src={getYouTubeEmbedUrl(content.videoUrl)}
+                        className="w-full h-full"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={module.title}
+                      />
+                    ) : (
+                      <video
+                        className="w-full h-full"
+                        controls
+                        preload="metadata"
+                      >
+                        <source src={content.videoUrl} type="video/mp4" />
+                        <p className="text-center text-white p-4">
+                          Din nettleser støtter ikke video-avspilling.
+                        </p>
+                      </video>
+                    )}
+                  </div>
+                ) : (
+                  <div className="aspect-video w-full bg-gray-100 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <PlayCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">Ingen video lagt til ennå</p>
+                    </div>
+                  </div>
+                )}
 
-                <div className="flex space-x-3 justify-center">
-                  <Button variant="secondary" onClick={onBack}>
-                    Til oversikt
-                  </Button>
-                  <Button onClick={handleModuleComplete}>
-                    Marker som sett
-                  </Button>
+                {content.estimatedMinutes && (
+                  <p className="text-center text-sm text-gray-600">
+                    ⏱️ Varighet: ~{content.estimatedMinutes} minutter
+                  </p>
+                )}
+
+                {/* Standard navigation buttons */}
+                <div className="pt-6 border-t border-gray-200">
+                  <div className="flex space-x-3 justify-end">
+                    <Button variant="secondary" onClick={onBack}>
+                      Til oversikt
+                    </Button>
+                    <Button onClick={handleModuleComplete}>
+                      Marker som sett
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
@@ -390,6 +435,20 @@ export default function ModuleViewer({
                   onAnswer={(index) => handleQuestionAnswer(questions[0].id, index)}
                   isFinalQuiz={false}
                 />
+                
+                {/* Standard navigation buttons */}
+                <div className="pt-6 border-t border-gray-200">
+                  <div className="flex space-x-3 justify-end">
+                    <Button variant="secondary" onClick={onBack}>
+                      Til oversikt
+                    </Button>
+                    {questionAnswers.get(questions[0].id) !== undefined && !showQuestionFeedback.get(questions[0].id) && (
+                      <Button onClick={handleModuleComplete}>
+                        Fullfør spørsmål
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

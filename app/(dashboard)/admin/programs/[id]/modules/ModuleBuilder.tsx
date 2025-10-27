@@ -16,7 +16,8 @@ import {
   X,
   MessageCircleQuestion,
   FileText,
-  Video
+  Video,
+  Upload
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -87,6 +88,49 @@ export default function ModuleBuilder({ program, companyId }: Props) {
     })
     setEditingModule(null)
     setShowForm(false)
+  }
+
+  const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Check file size (100MB limit)
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('Video må være mindre enn 100MB')
+      return
+    }
+
+    // Check file type
+    if (!file.type.startsWith('video/')) {
+      toast.error('Kun videofiler er tillatt')
+      return
+    }
+
+    const loadingToast = toast.loading('Laster opp video...')
+
+    try {
+      const fileName = `videos/${Date.now()}-${file.name}`
+      
+      const { data, error } = await supabase.storage
+        .from('learning-content')
+        .upload(fileName, file)
+
+      if (error) throw error
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('learning-content')
+        .getPublicUrl(fileName)
+
+      setFormData(prev => ({ ...prev, videoUrl: urlData.publicUrl }))
+      
+      toast.dismiss(loadingToast)
+      toast.success('Video lastet opp!')
+    } catch (error: any) {
+      toast.dismiss(loadingToast)
+      console.error('Video upload error:', error)
+      toast.error('Kunne ikke laste opp video: ' + (error.message || 'Ukjent feil'))
+    }
   }
 
   const handleAddComponent = (type: ComponentType) => {
@@ -481,12 +525,73 @@ export default function ModuleBuilder({ program, companyId }: Props) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Video URL
+                      Video
+                    </label>
+                    
+                    <div className="space-y-4">
+                      {/* YouTube URL Option */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">
+                          YouTube URL
+                        </label>
+                        <Input
+                          value={formData.videoUrl}
+                          onChange={(e) => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
+                          placeholder="https://youtube.com/watch?v=... eller https://youtu.be/..."
+                        />
+                      </div>
+
+                      {/* OR Divider */}
+                      <div className="flex items-center my-4">
+                        <div className="flex-1 border-t border-gray-300"></div>
+                        <span className="px-3 text-sm text-gray-500 bg-white">ELLER</span>
+                        <div className="flex-1 border-t border-gray-300"></div>
+                      </div>
+
+                      {/* Video Upload */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-2">
+                          Last opp video
+                        </label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          <input
+                            type="file"
+                            accept="video/*"
+                            onChange={handleVideoUpload}
+                            className="hidden"
+                            id="video-upload"
+                          />
+                          <label
+                            htmlFor="video-upload"
+                            className="cursor-pointer flex flex-col items-center"
+                          >
+                            <Video className="w-8 h-8 text-gray-400 mb-2" />
+                            <span className="text-sm text-gray-600">
+                              Klikk for å laste opp video
+                            </span>
+                            <span className="text-xs text-gray-500 mt-1">
+                              MP4, MOV, AVI (maks 100MB)
+                            </span>
+                          </label>
+                        </div>
+                        {formData.videoUrl && formData.videoUrl.includes('supabase') && (
+                          <p className="text-sm text-green-600 mt-2">
+                            ✅ Video uploaded: {formData.videoUrl.split('/').pop()?.substring(0, 30)}...
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Estimert varighet (minutter)
                     </label>
                     <Input
-                      value={formData.videoUrl}
-                      onChange={(e) => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
-                      placeholder="https://youtube.com/watch?v=... eller Supabase Storage URL"
+                      type="number"
+                      value={formData.estimatedMinutes}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedMinutes: parseInt(e.target.value) || 10 }))}
+                      min="1"
                     />
                   </div>
                 </>
