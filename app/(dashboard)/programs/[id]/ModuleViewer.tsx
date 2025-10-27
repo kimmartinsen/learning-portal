@@ -113,7 +113,9 @@ export default function ModuleViewer({
           questions_total: 0,
           score: null,
           passed: null
-        }])
+        }], {
+          onConflict: 'user_id,module_id'
+        })
 
       if (error) {
         console.error('Error starting module:', error)
@@ -147,7 +149,9 @@ export default function ModuleViewer({
 
       const { error } = await supabase
         .from('user_progress')
-        .upsert([updateData])
+        .upsert([updateData], {
+          onConflict: 'user_id,module_id'
+        })
 
       if (error) {
         console.error('Supabase error:', error)
