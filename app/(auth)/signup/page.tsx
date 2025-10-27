@@ -60,10 +60,10 @@ export default function SignupPage() {
       // 2. Create company
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
-        .insert({
+        .insert([{
           name: formData.companyName,
           badge_system_enabled: true,
-        })
+        }])
         .select()
         .single()
 
@@ -72,13 +72,13 @@ export default function SignupPage() {
       // 3. Create profile
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert({
+        .insert([{
           id: authData.user.id,
           email: formData.email,
           full_name: formData.fullName,
-          role: 'admin',
+          role: 'admin' as const,
           company_id: companyData.id,
-        })
+        }])
 
       if (profileError) throw profileError
 

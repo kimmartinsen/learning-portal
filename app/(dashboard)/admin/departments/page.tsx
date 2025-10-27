@@ -93,11 +93,11 @@ export default function DepartmentsPage() {
         // Create new department
         const { error } = await supabase
           .from('departments')
-          .insert({
+          .insert([{
             name: formData.name,
             description: formData.description || null,
             company_id: user.company_id,
-          })
+          }])
 
         if (error) throw error
         toast.success('Avdeling opprettet!')

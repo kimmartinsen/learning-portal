@@ -166,28 +166,28 @@ export default function UsersPage() {
           // Create profile
           const { error: profileError } = await supabase
             .from('profiles')
-            .insert({
+            .insert([{
               id: signupData.user.id,
               email: formData.email,
               full_name: formData.fullName,
               role: formData.role,
               company_id: user.company_id,
               department_id: formData.departmentId || null,
-            })
+            }])
 
           if (profileError) throw profileError
         } else {
           // Create profile for admin-created user
           const { error: profileError } = await supabase
             .from('profiles')
-            .insert({
+            .insert([{
               id: authData.user.id,
               email: formData.email,
               full_name: formData.fullName,
               role: formData.role,
               company_id: user.company_id,
               department_id: formData.departmentId || null,
-            })
+            }])
 
           if (profileError) throw profileError
         }
