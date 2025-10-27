@@ -1,19 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, FolderOpen, BookOpen } from 'lucide-react'
+import { Plus, Edit2, Trash2, BookOpen, GripVertical } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-
-interface Theme {
-  id: string
-  name: string
-  description: string | null
-  created_at: string
-}
+import type { Theme, CreateThemeFormData } from '@/types/enhanced-database.types'
 
 interface User {
   id: string
@@ -28,7 +22,7 @@ export default function ThemesPage() {
   const [editingTheme, setEditingTheme] = useState<Theme | null>(null)
   const [user, setUser] = useState<User | null>(null)
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateThemeFormData>({
     name: '',
     description: '',
   })
@@ -61,7 +55,7 @@ export default function ThemesPage() {
         .from('themes')
         .select('*')
         .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: true })
+        .order('order_index', { ascending: true })
 
       if (error) throw error
       setThemes(themesData || [])
@@ -91,12 +85,17 @@ export default function ThemesPage() {
         toast.success('Tema oppdatert!')
       } else {
         // Create new theme
+        const nextOrderIndex = themes.length > 0 
+          ? Math.max(...themes.map(t => t.order_index)) + 1 
+          : 0
+
         const { error } = await supabase
           .from('themes')
           .insert([{
             name: formData.name,
             description: formData.description || null,
             company_id: user.company_id,
+            order_index: nextOrderIndex,
           }])
 
         if (error) throw error
@@ -122,7 +121,7 @@ export default function ThemesPage() {
   }
 
   const handleDelete = async (themeId: string) => {
-    if (!confirm('Er du sikker på at du vil slette dette temaet? Dette vil ikke slette kurs, men du må manuelt flytte dem til et annet tema.')) return
+    if (!confirm('Er du sikker på at du vil slette dette temaet? Alle tilhørende kurs vil miste tema-tilknytningen.')) return
 
     try {
       const { error } = await supabase
@@ -144,6 +143,37 @@ export default function ThemesPage() {
     setFormData({ name: '', description: '' })
   }
 
+  // Get program count for each theme
+  const [programCounts, setProgramCounts] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    if (themes.length > 0 && user) {
+      fetchProgramCounts()
+    }
+  }, [themes, user])
+
+  const fetchProgramCounts = async () => {
+    if (!user) return
+
+    try {
+      const counts: Record<string, number> = {}
+      
+      for (const theme of themes) {
+        const { count } = await supabase
+          .from('training_programs')
+          .select('id', { count: 'exact', head: true })
+          .eq('theme_id', theme.id)
+          .eq('company_id', user.company_id)
+        
+        counts[theme.id] = count || 0
+      }
+
+      setProgramCounts(counts)
+    } catch (error: any) {
+      console.error('Error fetching program counts:', error)
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8">Laster...</div>
   }
@@ -154,7 +184,7 @@ export default function ThemesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Temaer</h1>
-          <p className="text-gray-600">Organiser kurs i temaer</p>
+          <p className="text-gray-600">Organiser kurs i temaer for bedre struktur</p>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
@@ -178,7 +208,7 @@ export default function ThemesPage() {
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   required
-                  placeholder="F.eks. HMS"
+                  placeholder="F.eks. HMS og Sikkerhet"
                 />
                 
                 <div>
@@ -190,7 +220,7 @@ export default function ThemesPage() {
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                     rows={3}
-                    placeholder="Kort beskrivelse av hva temaet dekker"
+                    placeholder="Valgfri beskrivelse av temaet"
                   />
                 </div>
 
@@ -216,7 +246,10 @@ export default function ThemesPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <FolderOpen className="w-6 h-6 text-primary-600" />
+                    <div className="cursor-move">
+                      <GripVertical className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <BookOpen className="w-6 h-6 text-primary-600" />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
                         {theme.name}
@@ -226,9 +259,14 @@ export default function ThemesPage() {
                           {theme.description}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        Opprettet: {new Date(theme.created_at).toLocaleDateString('no-NO')}
-                      </p>
+                      <div className="flex items-center space-x-4 mt-2">
+                        <p className="text-xs text-gray-500">
+                          {programCounts[theme.id] || 0} kurs
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Opprettet: {new Date(theme.created_at).toLocaleDateString('no-NO')}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   
@@ -256,7 +294,7 @@ export default function ThemesPage() {
         ) : (
           <Card>
             <CardContent className="p-12 text-center">
-              <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Ingen temaer ennå
               </h3>

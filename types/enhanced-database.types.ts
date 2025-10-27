@@ -16,10 +16,7 @@ export interface Theme {
   company_id: string
   name: string
   description: string | null
-  color: string // Hex color code
-  icon: string | null // Lucide icon name
-  is_active: boolean
-  sort_order: number
+  order_index: number
   created_at: string
   updated_at: string
 }
@@ -31,9 +28,9 @@ export interface EnhancedTrainingProgram {
   title: string
   description: string | null
   instructor_id: string | null
+  deadline_days: number // Number of days to complete (default: 14)
   repetition_enabled: boolean
   repetition_interval_months: number | null
-  badge_enabled: boolean
   created_at: string
   
   // Relations
@@ -153,10 +150,6 @@ export interface UserDashboardData {
 export interface CreateThemeFormData {
   name: string
   description: string
-  color: string
-  icon: string
-  is_active: boolean
-  sort_order: number
 }
 
 export interface AssignProgramFormData {

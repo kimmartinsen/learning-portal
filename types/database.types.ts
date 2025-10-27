@@ -319,44 +319,79 @@ export interface Database {
           }
         ]
       }
-      training_programs: {
+      themes: {
         Row: {
-          badge_enabled: boolean | null
           company_id: string
           created_at: string | null
-          deadline: string | null
+          description: string | null
+          id: string
+          name: string
+          order_index: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          order_index?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          order_index?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "themes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      training_programs: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          deadline_days: number | null
           description: string | null
           id: string
           instructor_id: string | null
-          is_mandatory: boolean | null
           repetition_enabled: boolean | null
           repetition_interval_months: number | null
+          theme_id: string | null
           title: string
         }
         Insert: {
-          badge_enabled?: boolean | null
           company_id: string
           created_at?: string | null
-          deadline?: string | null
+          deadline_days?: number | null
           description?: string | null
           id?: string
           instructor_id?: string | null
-          is_mandatory?: boolean | null
           repetition_enabled?: boolean | null
           repetition_interval_months?: number | null
+          theme_id?: string | null
           title: string
         }
         Update: {
-          badge_enabled?: boolean | null
           company_id?: string
           created_at?: string | null
-          deadline?: string | null
+          deadline_days?: number | null
           description?: string | null
           id?: string
           instructor_id?: string | null
-          is_mandatory?: boolean | null
           repetition_enabled?: boolean | null
           repetition_interval_months?: number | null
+          theme_id?: string | null
           title?: string
         }
         Relationships: [
@@ -372,6 +407,13 @@ export interface Database {
             columns: ["instructor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_programs_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "themes"
             referencedColumns: ["id"]
           }
         ]

@@ -36,6 +36,7 @@ const adminMenuItems = [
   { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
   { href: '/admin/users', label: 'Brukere', icon: Users },
   { href: '/admin/departments', label: 'Avdelinger', icon: Building2 },
+  { href: '/admin/themes', label: 'Temaer', icon: BookOpen },
   { href: '/admin/programs', label: 'Kurs', icon: GraduationCap },
   { href: '/admin/reports', label: 'Rapporter', icon: BarChart3 },
 ]

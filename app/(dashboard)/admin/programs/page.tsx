@@ -1,28 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, BookOpen, Users, Calendar, Award, Settings } from 'lucide-react'
+import { Plus, Edit2, Trash2, BookOpen, Users, Clock, Settings, Tag } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-
-interface TrainingProgram {
-  id: string
-  title: string
-  description: string | null
-  is_mandatory: boolean
-  deadline: string | null
-  repetition_enabled: boolean
-  repetition_interval_months: number | null
-  badge_enabled: boolean
-  created_at: string
-  instructor_id?: string | null
-  instructor?: {
-    full_name: string
-  } | null
-}
+import type { EnhancedTrainingProgram, Theme } from '@/types/enhanced-database.types'
 
 interface Department {
   id: string
@@ -41,23 +26,23 @@ interface Instructor {
 }
 
 export default function AdminProgramsPage() {
-  const [programs, setPrograms] = useState<TrainingProgram[]>([])
+  const [programs, setPrograms] = useState<EnhancedTrainingProgram[]>([])
+  const [themes, setThemes] = useState<Theme[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [instructors, setInstructors] = useState<Instructor[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [editingProgram, setEditingProgram] = useState<TrainingProgram | null>(null)
+  const [editingProgram, setEditingProgram] = useState<EnhancedTrainingProgram | null>(null)
   const [user, setUser] = useState<User | null>(null)
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    themeId: '',
     instructorId: '',
-    isMandatory: false,
-    deadline: '',
+    deadlineDays: 14,
     repetitionEnabled: false,
     repetitionInterval: 12,
-    badgeEnabled: true,
     selectedDepartments: [] as string[]
   })
 
@@ -85,6 +70,7 @@ export default function AdminProgramsPage() {
       setUser(profile)
       await Promise.all([
         fetchPrograms(profile.company_id),
+        fetchThemes(profile.company_id),
         fetchDepartments(profile.company_id),
         fetchInstructors(profile.company_id)
       ])
@@ -100,6 +86,7 @@ export default function AdminProgramsPage() {
       .from('training_programs')
       .select(`
         *,
+        theme:themes(id, name),
         instructor:profiles(full_name)
       `)
       .eq('company_id', companyId)
@@ -107,6 +94,17 @@ export default function AdminProgramsPage() {
 
     if (error) throw error
     setPrograms(data || [])
+  }
+
+  const fetchThemes = async (companyId: string) => {
+    const { data, error } = await supabase
+      .from('themes')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('order_index', { ascending: true })
+
+    if (error) throw error
+    setThemes(data || [])
   }
 
   const fetchDepartments = async (companyId: string) => {
@@ -140,12 +138,11 @@ export default function AdminProgramsPage() {
       const programData = {
         title: formData.title,
         description: formData.description || null,
+        theme_id: formData.themeId || null,
         instructor_id: formData.instructorId || null,
-        is_mandatory: formData.isMandatory,
-        deadline: formData.deadline || null,
+        deadline_days: formData.deadlineDays,
         repetition_enabled: formData.repetitionEnabled,
         repetition_interval_months: formData.repetitionEnabled ? formData.repetitionInterval : null,
-        badge_enabled: formData.badgeEnabled,
         company_id: user.company_id
       }
 
@@ -202,17 +199,16 @@ export default function AdminProgramsPage() {
     }
   }
 
-  const handleEdit = (program: TrainingProgram) => {
+  const handleEdit = (program: EnhancedTrainingProgram) => {
     setEditingProgram(program)
     setFormData({
       title: program.title,
       description: program.description || '',
+      themeId: program.theme_id || '',
       instructorId: program.instructor_id || '',
-      isMandatory: program.is_mandatory,
-      deadline: program.deadline || '',
-      repetitionEnabled: program.repetition_enabled,
+      deadlineDays: program.deadline_days || 14,
+      repetitionEnabled: program.repetition_enabled || false,
       repetitionInterval: program.repetition_interval_months || 12,
-      badgeEnabled: program.badge_enabled,
       selectedDepartments: [] // TODO: Fetch existing assignments
     })
     setShowForm(true)
@@ -235,7 +231,7 @@ export default function AdminProgramsPage() {
     }
   }
 
-  const handleEditModules = (program: TrainingProgram) => {
+  const handleEditModules = (program: EnhancedTrainingProgram) => {
     // Navigate to module builder
     window.location.href = `/admin/programs/${program.id}/modules`
   }
@@ -246,15 +242,24 @@ export default function AdminProgramsPage() {
     setFormData({
       title: '',
       description: '',
+      themeId: '',
       instructorId: '',
-      isMandatory: false,
-      deadline: '',
+      deadlineDays: 14,
       repetitionEnabled: false,
       repetitionInterval: 12,
-      badgeEnabled: true,
       selectedDepartments: []
     })
   }
+
+  // Group programs by theme
+  const programsByTheme = programs.reduce((acc, program) => {
+    const themeId = program.theme_id || 'no-theme'
+    if (!acc[themeId]) {
+      acc[themeId] = []
+    }
+    acc[themeId].push(program)
+    return acc
+  }, {} as Record<string, EnhancedTrainingProgram[]>)
 
   if (loading) {
     return <div className="text-center py-8">Laster...</div>
@@ -266,11 +271,11 @@ export default function AdminProgramsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Kurs</h1>
-          <p className="text-gray-600">Administrer bedriftens kurs</p>
+          <p className="text-gray-600">Administrer bedriftens kurs organisert i temaer</p>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Ny kurs
+          Nytt kurs
         </Button>
       </div>
 
@@ -280,7 +285,7 @@ export default function AdminProgramsPage() {
           <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <h3 className="text-lg font-semibold">
-                {editingProgram ? 'Rediger kurs' : 'Ny kurs'}
+                {editingProgram ? 'Rediger kurs' : 'Nytt kurs'}
               </h3>
             </CardHeader>
             <CardContent>
@@ -308,6 +313,31 @@ export default function AdminProgramsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tema
+                  </label>
+                  <select
+                    value={formData.themeId}
+                    onChange={(e) => setFormData(prev => ({ ...prev, themeId: e.target.value }))}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                  >
+                    <option value="">Velg tema (valgfritt)</option>
+                    {themes.map(theme => (
+                      <option key={theme.id} value={theme.id}>
+                        {theme.name}
+                      </option>
+                    ))}
+                  </select>
+                  {themes.length === 0 && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      <a href="/admin/themes" className="text-primary-600 hover:text-primary-700">
+                        Opprett temaer først
+                      </a> for å organisere kursene
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Instruktør
                   </label>
                   <select
@@ -324,37 +354,15 @@ export default function AdminProgramsPage() {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.isMandatory}
-                        onChange={(e) => setFormData(prev => ({ ...prev, isMandatory: e.target.checked }))}
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Obligatorisk</span>
-                    </label>
-                  </div>
-                  
-                  <div>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.badgeEnabled}
-                        onChange={(e) => setFormData(prev => ({ ...prev, badgeEnabled: e.target.checked }))}
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Badge ved fullføring</span>
-                    </label>
-                  </div>
-                </div>
-
                 <Input
-                  label="Frist (valgfri)"
-                  type="date"
-                  value={formData.deadline}
-                  onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
+                  label="Frist (antall dager)"
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={formData.deadlineDays}
+                  onChange={(e) => setFormData(prev => ({ ...prev, deadlineDays: parseInt(e.target.value) || 14 }))}
+                  placeholder="14"
+                  helper="Antall dager brukere har til å fullføre kurset"
                 />
 
                 <div>
@@ -425,83 +433,163 @@ export default function AdminProgramsPage() {
         </div>
       )}
 
-      {/* Programs List */}
-      <div className="grid gap-4">
-        {programs.length > 0 ? (
-          programs.map((program) => (
-            <Card key={program.id}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {program.title}
-                      </h3>
-                      {program.is_mandatory && (
-                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
-                          Obligatorisk
-                        </span>
-                      )}
-                      {program.badge_enabled && (
-                        <Award className="w-5 h-5 text-yellow-500" />
-                      )}
-                    </div>
-                    
-                    {program.description && (
-                      <p className="text-gray-600 mb-3">{program.description}</p>
-                    )}
-                    
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      {program.instructor && (
-                        <div className="flex items-center space-x-1">
-                          <Users className="w-4 h-4" />
-                          <span>{program.instructor.full_name}</span>
+      {/* Programs List - Grouped by Theme */}
+      <div className="space-y-6">
+        {themes.map(theme => {
+          const themePrograms = programsByTheme[theme.id] || []
+          if (themePrograms.length === 0) return null
+
+          return (
+            <div key={theme.id} className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Tag className="w-5 h-5 text-primary-600" />
+                <h2 className="text-lg font-semibold text-gray-900">{theme.name}</h2>
+                <span className="text-sm text-gray-500">({themePrograms.length} kurs)</span>
+              </div>
+              
+              <div className="grid gap-3 ml-7">
+                {themePrograms.map((program) => (
+                  <Card key={program.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-base font-semibold text-gray-900 mb-1">
+                            {program.title}
+                          </h3>
+                          
+                          {program.description && (
+                            <p className="text-sm text-gray-600 mb-2">{program.description}</p>
+                          )}
+                          
+                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            {program.instructor && (
+                              <div className="flex items-center space-x-1">
+                                <Users className="w-3 h-3" />
+                                <span>{program.instructor.full_name}</span>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center space-x-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{program.deadline_days} dager frist</span>
+                            </div>
+                            
+                            <span>Opprettet: {new Date(program.created_at).toLocaleDateString('no-NO')}</span>
+                          </div>
                         </div>
-                      )}
-                      
-                      {program.deadline && (
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>Frist: {new Date(program.deadline).toLocaleDateString('no-NO')}</span>
+                        
+                        <div className="flex space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditModules(program)}
+                            title="Rediger moduler"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(program)}
+                            title="Rediger kurs"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(program.id)}
+                            className="text-red-600 hover:text-red-700"
+                            title="Slett kurs"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
-                      )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+
+        {/* Programs without theme */}
+        {programsByTheme['no-theme'] && programsByTheme['no-theme'].length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <BookOpen className="w-5 h-5 text-gray-400" />
+              <h2 className="text-lg font-semibold text-gray-500">Uten tema</h2>
+              <span className="text-sm text-gray-400">({programsByTheme['no-theme'].length} kurs)</span>
+            </div>
+            
+            <div className="grid gap-3 ml-7">
+              {programsByTheme['no-theme'].map((program) => (
+                <Card key={program.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-base font-semibold text-gray-900 mb-1">
+                          {program.title}
+                        </h3>
+                        
+                        {program.description && (
+                          <p className="text-sm text-gray-600 mb-2">{program.description}</p>
+                        )}
+                        
+                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                          {program.instructor && (
+                            <div className="flex items-center space-x-1">
+                              <Users className="w-3 h-3" />
+                              <span>{program.instructor.full_name}</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center space-x-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{program.deadline_days} dager frist</span>
+                          </div>
+                          
+                          <span>Opprettet: {new Date(program.created_at).toLocaleDateString('no-NO')}</span>
+                        </div>
+                      </div>
                       
-                      <span>Opprettet: {new Date(program.created_at).toLocaleDateString('no-NO')}</span>
+                      <div className="flex space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditModules(program)}
+                          title="Rediger moduler"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(program)}
+                          title="Rediger kurs"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(program.id)}
+                          className="text-red-600 hover:text-red-700"
+                          title="Slett kurs"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditModules(program)}
-                      title="Rediger moduler"
-                    >
-                      <Settings className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(program)}
-                      title="Rediger kurs"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(program.id)}
-                      className="text-red-600 hover:text-red-700"
-                      title="Slett kurs"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {programs.length === 0 && (
           <Card>
             <CardContent className="p-12 text-center">
               <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -511,6 +599,13 @@ export default function AdminProgramsPage() {
               <p className="text-gray-600 mb-4">
                 Opprett ditt første kurs for å komme i gang
               </p>
+              {themes.length === 0 && (
+                <p className="text-sm text-gray-500 mb-4">
+                  Tip: <a href="/admin/themes" className="text-primary-600 hover:text-primary-700">
+                    Opprett temaer først
+                  </a> for bedre organisering
+                </p>
+              )}
               <Button onClick={() => setShowForm(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Opprett kurs
