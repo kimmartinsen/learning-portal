@@ -160,7 +160,7 @@ export default function AdminProgramsPage() {
 
         if (error) throw error
         programId = editingProgram.id
-        toast.success('Program oppdatert!')
+        toast.success('Kurs oppdatert!')
       } else {
         // Create new program
         const { data, error } = await supabase
@@ -171,7 +171,7 @@ export default function AdminProgramsPage() {
 
         if (error) throw error
         programId = data.id
-        toast.success('Program opprettet!')
+        toast.success('Kurs opprettet!')
       }
 
       // Update program-department assignments
@@ -219,7 +219,7 @@ export default function AdminProgramsPage() {
   }
 
   const handleDelete = async (programId: string) => {
-    if (!confirm('Er du sikker på at du vil slette dette programmet?')) return
+    if (!confirm('Er du sikker på at du vil slette dette kurset?')) return
 
     try {
       const { error } = await supabase
@@ -228,10 +228,10 @@ export default function AdminProgramsPage() {
         .eq('id', programId)
 
       if (error) throw error
-      toast.success('Program slettet!')
+      toast.success('Kurs slettet!')
       fetchPrograms(user!.company_id)
     } catch (error: any) {
-      toast.error('Kunne ikke slette program: ' + error.message)
+      toast.error('Kunne ikke slette kurs: ' + error.message)
     }
   }
 
@@ -265,12 +265,12 @@ export default function AdminProgramsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Opplæringsprogrammer</h1>
-          <p className="text-gray-600">Administrer bedriftens opplæringsprogrammer</p>
+          <h1 className="text-2xl font-bold text-gray-900">Kurs</h1>
+          <p className="text-gray-600">Administrer bedriftens kurs</p>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Nytt program
+          Ny kurs
         </Button>
       </div>
 
@@ -280,13 +280,13 @@ export default function AdminProgramsPage() {
           <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <h3 className="text-lg font-semibold">
-                {editingProgram ? 'Rediger program' : 'Nytt opplæringsprogram'}
+                {editingProgram ? 'Rediger kurs' : 'Ny kurs'}
               </h3>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Input
-                  label="Programtittel"
+                  label="Kurstittel"
                   value={formData.title}
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   required
@@ -302,7 +302,7 @@ export default function AdminProgramsPage() {
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                     rows={3}
-                    placeholder="Beskrivelse av programmet"
+                    placeholder="Beskrivelse av kurset"
                   />
                 </div>
 
@@ -413,7 +413,7 @@ export default function AdminProgramsPage() {
 
                 <div className="flex space-x-3 pt-4">
                   <Button type="submit" className="flex-1">
-                    {editingProgram ? 'Oppdater program' : 'Opprett program'}
+                    {editingProgram ? 'Oppdater kurs' : 'Opprett kurs'}
                   </Button>
                   <Button type="button" variant="secondary" onClick={resetForm}>
                     Avbryt
@@ -483,7 +483,7 @@ export default function AdminProgramsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEdit(program)}
-                      title="Rediger program"
+                      title="Rediger kurs"
                     >
                       <Edit2 className="w-4 h-4" />
                     </Button>
@@ -492,7 +492,7 @@ export default function AdminProgramsPage() {
                       size="sm"
                       onClick={() => handleDelete(program.id)}
                       className="text-red-600 hover:text-red-700"
-                      title="Slett program"
+                      title="Slett kurs"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -506,14 +506,14 @@ export default function AdminProgramsPage() {
             <CardContent className="p-12 text-center">
               <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Ingen programmer ennå
+                Ingen kurs ennå
               </h3>
               <p className="text-gray-600 mb-4">
-                Opprett ditt første opplæringsprogram for å komme i gang
+                Opprett ditt første kurs for å komme i gang
               </p>
               <Button onClick={() => setShowForm(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Opprett program
+                Opprett kurs
               </Button>
             </CardContent>
           </Card>

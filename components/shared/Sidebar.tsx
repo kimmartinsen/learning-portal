@@ -36,14 +36,14 @@ const adminMenuItems = [
   { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
   { href: '/admin/users', label: 'Brukere', icon: Users },
   { href: '/admin/departments', label: 'Avdelinger', icon: Building2 },
-  { href: '/admin/programs', label: 'Programmer', icon: GraduationCap },
+  { href: '/admin/programs', label: 'Kurs', icon: GraduationCap },
   { href: '/admin/reports', label: 'Rapporter', icon: BarChart3 },
 ]
 
 const instructorMenuItems = [
   { href: '/dashboard', label: 'Oversikt', icon: Home },
   { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
-  { href: '/instructor/programs', label: 'Mine programmer', icon: GraduationCap },
+  { href: '/instructor/programs', label: 'Mine kurs', icon: GraduationCap },
   { href: '/instructor/reports', label: 'Rapporter', icon: BarChart3 },
 ]
 

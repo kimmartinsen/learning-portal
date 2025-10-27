@@ -143,7 +143,7 @@ export default async function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Opplæringsprogrammer</p>
+                  <p className="text-sm font-medium text-gray-600">Kurs</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.totalPrograms}</p>
                 </div>
                 <BookOpen className="h-8 w-8 text-primary-600" />
@@ -171,7 +171,7 @@ export default async function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Mine programmer</p>
+                  <p className="text-sm font-medium text-gray-600">Mine kurs</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.myPrograms}</p>
                 </div>
                 <BookOpen className="h-8 w-8 text-primary-600" />
@@ -199,7 +199,7 @@ export default async function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Tildelte programmer</p>
+                  <p className="text-sm font-medium text-gray-600">Tildelte kurs</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.assignedPrograms}</p>
                 </div>
                 <BookOpen className="h-8 w-8 text-primary-600" />
@@ -211,7 +211,7 @@ export default async function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Fullførte programmer</p>
+                  <p className="text-sm font-medium text-gray-600">Fullførte kurs</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.completedPrograms}</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-600" />
@@ -258,7 +258,7 @@ export default async function DashboardPage() {
                   >
                     <div className="flex items-center space-x-3">
                       <BookOpen className="h-5 w-5 text-primary-600" />
-                      <span className="text-sm font-medium">Opprett nytt program</span>
+                      <span className="text-sm font-medium">Opprett nytt kurs</span>
                     </div>
                   </a>
                 </>
@@ -272,7 +272,7 @@ export default async function DashboardPage() {
                   >
                     <div className="flex items-center space-x-3">
                       <BookOpen className="h-5 w-5 text-primary-600" />
-                      <span className="text-sm font-medium">Se mine programmer</span>
+                      <span className="text-sm font-medium">Se mine kurs</span>
                     </div>
                   </a>
                 </>

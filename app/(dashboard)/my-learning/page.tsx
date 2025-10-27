@@ -128,7 +128,7 @@ export default async function MyLearningPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Tildelte programmer</p>
+                <p className="text-sm font-medium text-gray-600">Tildelte kurs</p>
                 <p className="text-2xl font-bold text-gray-900">{programs?.length || 0}</p>
               </div>
               <BookOpen className="h-8 w-8 text-primary-600" />
@@ -249,10 +249,10 @@ export default async function MyLearningPage() {
             <CardContent className="p-12 text-center">
               <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Ingen opplæringsprogrammer ennå
+                Ingen kurs ennå
               </h3>
               <p className="text-gray-600">
-                Du har ikke blitt tildelt noen opplæringsprogrammer ennå. 
+                Du har ikke blitt tildelt noen kurs ennå. 
                 Kontakt din administrator for mer informasjon.
               </p>
             </CardContent>
