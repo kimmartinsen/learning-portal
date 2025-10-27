@@ -105,7 +105,7 @@ export function Topbar({ user }: TopbarProps) {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 pl-8 pr-64 py-4">
+    <header className="bg-white border-b border-gray-200 px-8 py-4">
       <div className="flex items-center justify-end">
         {/* Right side */}
         <div className="flex items-center space-x-4">
