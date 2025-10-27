@@ -568,10 +568,14 @@ function QuestionCard({
                   <label
                     key={index}
                     className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
-                      hasAnswered && showFeedback && !isFinalQuiz
+                      hasAnswered && showFeedback && !isFinalQuiz && isCorrect
                         ? index === question.correctIndex
                           ? 'border-green-500 bg-green-50'
                           : selectedAnswer === index
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-300 bg-gray-50'
+                        : hasAnswered && showFeedback && !isFinalQuiz && !isCorrect
+                        ? selectedAnswer === index
                           ? 'border-red-500 bg-red-50'
                           : 'border-gray-300 bg-gray-50'
                         : selectedAnswer === index
@@ -627,11 +631,6 @@ function QuestionCard({
                   {question.explanation && isCorrect && (
                     <p className="text-sm text-gray-700">
                       💡 {question.explanation}
-                    </p>
-                  )}
-                  {!isCorrect && (
-                    <p className="text-sm text-gray-700">
-                      💡 Hint: Tenk nøye over spørsmålet og prøv igjen.
                     </p>
                   )}
                 </div>
