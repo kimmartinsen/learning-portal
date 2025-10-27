@@ -184,11 +184,45 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
             }])
           
           toast.success('🏆 Gratulerer! Du har oppnådd badge for dette programmet!')
+          
+          // Go back to overview when program is complete
+          setCurrentModuleIndex(null)
+          return
+        }
+
+        // Find next available module
+        const currentIndex = sortedModules.findIndex(m => m.id === moduleId)
+        const nextIndex = getNextModuleIndex(currentIndex + 1)
+        
+        if (nextIndex !== null) {
+          // Auto-navigate to next module after a short delay
+          setTimeout(() => {
+            setCurrentModuleIndex(nextIndex)
+            toast.success(`Neste: ${sortedModules[nextIndex].title}`)
+          }, 1500)
+        } else {
+          // No more modules - go back to overview
+          setTimeout(() => {
+            setCurrentModuleIndex(null)
+            toast.success('🎉 Alle deler fullført!')
+          }, 1500)
         }
       }
     } catch (error) {
       console.error('Error refreshing progress:', error)
     }
+  }
+
+  // Helper function to find next available module
+  const getNextModuleIndex = (startFromIndex: number) => {
+    for (let i = startFromIndex; i < sortedModules.length; i++) {
+      const module = sortedModules[i]
+      const status = getModuleStatus(module, i)
+      if (status === 'available') {
+        return i
+      }
+    }
+    return null
   }
 
   const formatDeadline = (deadline: string | null) => {

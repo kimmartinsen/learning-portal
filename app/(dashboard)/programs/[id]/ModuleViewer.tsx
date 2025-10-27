@@ -336,9 +336,14 @@ export default function ModuleViewer({
                       <span className="text-sm">Lest og forstått</span>
                     </div>
                     
-                    <Button onClick={handleModuleComplete}>
-                      Fullfør del
-                    </Button>
+                    <div className="flex space-x-3">
+                      <Button variant="secondary" onClick={onBack}>
+                        Til oversikt
+                      </Button>
+                      <Button onClick={handleModuleComplete}>
+                        Fullfør del
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -364,9 +369,14 @@ export default function ModuleViewer({
                   </p>
                 </div>
 
-                <Button onClick={handleModuleComplete}>
-                  Marker som sett
-                </Button>
+                <div className="flex space-x-3 justify-center">
+                  <Button variant="secondary" onClick={onBack}>
+                    Til oversikt
+                  </Button>
+                  <Button onClick={handleModuleComplete}>
+                    Marker som sett
+                  </Button>
+                </div>
               </div>
             )}
 
