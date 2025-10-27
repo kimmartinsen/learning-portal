@@ -1,5 +1,16 @@
 // Utvidede TypeScript-typer for den nye strukturen
 
+export interface Module {
+  id: string
+  program_id: string
+  title: string
+  description: string | null
+  type: string
+  content: any
+  order_index: number
+  created_at: string
+}
+
 export interface Theme {
   id: string
   company_id: string
