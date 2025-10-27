@@ -81,6 +81,11 @@ export default async function MyLearningPage() {
     return acc
   }, {} as Record<string, UserAssignment[]>) || {}
 
+  // Type guard to ensure themeAssignments is properly typed
+  const getThemeAssignments = (themeName: string): UserAssignment[] => {
+    return assignmentsByTheme[themeName] || []
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'text-green-600 bg-green-50 border-green-200'
@@ -191,7 +196,9 @@ export default async function MyLearningPage() {
 
       {/* Assignments List - Grouped by Theme */}
       <div className="space-y-6">
-        {Object.entries(assignmentsByTheme).map(([themeName, themeAssignments]) => (
+        {Object.entries(assignmentsByTheme).map(([themeName]) => {
+          const themeAssignments = getThemeAssignments(themeName)
+          return (
           <div key={themeName} className="space-y-3">
             <div className="flex items-center space-x-2">
               <Tag className="w-5 h-5 text-primary-600" />
@@ -300,10 +307,13 @@ export default async function MyLearningPage() {
                     </CardContent>
                   </Card>
                 )
-              })}
+              })
+            })}
             </div>
           </div>
-        ))}
+        )}
+      )}
+      </div>
 
         {assignments?.length === 0 && (
           <Card>
