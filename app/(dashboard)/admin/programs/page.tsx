@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, BookOpen, Users, Calendar, Award } from 'lucide-react'
+import { Plus, Edit2, Trash2, BookOpen, Users, Calendar, Award, Settings } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -233,6 +233,11 @@ export default function AdminProgramsPage() {
     } catch (error: any) {
       toast.error('Kunne ikke slette program: ' + error.message)
     }
+  }
+
+  const handleEditModules = (program: TrainingProgram) => {
+    // Navigate to module builder
+    window.location.href = `/admin/programs/${program.id}/modules`
   }
 
   const resetForm = () => {
@@ -469,7 +474,16 @@ export default function AdminProgramsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleEditModules(program)}
+                      title="Rediger moduler"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleEdit(program)}
+                      title="Rediger program"
                     >
                       <Edit2 className="w-4 h-4" />
                     </Button>
@@ -478,6 +492,7 @@ export default function AdminProgramsPage() {
                       size="sm"
                       onClick={() => handleDelete(program.id)}
                       className="text-red-600 hover:text-red-700"
+                      title="Slett program"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
