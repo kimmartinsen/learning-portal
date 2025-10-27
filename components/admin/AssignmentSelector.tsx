@@ -15,7 +15,7 @@ interface User {
   department_id?: string
   department?: {
     name: string
-  }
+  } | null
 }
 
 interface Department {
@@ -137,7 +137,9 @@ export function AssignmentSelector({
   const filteredUsers = users.filter(user => 
     user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.department?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (typeof user.department === 'object' && user.department && 'name' in user.department 
+      ? user.department.name 
+      : '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const filteredDepartments = departments.filter(dept =>
@@ -264,7 +266,7 @@ export function AssignmentSelector({
                     <div>
                       <p className="font-medium text-gray-900">{user.full_name}</p>
                       <p className="text-sm text-gray-500">{user.email}</p>
-                      {user.department && (
+                      {user.department && typeof user.department === 'object' && 'name' in user.department && (
                         <p className="text-xs text-gray-400">{user.department.name}</p>
                       )}
                     </div>
