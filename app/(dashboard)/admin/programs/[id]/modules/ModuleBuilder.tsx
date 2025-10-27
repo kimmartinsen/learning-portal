@@ -70,6 +70,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
     explanation: '',
     quizTitle: '',
     passingScore: 80,
+    estimatedMinutes: 5,
     questions: [] as any[]
   })
 
@@ -84,6 +85,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
       explanation: '',
       quizTitle: '',
       passingScore: 80,
+      estimatedMinutes: 5,
       questions: []
     })
     setEditingModule(null)
@@ -139,13 +141,13 @@ export default function ModuleBuilder({ program, companyId }: Props) {
     
     // Set default titles based on type
     if (type === 'content_section') {
-      setFormData(prev => ({ ...prev, title: `Opplæringsdel ${modules.filter(m => m.type === 'content_section').length + 1}` }))
+      setFormData(prev => ({ ...prev, title: `Opplæringsdel ${modules.filter(m => m.type === 'content_section').length + 1}`, estimatedMinutes: 5 }))
     } else if (type === 'question') {
-      setFormData(prev => ({ ...prev, title: `Spørsmål ${modules.filter(m => m.type === 'question').length + 1}` }))
+      setFormData(prev => ({ ...prev, title: `Spørsmål ${modules.filter(m => m.type === 'question').length + 1}`, estimatedMinutes: 2 }))
     } else if (type === 'video_section') {
-      setFormData(prev => ({ ...prev, title: `Video ${modules.filter(m => m.type === 'video_section').length + 1}` }))
+      setFormData(prev => ({ ...prev, title: `Video ${modules.filter(m => m.type === 'video_section').length + 1}`, estimatedMinutes: 10 }))
     } else if (type === 'final_quiz') {
-      setFormData(prev => ({ ...prev, quizTitle: 'Avsluttende Quiz' }))
+      setFormData(prev => ({ ...prev, quizTitle: 'Avsluttende Quiz', estimatedMinutes: 10 }))
     }
     
     setShowAddMenu(false)
@@ -160,7 +162,8 @@ export default function ModuleBuilder({ program, companyId }: Props) {
       setFormData({
         ...formData,
         title: module.title,
-        content: module.content?.text || ''
+        content: module.content?.text || '',
+        estimatedMinutes: module.content?.estimatedMinutes || 5
       })
     } else if (module.type === 'question') {
       const question = module.content?.questions?.[0] || {}
@@ -170,20 +173,23 @@ export default function ModuleBuilder({ program, companyId }: Props) {
         question: question.question || '',
         options: question.options || ['', '', '', ''],
         correctIndex: question.correctIndex || 0,
-        explanation: question.explanation || ''
+        explanation: question.explanation || '',
+        estimatedMinutes: module.content?.estimatedMinutes || 2
       })
     } else if (module.type === 'video_section') {
       setFormData({
         ...formData,
         title: module.title,
-        videoUrl: module.content?.videoUrl || ''
+        videoUrl: module.content?.videoUrl || '',
+        estimatedMinutes: module.content?.estimatedMinutes || 10
       })
     } else if (module.type === 'final_quiz') {
       setFormData({
         ...formData,
         quizTitle: module.title,
         passingScore: module.content?.passingScore || 80,
-        questions: module.content?.questions || []
+        questions: module.content?.questions || [],
+        estimatedMinutes: module.content?.estimatedMinutes || 10
       })
     }
     
@@ -219,11 +225,12 @@ export default function ModuleBuilder({ program, companyId }: Props) {
         content = {
           type: 'content_section',
           text: formData.content,
-          estimatedMinutes: Math.ceil(formData.content.split(' ').length / 200) || 5 // ~200 words per minute reading
+          estimatedMinutes: formData.estimatedMinutes
         }
       } else if (formType === 'question') {
         content = {
           type: 'question',
+          estimatedMinutes: formData.estimatedMinutes,
           questions: [{
             id: 'q1',
             question: formData.question,
@@ -238,7 +245,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
         content = {
           type: 'video_section',
           videoUrl: formData.videoUrl,
-          estimatedMinutes: 10 // Default, can be updated later
+          estimatedMinutes: formData.estimatedMinutes
         }
       } else if (formType === 'final_quiz') {
         title = formData.quizTitle
@@ -246,7 +253,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
           type: 'final_quiz',
           passingScore: formData.passingScore,
           totalQuestions: formData.questions.length,
-          estimatedMinutes: Math.ceil(formData.questions.length * 0.5) || 10,
+          estimatedMinutes: formData.estimatedMinutes,
           questions: formData.questions
         }
         hasQuestions = true
@@ -436,6 +443,18 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                       Estimert lesetid: ~{Math.ceil(formData.content.split(' ').length / 200) || 1} minutter
                     </p>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Estimert tid (minutter)
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.estimatedMinutes}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedMinutes: parseInt(e.target.value) || 5 }))}
+                      min="1"
+                    />
+                  </div>
                 </>
               )}
 
@@ -504,6 +523,18 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                       value={formData.explanation}
                       onChange={(e) => setFormData(prev => ({ ...prev, explanation: e.target.value }))}
                       placeholder="Forklar hvorfor dette er riktig svar..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Estimert tid (minutter)
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.estimatedMinutes}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedMinutes: parseInt(e.target.value) || 2 }))}
+                      min="1"
                     />
                   </div>
                 </>
@@ -585,7 +616,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Estimert varighet (minutter)
+                      Estimert tid (minutter)
                     </label>
                     <Input
                       type="number"
@@ -611,17 +642,31 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kravscore for å bestå (%)
-                    </label>
-                    <Input
-                      type="number"
-                      value={formData.passingScore}
-                      onChange={(e) => setFormData(prev => ({ ...prev, passingScore: parseInt(e.target.value) || 80 }))}
-                      min="1"
-                      max="100"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Kravscore for å bestå (%)
+                      </label>
+                      <Input
+                        type="number"
+                        value={formData.passingScore}
+                        onChange={(e) => setFormData(prev => ({ ...prev, passingScore: parseInt(e.target.value) || 80 }))}
+                        min="1"
+                        max="100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Estimert tid (minutter)
+                      </label>
+                      <Input
+                        type="number"
+                        value={formData.estimatedMinutes}
+                        onChange={(e) => setFormData(prev => ({ ...prev, estimatedMinutes: parseInt(e.target.value) || 10 }))}
+                        min="1"
+                      />
+                    </div>
                   </div>
 
                   <div>
