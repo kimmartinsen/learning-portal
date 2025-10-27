@@ -439,21 +439,6 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                       onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
                       placeholder="Skriv opplæringsinnholdet her...&#10;&#10;Du kan bruke:&#10;- Punktlister&#10;- **fet tekst**&#10;- *kursiv tekst*"
                     />
-                    <p className="text-sm text-gray-500 mt-2">
-                      Estimert lesetid: ~{Math.ceil(formData.content.split(' ').length / 200) || 1} minutter
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Estimert tid (minutter)
-                    </label>
-                    <Input
-                      type="number"
-                      value={formData.estimatedMinutes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedMinutes: parseInt(e.target.value) || 5 }))}
-                      min="1"
-                    />
                   </div>
                 </>
               )}
@@ -526,17 +511,6 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Estimert tid (minutter)
-                    </label>
-                    <Input
-                      type="number"
-                      value={formData.estimatedMinutes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedMinutes: parseInt(e.target.value) || 2 }))}
-                      min="1"
-                    />
-                  </div>
                 </>
               )}
 
@@ -614,17 +588,6 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Estimert tid (minutter)
-                    </label>
-                    <Input
-                      type="number"
-                      value={formData.estimatedMinutes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedMinutes: parseInt(e.target.value) || 10 }))}
-                      min="1"
-                    />
-                  </div>
                 </>
               )}
 
@@ -642,31 +605,17 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Kravscore for å bestå (%)
-                      </label>
-                      <Input
-                        type="number"
-                        value={formData.passingScore}
-                        onChange={(e) => setFormData(prev => ({ ...prev, passingScore: parseInt(e.target.value) || 80 }))}
-                        min="1"
-                        max="100"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Estimert tid (minutter)
-                      </label>
-                      <Input
-                        type="number"
-                        value={formData.estimatedMinutes}
-                        onChange={(e) => setFormData(prev => ({ ...prev, estimatedMinutes: parseInt(e.target.value) || 10 }))}
-                        min="1"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Kravscore for å bestå (%)
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.passingScore}
+                      onChange={(e) => setFormData(prev => ({ ...prev, passingScore: parseInt(e.target.value) || 80 }))}
+                      min="1"
+                      max="100"
+                    />
                   </div>
 
                   <div>
@@ -900,10 +849,6 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                         </div>
                         
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          {module.content?.estimatedMinutes && (
-                            <span>~{module.content.estimatedMinutes} min</span>
-                          )}
-                          
                           {module.has_questions && (
                             <span>
                               {module.is_single_question ? '1 spørsmål' : 
