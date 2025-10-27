@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   }
 
   // Get dashboard stats based on role
-  let stats = {}
+  let stats: any = {}
 
   if (profile.role === 'admin') {
     // Admin stats
