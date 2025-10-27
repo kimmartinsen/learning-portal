@@ -568,7 +568,7 @@ function QuestionCard({
                   <label
                     key={index}
                     className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
-                      hasAnswered && showFeedback
+                      hasAnswered && showFeedback && !isFinalQuiz
                         ? index === question.correctIndex
                           ? 'border-green-500 bg-green-50'
                           : selectedAnswer === index
@@ -624,11 +624,26 @@ function QuestionCard({
                       </>
                     )}
                   </div>
-                  {question.explanation && (
+                  {question.explanation && isCorrect && (
                     <p className="text-sm text-gray-700">
                       💡 {question.explanation}
                     </p>
                   )}
+                  {!isCorrect && (
+                    <p className="text-sm text-gray-700">
+                      💡 Hint: Tenk nøye over spørsmålet og prøv igjen.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* For final quiz - only show that answer was recorded */}
+              {hasAnswered && isFinalQuiz && (
+                <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-blue-900">Svar registrert</span>
+                  </div>
                 </div>
               )}
             </div>
