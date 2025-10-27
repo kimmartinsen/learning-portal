@@ -332,7 +332,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
       case 'content_section': return <FileText className="w-5 h-5 text-blue-600" />
       case 'question': return <MessageCircleQuestion className="w-5 h-5 text-green-600" />
       case 'video_section': return <Video className="w-5 h-5 text-purple-600" />
-      case 'final_quiz': return <Award className="w-5 h-5 text-yellow-600" />
+      case 'final_quiz': return <CheckCircle className="w-5 h-5 text-yellow-600" />
       default: return <BookOpen className="w-5 h-5 text-gray-600" />
     }
   }
@@ -796,7 +796,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                     onClick={() => handleAddComponent('final_quiz')}
                     className="h-20 flex flex-col items-center justify-center space-y-2"
                   >
-                    <Award className="w-6 h-6" />
+                    <CheckCircle className="w-6 h-6" />
                     <span className="text-sm">Avsluttende Quiz</span>
                   </Button>
                 </div>

@@ -123,7 +123,7 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
     if (status === 'locked') return <Lock className="w-5 h-5 text-gray-400" />
     
     // Available or in progress - new granular types
-    if (module.is_final_quiz || module.type === 'final_quiz') return <Award className="w-5 h-5 text-yellow-600" />
+    if (module.is_final_quiz || module.type === 'final_quiz') return <CheckCircle className="w-5 h-5 text-yellow-600" />
     if (module.type === 'video_section') return <PlayCircle className="w-5 h-5 text-primary-600" />
     if (module.type === 'question') return <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center"><span className="text-green-600 text-xs font-bold">?</span></div>
     return <BookOpen className="w-5 h-5 text-primary-600" />
