@@ -124,7 +124,7 @@ export default function ModuleViewer({
     }
   }
 
-  const markModuleCompleted = async (additionalData = {}) => {
+  const markModuleCompleted = async (additionalData: any = {}) => {
     try {
       const timeSpent = Math.round((Date.now() - startTime) / 60000) // minutes
       
