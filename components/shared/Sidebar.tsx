@@ -105,26 +105,26 @@ export function Sidebar({ user }: SidebarProps) {
       {/* Sidebar */}
       <div
         className={cn(
-          'fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-40',
+          'fixed left-0 top-0 h-full w-56 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-40',
           'lg:translate-x-0 lg:static lg:z-0',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">O</span>
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center space-x-2">
+              <div className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">O</span>
               </div>
-              <span className="text-xl font-semibold text-gray-900">
+              <span className="text-lg font-semibold text-gray-900">
                 Opplæringsportal
               </span>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1">
+          <nav className="flex-1 px-3 py-4 space-y-1">
             {getMenuItems().map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
@@ -148,7 +148,7 @@ export function Sidebar({ user }: SidebarProps) {
           </nav>
 
           {/* User info & logout */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="px-3 py-4 border-t border-gray-200">
             {user && (
               <div className="mb-4">
                 <p className="text-sm font-medium text-gray-900">
