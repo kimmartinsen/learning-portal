@@ -40,7 +40,7 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar user={profile} />
       
-      <div className="flex-1 lg:ml-56">
+      <div className="flex-1">
         <Topbar user={profile} />
         
         <main className="px-8 py-6">
