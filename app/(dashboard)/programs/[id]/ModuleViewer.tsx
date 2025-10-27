@@ -200,6 +200,8 @@ export default function ModuleViewer({
   }
 
   const handleModuleComplete = () => {
+    console.log('Completing module:', module.type, module.title) // Debug log
+    
     if (isFinalQuiz) {
       handleQuizComplete()
       return
@@ -210,6 +212,8 @@ export default function ModuleViewer({
       const correctAnswers = questions.filter(q => 
         questionAnswers.get(q.id) === q.correctIndex
       ).length
+
+      console.log('Completing module with questions:', { correctAnswers, totalQuestions: questions.length }) // Debug log
 
       markModuleCompleted({
         questions_answered: Array.from(questionAnswers.entries()).map(([qId, answer]) => ({
@@ -223,6 +227,7 @@ export default function ModuleViewer({
       })
     } else {
       // For content sections without questions
+      console.log('Completing module without questions') // Debug log
       markModuleCompleted()
     }
   }
@@ -241,14 +246,19 @@ export default function ModuleViewer({
       passed,
       correctAnswers,
       totalQuestions: questions.length,
+      passingScore,
       answers: Array.from(questionAnswers.entries()).map(([qId, answer]) => ({
         questionId: qId,
         selectedAnswer: answer,
         correct: questions.find(q => q.id === qId)?.correctIndex === answer
       })),
+      incorrectQuestions: questions.filter(q => 
+        questionAnswers.get(q.id) !== q.correctIndex
+      ).map(q => q.question),
       timestamp: new Date().toISOString()
     }
 
+    console.log('Quiz completed:', quizData) // Debug log
     setQuizResults(quizData)
 
     markModuleCompleted({
@@ -300,12 +310,7 @@ export default function ModuleViewer({
             </div>
 
             <div className="flex items-center space-x-4 text-sm text-gray-600">
-              {content.estimatedMinutes && (
-                <div className="flex items-center space-x-1">
-                  <Clock className="w-4 h-4" />
-                  <span>~{content.estimatedMinutes} min</span>
-                </div>
-              )}
+              {/* Removed estimated time display */}
             </div>
           </div>
         </div>
@@ -405,11 +410,7 @@ export default function ModuleViewer({
                   </div>
                 )}
 
-                {content.estimatedMinutes && (
-                  <p className="text-center text-sm text-gray-600">
-                    ⏱️ Varighet: ~{content.estimatedMinutes} minutter
-                  </p>
-                )}
+{/* Removed estimated time display */}
 
                 {/* Standard navigation buttons */}
                 <div className="pt-6 border-t border-gray-200">
@@ -478,10 +479,7 @@ export default function ModuleViewer({
                       </ul>
                     </div>
 
-                    <div className="flex items-center justify-center space-x-2 text-gray-600">
-                      <Clock className="w-4 h-4" />
-                      <span>Estimert tid: {content.estimatedMinutes || 10} minutter</span>
-                    </div>
+{/* Removed estimated time display */}
 
                     <Button onClick={() => setQuizStarted(true)} size="lg">
                       Start Quiz
@@ -503,11 +501,37 @@ export default function ModuleViewer({
                       {quizResults.passed ? '🎉 Gratulerer!' : '😔 Ikke bestått denne gangen'}
                     </h2>
                     
-                    <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
-                      <h3 className="font-semibold text-gray-900 mb-3">📊 Resultat:</h3>
-                      <div className="text-left space-y-2">
-                        <p>• {quizResults.correctAnswers} av {quizResults.totalQuestions} riktige svar ({quizResults.score}%)</p>
-                        <p>• Krav: {Math.ceil((content.passingScore || 80) / 100 * questions.length)} av {questions.length} ({content.passingScore || 80}%)</p>
+                    <div className={`rounded-lg p-6 max-w-md mx-auto ${
+                      quizResults.passed ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                    }`}>
+                      <h3 className="font-semibold text-gray-900 mb-4">📊 Detaljert Resultat:</h3>
+                      <div className="text-left space-y-3">
+                        <div className="flex justify-between">
+                          <span>Ditt resultat:</span>
+                          <span className="font-semibold">{quizResults.correctAnswers}/{quizResults.totalQuestions} ({quizResults.score}%)</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Krav for å bestå:</span>
+                          <span>{Math.ceil((quizResults.passingScore / 100) * quizResults.totalQuestions)}/{quizResults.totalQuestions} ({quizResults.passingScore}%)</span>
+                        </div>
+                        <div className="pt-2 border-t">
+                          <div className="flex justify-between">
+                            <span>Status:</span>
+                            <span className={`font-semibold ${quizResults.passed ? 'text-green-600' : 'text-red-600'}`}>
+                              {quizResults.passed ? '✅ BESTÅTT' : '❌ IKKE BESTÅTT'}
+                            </span>
+                          </div>
+                        </div>
+                        {!quizResults.passed && quizResults.incorrectQuestions.length > 0 && (
+                          <div className="pt-2 border-t">
+                            <p className="text-sm text-gray-700 mb-2">Feil på disse spørsmålene:</p>
+                            <ul className="text-sm text-red-700 list-disc list-inside">
+                              {quizResults.incorrectQuestions.slice(0, 3).map((q: string, i: number) => (
+                                <li key={i}>{q.substring(0, 50)}...</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -523,9 +547,19 @@ export default function ModuleViewer({
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <p className="text-gray-600">
-                          Du trengte {Math.ceil((content.passingScore || 80) / 100 * questions.length) - quizResults.correctAnswers} flere riktige svar for å bestå.
+                        <p className="text-gray-600 text-center">
+                          Du trengte {Math.ceil((quizResults.passingScore / 100) * quizResults.totalQuestions) - quizResults.correctAnswers} flere riktige svar for å bestå.
                         </p>
+                        
+                        <div className="bg-blue-50 rounded-lg p-4 max-w-md mx-auto">
+                          <h4 className="font-medium text-blue-900 mb-2">💡 Forslag:</h4>
+                          <ul className="text-sm text-blue-800 space-y-1">
+                            <li>• Gå tilbake og les gjennom materialet igjen</li>
+                            <li>• Fokuser på områdene du svarte feil på</li>
+                            <li>• Ta quizen på nytt når du føler deg klar</li>
+                          </ul>
+                        </div>
+
                         <div className="flex space-x-4 justify-center">
                           <Button variant="secondary" onClick={onBack}>
                             Se deler igjen  
@@ -534,6 +568,7 @@ export default function ModuleViewer({
                             setQuizResults(null)
                             setQuestionAnswers(new Map())
                             setShowQuestionFeedback(new Map())
+                            setQuizStarted(false)
                           }}>
                             Prøv quiz på nytt
                           </Button>

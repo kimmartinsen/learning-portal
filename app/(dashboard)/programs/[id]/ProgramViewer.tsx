@@ -169,10 +169,18 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
         })
         setProgressMap(newMap)
 
-        // Check if program is completed
-        const allModulesCompleted = sortedModules.every(module => 
-          newMap.get(module.id)?.status === 'completed'
-        )
+        // Check if program is completed (all modules completed AND all final quizzes passed)
+        const allModulesCompleted = sortedModules.every(module => {
+          const moduleProgress = newMap.get(module.id)
+          if (moduleProgress?.status !== 'completed') return false
+          
+          // For final quiz modules, also check if they passed
+          if (module.is_final_quiz && moduleProgress.passed === false) {
+            return false
+          }
+          
+          return true
+        })
 
         if (allModulesCompleted && program.badge_enabled && !userBadge) {
           // Award badge
@@ -190,7 +198,16 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
           return
         }
 
-        // Find next available module
+        // Find next available module - but only auto-navigate if current module was successful
+        const currentModule = sortedModules.find(m => m.id === moduleId)
+        const currentProgress = newMap.get(moduleId)
+        
+        // Don't auto-navigate if it's a failed final quiz
+        if (currentModule?.is_final_quiz && currentProgress?.passed === false) {
+          // Stay on the quiz page to allow retry
+          return
+        }
+        
         const currentIndex = sortedModules.findIndex(m => m.id === moduleId)
         const nextIndex = getNextModuleIndex(currentIndex + 1)
         
@@ -413,13 +430,6 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
                         </div>
                         
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          {module.content?.estimatedMinutes && (
-                            <div className="flex items-center space-x-1">
-                              <Clock className="w-4 h-4" />
-                              <span>{module.content.estimatedMinutes} min</span>
-                            </div>
-                          )}
-                          
                           {/* Type label */}
                           <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
                             {module.type === 'content_section' ? 'Opplæringsdel' :
