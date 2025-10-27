@@ -43,10 +43,8 @@ export default async function DashboardLayout({
       <div className="flex-1 lg:ml-56">
         <Topbar user={profile} />
         
-        <main className="px-6 py-6">
-          <div className="max-w-4xl mx-auto">
-            {children}
-          </div>
+        <main className="pl-8 pr-8 py-6">
+          {children}
         </main>
       </div>
     </div>
