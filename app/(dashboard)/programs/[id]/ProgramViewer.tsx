@@ -209,9 +209,9 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
         }
         
         const currentIndex = sortedModules.findIndex(m => m.id === moduleId)
-        const nextIndex = getNextModuleIndex(currentIndex + 1)
+        const nextIndex = currentIndex + 1
         
-        if (nextIndex !== null) {
+        if (nextIndex < sortedModules.length) {
           // Auto-navigate to next module after a short delay
           setTimeout(() => {
             setCurrentModuleIndex(nextIndex)
