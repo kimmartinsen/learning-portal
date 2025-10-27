@@ -58,7 +58,7 @@ export default function SignupPage() {
       if (!authData.user) throw new Error('Kunne ikke opprette bruker')
 
       // 2. Create company
-      const { data: companyData, error: companyError } = await (supabase as any)
+      const { data: companyData, error: companyError } = await supabase
         .from('companies')
         .insert([{
           name: formData.companyName,
@@ -70,7 +70,7 @@ export default function SignupPage() {
       if (companyError) throw companyError
 
       // 3. Create profile
-      const { error: profileError } = await (supabase as any)
+      const { error: profileError } = await supabase
         .from('profiles')
         .insert([{
           id: authData.user.id,

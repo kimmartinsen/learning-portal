@@ -91,7 +91,7 @@ export default function DepartmentsPage() {
         toast.success('Avdeling oppdatert!')
       } else {
         // Create new department
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('departments')
           .insert([{
             name: formData.name,

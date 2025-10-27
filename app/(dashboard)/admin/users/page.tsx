@@ -164,7 +164,7 @@ export default function UsersPage() {
           if (!signupData.user) throw new Error('Could not create user')
 
           // Create profile
-          const { error: profileError } = await (supabase as any)
+          const { error: profileError } = await supabase
             .from('profiles')
             .insert([{
               id: signupData.user.id,
@@ -178,7 +178,7 @@ export default function UsersPage() {
           if (profileError) throw profileError
         } else {
           // Create profile for admin-created user
-          const { error: profileError } = await (supabase as any)
+          const { error: profileError } = await supabase
             .from('profiles')
             .insert([{
               id: authData.user.id,
