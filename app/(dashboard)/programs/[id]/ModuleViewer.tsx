@@ -107,10 +107,18 @@ export default function ModuleViewer({
           module_id: module.id,
           status: 'in_progress',
           started_at: new Date().toISOString(),
-          time_spent_minutes: 0
+          time_spent_minutes: 0,
+          questions_answered: [],
+          questions_correct: 0,
+          questions_total: 0,
+          score: null,
+          passed: null
         }])
 
-      if (error) throw error
+      if (error) {
+        console.error('Error starting module:', error)
+        throw error
+      }
     } catch (error) {
       console.error('Error marking module as started:', error)
     }
@@ -127,20 +135,30 @@ export default function ModuleViewer({
         status: 'completed',
         completed_at: new Date().toISOString(),
         time_spent_minutes: (progress?.time_spent_minutes || 0) + timeSpent,
+        questions_answered: additionalData.questions_answered || [],
+        questions_correct: additionalData.questions_correct || 0,
+        questions_total: additionalData.questions_total || 0,
+        score: additionalData.score || null,
+        passed: additionalData.passed || null,
         ...additionalData
       }
+
+      console.log('Saving progress:', updateData) // Debug log
 
       const { error } = await supabase
         .from('user_progress')
         .upsert([updateData])
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
       
       toast.success('Del fullført!')
       onComplete(updateData)
     } catch (error: any) {
       console.error('Error marking module as completed:', error)
-      toast.error('Kunne ikke markere del som fullført')
+      toast.error('Kunne ikke markere del som fullført: ' + (error.message || 'Ukjent feil'))
     }
   }
 
