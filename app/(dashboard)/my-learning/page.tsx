@@ -307,13 +307,10 @@ export default async function MyLearningPage() {
                     </CardContent>
                   </Card>
                 )
-              })
-            })}
+              })}
             </div>
           </div>
         )}
-      )}
-      </div>
 
         {assignments?.length === 0 && (
           <Card>
