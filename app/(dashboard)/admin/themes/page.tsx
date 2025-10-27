@@ -1,0 +1,276 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Plus, Edit2, Trash2, FolderOpen, BookOpen } from 'lucide-react'
+import { Card, CardContent, CardHeader } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { supabase } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+
+interface Theme {
+  id: string
+  name: string
+  description: string | null
+  created_at: string
+}
+
+interface User {
+  id: string
+  role: string
+  company_id: string
+}
+
+export default function ThemesPage() {
+  const [themes, setThemes] = useState<Theme[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editingTheme, setEditingTheme] = useState<Theme | null>(null)
+  const [user, setUser] = useState<User | null>(null)
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+  })
+
+  useEffect(() => {
+    fetchUserAndThemes()
+  }, [])
+
+  const fetchUserAndThemes = async () => {
+    try {
+      // Get current user
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role, company_id')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!profile || profile.role !== 'admin') {
+        toast.error('Ikke autorisert')
+        return
+      }
+
+      setUser(profile)
+
+      // Fetch themes for the user's company
+      const { data: themesData, error } = await supabase
+        .from('themes')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      setThemes(themesData || [])
+    } catch (error: any) {
+      toast.error('Kunne ikke hente temaer: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    try {
+      if (editingTheme) {
+        // Update existing theme
+        const { error } = await supabase
+          .from('themes')
+          .update({
+            name: formData.name,
+            description: formData.description || null,
+          })
+          .eq('id', editingTheme.id)
+
+        if (error) throw error
+        toast.success('Tema oppdatert!')
+      } else {
+        // Create new theme
+        const { error } = await supabase
+          .from('themes')
+          .insert([{
+            name: formData.name,
+            description: formData.description || null,
+            company_id: user.company_id,
+          }])
+
+        if (error) throw error
+        toast.success('Tema opprettet!')
+      }
+
+      setShowForm(false)
+      setEditingTheme(null)
+      setFormData({ name: '', description: '' })
+      fetchUserAndThemes()
+    } catch (error: any) {
+      toast.error(error.message)
+    }
+  }
+
+  const handleEdit = (theme: Theme) => {
+    setEditingTheme(theme)
+    setFormData({
+      name: theme.name,
+      description: theme.description || '',
+    })
+    setShowForm(true)
+  }
+
+  const handleDelete = async (themeId: string) => {
+    if (!confirm('Er du sikker på at du vil slette dette temaet? Dette vil ikke slette kurs, men du må manuelt flytte dem til et annet tema.')) return
+
+    try {
+      const { error } = await supabase
+        .from('themes')
+        .delete()
+        .eq('id', themeId)
+
+      if (error) throw error
+      toast.success('Tema slettet!')
+      fetchUserAndThemes()
+    } catch (error: any) {
+      toast.error('Kunne ikke slette tema: ' + error.message)
+    }
+  }
+
+  const resetForm = () => {
+    setShowForm(false)
+    setEditingTheme(null)
+    setFormData({ name: '', description: '' })
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Laster...</div>
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Temaer</h1>
+          <p className="text-gray-600">Organiser kurs i temaer</p>
+        </div>
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nytt tema
+        </Button>
+      </div>
+
+      {/* Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <h3 className="text-lg font-semibold">
+                {editingTheme ? 'Rediger tema' : 'Nytt tema'}
+              </h3>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  label="Temanavn"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  placeholder="F.eks. HMS"
+                />
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Beskrivelse
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                    rows={3}
+                    placeholder="Kort beskrivelse av hva temaet dekker"
+                  />
+                </div>
+
+                <div className="flex space-x-3 pt-4">
+                  <Button type="submit" className="flex-1">
+                    {editingTheme ? 'Oppdater' : 'Opprett'}
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={resetForm}>
+                    Avbryt
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Themes List */}
+      <div className="grid gap-4">
+        {themes.length > 0 ? (
+          themes.map((theme) => (
+            <Card key={theme.id}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <FolderOpen className="w-6 h-6 text-primary-600" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {theme.name}
+                      </h3>
+                      {theme.description && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          {theme.description}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Opprettet: {new Date(theme.created_at).toLocaleDateString('no-NO')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(theme)}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(theme.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Ingen temaer ennå
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Opprett ditt første tema for å organisere kursene
+              </p>
+              <Button onClick={() => setShowForm(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Opprett tema
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  )
+}
