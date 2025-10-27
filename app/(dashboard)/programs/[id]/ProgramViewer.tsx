@@ -87,9 +87,12 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
   // Sort modules by order_index
   const sortedModules = [...program.modules].sort((a, b) => a.order_index - b.order_index)
   
-  // Calculate overall progress
+  // Calculate overall progress dynamically based on progressMap
   const totalModules = sortedModules.length
-  const completedModules = userProgress.filter(p => p.status === 'completed').length
+  const completedModules = sortedModules.filter(module => {
+    const progress = progressMap.get(module.id)
+    return progress?.status === 'completed'
+  }).length
   const overallProgress = totalModules > 0 ? (completedModules / totalModules) * 100 : 0
 
   // Find next module to continue

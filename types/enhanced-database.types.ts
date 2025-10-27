@@ -98,6 +98,8 @@ export interface UserAssignment {
   progress_percentage: number
   modules_total: number
   modules_completed: number
+  total_modules?: number
+  completed_modules?: number
 }
 
 export interface EnhancedUserProgress {

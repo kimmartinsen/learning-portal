@@ -116,12 +116,22 @@ SELECT
     ELSE 'not_started'
   END as calculated_status,
   
-  -- Progress from user_progress table
+  -- Progress from user_progress table (count only COMPLETED modules with status = 'completed')
   COALESCE(
-    (SELECT COUNT(*)::FLOAT / NULLIF(
-      (SELECT COUNT(*) FROM modules WHERE program_id = tp.id), 0
-    ) * 100)::INTEGER, 0
-  ) as progress_percentage
+    (SELECT COUNT(*)::FLOAT FROM user_progress up 
+     WHERE up.program_id = tp.id 
+     AND up.user_id = pa.assigned_to_user_id 
+     AND up.status = 'completed') / NULLIF(
+       (SELECT COUNT(*) FROM modules WHERE program_id = tp.id), 0
+     ) * 100, 0
+  )::INTEGER as progress_percentage,
+  
+  -- Total modules and completed count for better calculations
+  (SELECT COUNT(*) FROM modules WHERE program_id = tp.id) as total_modules,
+  (SELECT COUNT(*) FROM user_progress up 
+   WHERE up.program_id = tp.id 
+   AND up.user_id = pa.assigned_to_user_id 
+   AND up.status = 'completed') as completed_modules
   
 FROM program_assignments pa
 JOIN training_programs tp ON pa.program_id = tp.id
