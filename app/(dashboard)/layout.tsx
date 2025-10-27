@@ -44,7 +44,9 @@ export default async function DashboardLayout({
         <Topbar user={profile} />
         
         <main className="p-4 pt-6">
-          {children}
+          <div className="max-w-6xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>
