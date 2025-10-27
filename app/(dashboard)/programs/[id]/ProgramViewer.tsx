@@ -9,7 +9,6 @@ import {
   CheckCircle, 
   Lock, 
   Clock,
-  Award,
   Calendar,
   User,
   ChevronRight
@@ -38,7 +37,6 @@ interface Program {
   description: string | null
   is_mandatory: boolean
   deadline: string | null
-  badge_enabled: boolean
   instructor?: {
     full_name: string
   } | null
@@ -58,19 +56,13 @@ interface UserProgress {
   passed: boolean | null
 }
 
-interface Badge {
-  id: string
-  earned_at: string
-}
-
 interface Props {
   program: Program
   userProgress: UserProgress[]
-  userBadge?: Badge | null
   userId: string
 }
 
-export default function ProgramViewer({ program, userProgress, userBadge, userId }: Props) {
+export default function ProgramViewer({ program, userProgress, userId }: Props) {
   const router = useRouter()
   const [currentModuleIndex, setCurrentModuleIndex] = useState<number | null>(null)
   const [progressMap, setProgressMap] = useState<Map<string, UserProgress>>(new Map())
@@ -185,19 +177,10 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
           return true
         })
 
-        if (allModulesCompleted && program.badge_enabled && !userBadge) {
-          // Award badge
-          await supabase
-            .from('badges')
-            .insert([{
-              user_id: userId,
-              program_id: program.id
-            }])
-          
-          toast.success('🏆 Gratulerer! Du har oppnådd badge for dette programmet!')
-          
+        if (allModulesCompleted) {
           // Go back to overview when program is complete
           setCurrentModuleIndex(null)
+          toast.success('🎉 Alle deler fullført!')
           return
         }
 
@@ -348,15 +331,6 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
                 </div>
               </div>
 
-              {userBadge && (
-                <div className="flex items-center space-x-2 text-yellow-600 mb-4">
-                  <Award className="w-5 h-5" />
-                  <span className="font-medium">Badge opptjent!</span>
-                  <span className="text-sm text-gray-600">
-                    {new Date(userBadge.earned_at).toLocaleDateString('no-NO')}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -490,12 +464,6 @@ export default function ProgramViewer({ program, userProgress, userBadge, userId
               <p className="text-green-800 mb-4">
                 Du har fullført alle moduler i dette programmet.
               </p>
-              {userBadge && program.badge_enabled && (
-                <div className="flex items-center justify-center space-x-2 text-yellow-600">
-                  <Award className="w-6 h-6" />
-                  <span className="font-medium">Badge opptjent!</span>
-                </div>
-              )}
             </CardContent>
           </Card>
         )}

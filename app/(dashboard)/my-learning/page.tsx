@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { BookOpen, Clock, Award, PlayCircle, CheckCircle, AlertTriangle, Tag } from 'lucide-react'
+import { BookOpen, Clock, PlayCircle, CheckCircle, AlertTriangle, Tag } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -57,13 +57,8 @@ export default async function MyLearningPage() {
     console.error('Error fetching assignments:', error)
   }
 
-  // Get user's badges
-  const { data: badges } = await supabase
-    .from('badges')
-    .select('program_id')
-    .eq('user_id', profile.id)
-
-  const badgeMap = new Map(badges?.map(b => [b.program_id, true]) || [])
+  // Progress calculation no longer needs badges
+  const badgeMap = new Map()
 
   // Group assignments by status
   const notStarted = assignments?.filter(a => a.calculated_status === 'not_started') || []
@@ -208,7 +203,6 @@ export default async function MyLearningPage() {
               
               <div className="grid gap-3 ml-7">
                 {themeAssignments.map((assignment) => {
-                  const hasBadge = badgeMap.has(assignment.program_id)
                   const status = assignment.calculated_status
                   
                   return (
@@ -224,9 +218,6 @@ export default async function MyLearningPage() {
                                 <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                                   Auto-tildelt
                                 </span>
-                              )}
-                              {hasBadge && (
-                                <Award className="w-5 h-5 text-yellow-500" />
                               )}
                             </div>
                             

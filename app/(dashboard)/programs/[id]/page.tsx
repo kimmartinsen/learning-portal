@@ -55,19 +55,10 @@ export default async function ProgramPage({ params }: PageProps) {
     .eq('user_id', profile.id)
     .eq('program_id', params.id)
 
-  // Get user's badge for this program
-  const { data: badge } = await supabase
-    .from('badges')
-    .select('*')
-    .eq('user_id', profile.id)
-    .eq('program_id', params.id)
-    .single()
-
   return (
     <ProgramViewer
       program={program}
       userProgress={userProgress || []}
-      userBadge={badge}
       userId={profile.id}
     />
   )

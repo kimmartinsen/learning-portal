@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Users, BookOpen, Award, Clock, TrendingUp, AlertTriangle } from 'lucide-react'
+import { Users, BookOpen, Clock, TrendingUp, AlertTriangle } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
@@ -85,7 +85,6 @@ export default async function DashboardPage() {
     const [
       { count: assignedPrograms },
       { count: completedPrograms },
-      { count: myBadges },
     ] = await Promise.all([
       supabase
         .from('user_progress')
@@ -96,16 +95,11 @@ export default async function DashboardPage() {
         .select('program_id', { count: 'exact', head: true })
         .eq('user_id', profile.id)
         .eq('status', 'completed'),
-      supabase
-        .from('badges')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', profile.id),
     ])
 
     stats = {
       assignedPrograms: assignedPrograms || 0,
       completedPrograms: completedPrograms || 0,
-      myBadges: myBadges || 0,
     }
   }
 
@@ -219,17 +213,6 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Oppnådde badges</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.myBadges}</p>
-                </div>
-                <Award className="h-8 w-8 text-yellow-600" />
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
 

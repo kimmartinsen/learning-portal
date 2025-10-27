@@ -537,10 +537,6 @@ export default function ModuleViewer({
 
                     {quizResults.passed ? (
                       <div className="space-y-4">
-                        <div className="flex items-center justify-center space-x-2 text-yellow-600">
-                          <Award className="w-6 h-6" />
-                          <span className="font-medium">Badge opptjent!</span>
-                        </div>
                         <Button onClick={onBack}>
                           Tilbake til program
                         </Button>
