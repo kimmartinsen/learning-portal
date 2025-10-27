@@ -33,6 +33,7 @@ interface SidebarProps {
 
 const adminMenuItems = [
   { href: '/dashboard', label: 'Oversikt', icon: Home },
+  { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
   { href: '/admin/users', label: 'Brukere', icon: Users },
   { href: '/admin/departments', label: 'Avdelinger', icon: Building2 },
   { href: '/admin/programs', label: 'Programmer', icon: GraduationCap },
@@ -41,6 +42,7 @@ const adminMenuItems = [
 
 const instructorMenuItems = [
   { href: '/dashboard', label: 'Oversikt', icon: Home },
+  { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
   { href: '/instructor/programs', label: 'Mine programmer', icon: GraduationCap },
   { href: '/instructor/reports', label: 'Rapporter', icon: BarChart3 },
 ]
