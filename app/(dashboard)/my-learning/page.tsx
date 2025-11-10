@@ -150,84 +150,80 @@ export default async function MyLearningPage() {
                 <span className="text-sm text-gray-500">({themeAssignments.length} kurs)</span>
               </div>
               
-              <div className="overflow-x-auto ml-7">
-                <table className="inline-table w-auto divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="w-36 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
-                        Kurs
-                      </th>
-                      {themeAssignments.map((assignment) => (
-                        <th
-                          key={`${assignment.id}-header`}
-                          className="w-0 px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap"
-                        >
-                          {assignment.program_title}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white">
-                    <tr>
-                      <td className="px-2 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Status
-                      </td>
-                      {themeAssignments.map((assignment) => {
-                        const status = assignment.calculated_status
+              <div className="ml-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {themeAssignments.map((assignment) => {
+                  const status = assignment.calculated_status
 
-                        const actionConfig =
-                          status === 'completed'
-                            ? {
-                                label: 'Se igjen',
-                                icon: <CheckCircle className="w-4 h-4" />,
-                                variant: 'secondary' as const
-                              }
-                            : status === 'in_progress'
-                            ? {
-                                label: 'Fortsett',
-                                icon: <PlayCircle className="w-4 h-4" />,
-                                variant: 'primary' as const
-                              }
-                            : status === 'overdue'
-                            ? {
-                                label: 'Start nå',
-                                icon: <AlertTriangle className="w-4 h-4" />,
-                                variant: 'danger' as const
-                              }
-                            : {
-                                label: 'Start',
-                                icon: <PlayCircle className="w-4 h-4" />,
-                                variant: 'primary' as const
-                              }
+                  const actionConfig =
+                    status === 'completed'
+                      ? {
+                          label: 'Se igjen',
+                          icon: <CheckCircle className="w-4 h-4" />,
+                          variant: 'secondary' as const
+                        }
+                      : status === 'in_progress'
+                      ? {
+                          label: 'Fortsett',
+                          icon: <PlayCircle className="w-4 h-4" />,
+                          variant: 'primary' as const
+                        }
+                      : status === 'overdue'
+                      ? {
+                          label: 'Start nå',
+                          icon: <AlertTriangle className="w-4 h-4" />,
+                          variant: 'danger' as const
+                        }
+                      : {
+                          label: 'Start',
+                          icon: <PlayCircle className="w-4 h-4" />,
+                          variant: 'primary' as const
+                        }
 
-                        return (
-                          <td key={`${assignment.id}-status`} className="w-0 px-1 py-2 text-center align-top">
-                            <div className="flex flex-col items-center gap-2">
-                              <span
-                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(
-                                  status
-                                )}`}
-                              >
-                                {getStatusIcon(status)}
-                                <span>{getStatusText(status)}</span>
-                              </span>
-                              <Link href={`/programs/${assignment.program_id}`} className="w-full">
-                                <Button
-                                  size="sm"
-                                  variant={actionConfig.variant}
-                                  className="flex items-center justify-center gap-2 px-4"
-                                >
-                                  {actionConfig.icon}
-                                  <span>{actionConfig.label}</span>
-                                </Button>
-                              </Link>
-                            </div>
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  </tbody>
-                </table>
+                  return (
+                    <Card
+                      key={assignment.id}
+                      className={
+                        status === 'overdue'
+                          ? 'border-red-200 shadow-sm'
+                          : status === 'completed'
+                          ? 'border-green-200 shadow-sm'
+                          : 'shadow-sm'
+                      }
+                    >
+                      <CardContent className="space-y-4 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="text-sm font-semibold leading-tight text-gray-900">
+                            {assignment.program_title}
+                          </h3>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(
+                              status
+                            )}`}
+                          >
+                            {getStatusIcon(status)}
+                            <span>{getStatusText(status)}</span>
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Clock className="h-4 w-4" />
+                          <span>{formatDaysRemaining(assignment.days_remaining, status)}</span>
+                        </div>
+
+                        <Link href={`/programs/${assignment.program_id}`} className="block">
+                          <Button
+                            size="sm"
+                            variant={actionConfig.variant}
+                            className="flex w-full items-center justify-center gap-2"
+                          >
+                            {actionConfig.icon}
+                            <span>{actionConfig.label}</span>
+                          </Button>
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             </div>
           )
