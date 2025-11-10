@@ -201,104 +201,100 @@ export default async function MyLearningPage() {
                 <span className="text-sm text-gray-500">({themeAssignments.length} kurs)</span>
               </div>
               
-              <div className="grid gap-3 ml-7">
-                {themeAssignments.map((assignment) => {
-                  const status = assignment.calculated_status
-                  
-                  return (
-                    <Card key={assignment.id} className={status === 'overdue' ? 'border-red-200' : ''}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <h3 className="text-base font-semibold text-gray-900">
-                                {assignment.program_title}
-                              </h3>
-                              {assignment.is_auto_assigned && (
-                                <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                                  Auto-tildelt
-                                </span>
-                              )}
-                            </div>
-                            
-                            {assignment.program_description && (
-                              <p className="text-sm text-gray-600 mb-3">{assignment.program_description}</p>
-                            )}
-                            
-                            <div className="flex items-center space-x-4 text-sm">
-                              <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full font-medium border ${getStatusColor(status)}`}>
+              <div className="overflow-x-auto ml-7">
+                <table className="inline-table w-auto divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="w-36 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                        Kurs
+                      </th>
+                      {themeAssignments.map((assignment) => (
+                        <th
+                          key={`${assignment.id}-header`}
+                          className="w-0 px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap"
+                        >
+                          {assignment.program_title}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white">
+                    <tr>
+                      <td className="px-2 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        Status
+                      </td>
+                      {themeAssignments.map((assignment) => {
+                        const status = assignment.calculated_status
+                        const dueText = formatDaysRemaining(assignment.days_remaining, status)
+
+                        const actionConfig =
+                          status === 'completed'
+                            ? {
+                                label: 'Se igjen',
+                                icon: <CheckCircle className="w-4 h-4" />,
+                                variant: 'secondary' as const
+                              }
+                            : status === 'in_progress'
+                            ? {
+                                label: 'Fortsett',
+                                icon: <PlayCircle className="w-4 h-4" />,
+                                variant: 'primary' as const
+                              }
+                            : status === 'overdue'
+                            ? {
+                                label: 'Start nå',
+                                icon: <AlertTriangle className="w-4 h-4" />,
+                                variant: 'danger' as const
+                              }
+                            : {
+                                label: 'Start',
+                                icon: <PlayCircle className="w-4 h-4" />,
+                                variant: 'primary' as const
+                              }
+
+                        return (
+                          <td key={`${assignment.id}-status`} className="w-0 px-1 py-2 align-top text-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(
+                                  status
+                                )}`}
+                              >
                                 {getStatusIcon(status)}
                                 <span>{getStatusText(status)}</span>
                               </span>
-                              
-                              <div className="flex items-center space-x-1">
-                                <Clock className="w-4 h-4 text-gray-400" />
-                                <span className={status === 'overdue' ? 'text-red-600 font-medium' : 'text-gray-600'}>
-                                  {formatDaysRemaining(assignment.days_remaining, status)}
-                                </span>
-                              </div>
-                              
-                              {assignment.progress_percentage > 0 && (
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-16 bg-gray-200 rounded-full h-2">
-                                    <div 
-                                      className="bg-primary-600 h-2 rounded-full" 
-                                      style={{ width: `${assignment.progress_percentage}%` }}
-                                    ></div>
-                                  </div>
-                                  <span className="text-xs text-gray-500">
-                                    {assignment.progress_percentage}%
-                                  </span>
-                                </div>
-                              )}
-                              
-                              <span className="text-xs text-gray-500">
-                                Tildelt: {new Date(assignment.assigned_at).toLocaleDateString('no-NO')}
-                              </span>
-                            </div>
-
-                            {assignment.notes && (
-                              <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-600">
-                                <strong>Notat:</strong> {assignment.notes}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="ml-4">
-                            <Link href={`/programs/${assignment.program_id}`}>
-                              <Button 
-                                size="sm"
-                                variant={status === 'overdue' ? 'danger' : 'primary'}
+                              <span
+                                className={`text-xs ${
+                                  status === 'overdue' ? 'text-red-600 font-medium' : 'text-gray-500'
+                                }`}
                               >
-                                {status === 'completed' ? (
-                                  <>
-                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                    Se igjen
-                                  </>
-                                ) : status === 'in_progress' ? (
-                                  <>
-                                    <PlayCircle className="w-4 h-4 mr-2" />
-                                    Fortsett
-                                  </>
-                                ) : status === 'overdue' ? (
-                                  <>
-                                    <AlertTriangle className="w-4 h-4 mr-2" />
-                                    Start nå
-                                  </>
-                                ) : (
-                                  <>
-                                    <PlayCircle className="w-4 h-4 mr-2" />
-                                    Start
-                                  </>
-                                )}
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+                                {dueText}
+                              </span>
+                              {assignment.progress_percentage > 0 && (
+                                <span className="text-xs text-gray-500">
+                                  {assignment.progress_percentage}% fullført
+                                </span>
+                              )}
+                              <Link href={`/programs/${assignment.program_id}`} className="w-full">
+                                <Button
+                                  size="sm"
+                                  variant={actionConfig.variant}
+                                  className="w-full flex items-center justify-center gap-2"
+                                >
+                                  {actionConfig.icon}
+                                  <span>{actionConfig.label}</span>
+                                </Button>
+                              </Link>
+                              {assignment.notes && (
+                                <span className="text-xs text-gray-500">{assignment.notes}</span>
+                              )}
+                            </div>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           )
