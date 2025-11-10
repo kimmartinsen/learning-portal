@@ -105,19 +105,19 @@ export function Sidebar({ user }: SidebarProps) {
       {/* Sidebar */}
       <div
         className={cn(
-          'fixed left-0 top-0 h-full w-56 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-40',
+          'fixed left-0 top-0 h-full w-56 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-300 ease-in-out z-40',
           'lg:translate-x-0 lg:static lg:z-0',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <div className="flex items-center space-x-2">
               <div className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">O</span>
               </div>
-              <span className="text-lg font-semibold text-gray-900">
+              <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Opplæringsportal
               </span>
             </div>
@@ -148,13 +148,13 @@ export function Sidebar({ user }: SidebarProps) {
           </nav>
 
           {/* User info & logout */}
-          <div className="px-3 py-4 border-t border-gray-200">
+          <div className="px-3 py-4 border-t border-gray-200 dark:border-gray-800">
             {user && (
               <div className="mb-4">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {user.full_name}
                 </p>
-                <p className="text-xs text-gray-500 capitalize">
+                <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                   {user.role === 'admin' ? 'Administrator' : 
                    user.role === 'instructor' ? 'Instruktør' : 'Bruker'}
                 </p>
@@ -165,7 +165,7 @@ export function Sidebar({ user }: SidebarProps) {
               variant="ghost"
               size="sm"
               onClick={handleSignOut}
-              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logg ut

@@ -367,7 +367,7 @@ export default function AdminProgramsPage() {
                     onChange={(e) =>
                       setThemeFormData((prev) => ({ ...prev, description: e.target.value }))
                     }
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                     rows={3}
                     placeholder="Valgfri beskrivelse av temaet"
                   />
@@ -412,7 +412,7 @@ export default function AdminProgramsPage() {
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                     rows={3}
                     placeholder="Beskrivelse av kurset"
                   />

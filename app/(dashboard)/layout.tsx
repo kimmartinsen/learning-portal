@@ -37,7 +37,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex transition-colors duration-200">
       <Sidebar user={profile} />
       
       <div className="flex-1">

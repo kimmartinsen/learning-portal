@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, Search, LogOut } from 'lucide-react'
+import { Bell, Search, LogOut, Sun, Moon } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { generateInitials } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 interface Notification {
   id: string
@@ -34,6 +35,7 @@ export function Topbar({ user }: TopbarProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
     if (user) {
@@ -105,10 +107,18 @@ export function Topbar({ user }: TopbarProps) {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 px-8 py-4">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-8 py-4 transition-colors duration-200">
       <div className="flex items-center justify-end">
         {/* Right side */}
         <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="sm" onClick={toggleTheme} className="p-2">
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </Button>
+
           {/* Notifications */}
           <div className="relative">
             <Button
@@ -127,9 +137,9 @@ export function Topbar({ user }: TopbarProps) {
 
             {/* Notification dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-900">Varsler</h3>
+              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg z-50">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Varsler</h3>
                   {unreadCount > 0 && (
                     <Button
                       variant="ghost"
@@ -147,26 +157,26 @@ export function Topbar({ user }: TopbarProps) {
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                          !notification.read ? 'bg-primary-50' : ''
+                        className={`p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer ${
+                          !notification.read ? 'bg-primary-50 dark:bg-primary-900/40' : ''
                         }`}
                         onClick={() => !notification.read && markAsRead(notification.id)}
                       >
-                        <h4 className="text-sm font-medium text-gray-900">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {notification.title}
                         </h4>
                         {notification.message && (
-                          <p className="text-sm text-gray-600 mt-1">
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                             {notification.message}
                           </p>
                         )}
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                           {new Date(notification.created_at).toLocaleDateString('no-NO')}
                         </p>
                       </div>
                     ))
                   ) : (
-                    <div className="p-4 text-center text-sm text-gray-500">
+                    <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
                       Ingen varsler
                     </div>
                   )}
@@ -178,16 +188,16 @@ export function Topbar({ user }: TopbarProps) {
           {/* User info & logout */}
           <div className="flex items-center space-x-3">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {user?.full_name}
               </p>
-              <p className="text-xs text-gray-500 capitalize">
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                 {user?.role === 'admin' ? 'Administrator' : 
                  user?.role === 'instructor' ? 'Instruktør' : 'Bruker'}
               </p>
             </div>
             
-            <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center">
               {user?.avatar_url ? (
                 <img
                   src={user.avatar_url}
@@ -195,7 +205,7 @@ export function Topbar({ user }: TopbarProps) {
                   className="w-8 h-8 rounded-full object-cover"
                 />
               ) : (
-                <span className="text-primary-700 text-sm font-medium">
+                <span className="text-primary-700 dark:text-primary-200 text-sm font-medium">
                   {generateInitials(user?.full_name || '')}
                 </span>
               )}
@@ -206,7 +216,7 @@ export function Topbar({ user }: TopbarProps) {
               variant="ghost"
               size="sm"
               onClick={handleSignOut}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10"
               title="Logg ut"
             >
               <LogOut className="w-4 h-4" />
