@@ -9,6 +9,7 @@ import {
   Trash2, 
   BookOpen, 
   PlayCircle,
+  CheckCircle,
   Award,
   GripVertical,
   Eye,
