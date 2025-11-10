@@ -41,25 +41,19 @@ type ProfileRecord = {
   email: string | null
 }
 
-type AssignmentRecord = {
+type UserAssignmentView = {
   id: string
   program_id: string
   assigned_to_user_id: string | null
-  due_date: string
-  status: string
+  due_date: string | null
+  status: string | null
   completed_at: string | null
   assigned_at: string | null
   notes: string | null
   is_mandatory: boolean | null
-  profiles: ProfileRecord | null
-  user_progress: {
-    id: string
-    module_id: string
-    status: string | null
-  }[] | null
+  calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | null
+  progress_percentage: number | null
 }
-
-type RawAssignment = Omit<AssignmentRecord, 'profiles' | 'user_progress'>
 
 type UserProgramStatus = {
   status: 'not_started' | 'in_progress' | 'completed' | 'overdue'
@@ -129,7 +123,6 @@ export default function ThemesPage() {
   const [user, setUser] = useState<User | null>(null)
   const [expandedThemeId, setExpandedThemeId] = useState<string | null>(null)
   const [progressState, setProgressState] = useState<Record<string, ThemeProgressState>>({})
-  const [moduleCounts, setModuleCounts] = useState<Record<string, number>>({})
   
   const [formData, setFormData] = useState<CreateThemeFormData>({
     name: '',
@@ -342,28 +335,10 @@ export default function ThemesPage() {
 
       const programIds = programs.map(program => program.id)
 
-      const { data: modulesData, error: modulesError } = await supabase
-        .from('modules')
-        .select('program_id')
-        .in('program_id', programIds)
-
-      if (modulesError) {
-        throw modulesError
-      }
-
-      const moduleCountMap =
-        (modulesData as { program_id: string }[] | null)?.reduce<Record<string, number>>(
-          (acc, module) => {
-            acc[module.program_id] = (acc[module.program_id] || 0) + 1
-            return acc
-          },
-          {}
-        ) || {}
-
       const { data: assignmentRows, error: assignmentError } = await supabase
-        .from('program_assignments')
+        .from('user_assignments')
         .select(
-          'id, program_id, assigned_to_user_id, due_date, status, completed_at, assigned_at, notes, is_mandatory'
+          'id, program_id, assigned_to_user_id, due_date, status, completed_at, assigned_at, notes, is_mandatory, calculated_status, progress_percentage'
         )
         .in('program_id', programIds)
         .not('assigned_to_user_id', 'is', null)
@@ -372,11 +347,11 @@ export default function ThemesPage() {
         throw assignmentError
       }
 
-      const rawAssignments = (assignmentRows as RawAssignment[] | null) || []
+      const assignments = (assignmentRows as UserAssignmentView[] | null) || []
 
       const userIds = Array.from(
         new Set(
-          rawAssignments
+          assignments
             .map((assignment) => assignment.assigned_to_user_id)
             .filter((id): id is string => Boolean(id))
         )
@@ -397,50 +372,6 @@ export default function ThemesPage() {
           ((profileRows as ProfileRecord[] | null) || []).map((profile) => [profile.id, profile])
         )
       }
-
-      const assignmentIds = rawAssignments.map((assignment) => assignment.id)
-
-      let progressByAssignment: Record<
-        string,
-        { id: string; module_id: string; status: string | null }[]
-      > = {}
-
-      if (assignmentIds.length > 0) {
-        const { data: progressRows, error: progressError } = await supabase
-          .from('user_progress')
-          .select('id, assignment_id, module_id, status')
-          .in('assignment_id', assignmentIds)
-
-        if (progressError) {
-          throw progressError
-        }
-
-        progressByAssignment =
-          (progressRows as { id: string; assignment_id: string | null; module_id: string; status: string | null }[] | null)?.reduce<
-            Record<string, { id: string; module_id: string; status: string | null }[]>
-          >((acc, progress) => {
-            if (!progress.assignment_id) {
-              return acc
-            }
-            if (!acc[progress.assignment_id]) {
-              acc[progress.assignment_id] = []
-            }
-            acc[progress.assignment_id].push({
-              id: progress.id,
-              module_id: progress.module_id,
-              status: progress.status
-            })
-            return acc
-          }, {}) || {}
-      }
-
-      const normalizedAssignments: AssignmentRecord[] = rawAssignments.map((assignment) => ({
-        ...assignment,
-        profiles: assignment.assigned_to_user_id
-          ? profileMap.get(assignment.assigned_to_user_id) || null
-          : null,
-        user_progress: progressByAssignment[assignment.id] || []
-      }))
 
       const { data: departmentsData, error: departmentsError } = await supabase
         .from('departments')
@@ -463,58 +394,49 @@ export default function ThemesPage() {
       let overdueCount = 0
       let inProgressCount = 0
 
-      normalizedAssignments.forEach(assignment => {
-        if (!assignment.profiles || !assignment.assigned_to_user_id) {
+      assignments.forEach(assignment => {
+        if (!assignment.assigned_to_user_id) {
           return
         }
 
-        const userId = assignment.profiles.id
+        const profile = profileMap.get(assignment.assigned_to_user_id)
+        if (!profile) {
+          return
+        }
+
+        const userId = profile.id
 
         if (!userMap.has(userId)) {
           userMap.set(userId, {
             userId,
-            name: assignment.profiles.full_name || 'Ukjent bruker',
-            email: assignment.profiles.email,
-            departmentName: assignment.profiles.department_id
-              ? departmentMap[assignment.profiles.department_id] || 'Uten avdeling'
+            name: profile.full_name || 'Ukjent bruker',
+            email: profile.email,
+            departmentName: profile.department_id
+              ? departmentMap[profile.department_id] || 'Uten avdeling'
               : 'Uten avdeling',
             programs: {}
           })
         }
 
         const row = userMap.get(userId)!
-        const totalModules = moduleCountMap[assignment.program_id] || 0
-        const completedModules = (assignment.user_progress || []).filter(
-          progress => progress.status === 'completed'
-        ).length
+        const totalModules = 0
+        const completedModules = 0
 
-        let status: UserProgramStatus['status'] = 'not_started'
+        const status: UserProgramStatus['status'] =
+          (assignment.calculated_status as UserProgramStatus['status']) ||
+          (assignment.completed_at ? 'completed' : 'not_started')
 
-        if (assignment.completed_at) {
-          status = 'completed'
+        if (status === 'completed') {
           completedCount += 1
-        } else {
-          const dueDate = assignment.due_date ? new Date(assignment.due_date) : null
-          const now = new Date()
-          const hasProgress =
-            completedModules > 0 ||
-            (assignment.user_progress || []).some(progress => progress.status === 'in_progress')
-
-          if (dueDate && dueDate < now) {
-            status = 'overdue'
-            overdueCount += 1
-          } else if (assignment.status === 'started' || hasProgress) {
-            status = 'in_progress'
-            inProgressCount += 1
-          } else if (assignment.status === 'completed') {
-            status = 'completed'
-            completedCount += 1
-          }
+        } else if (status === 'overdue') {
+          overdueCount += 1
+        } else if (status === 'in_progress') {
+          inProgressCount += 1
         }
 
         const progressPercent =
-          totalModules > 0
-            ? Math.round((completedModules / totalModules) * 100)
+          typeof assignment.progress_percentage === 'number'
+            ? Math.round(assignment.progress_percentage)
             : status === 'completed'
             ? 100
             : 0
@@ -524,7 +446,7 @@ export default function ThemesPage() {
           completedModules,
           totalModules,
           progressPercent,
-          dueDate: assignment.due_date || null,
+          dueDate: assignment.due_date,
           completedAt: assignment.completed_at
         }
       })
@@ -537,7 +459,7 @@ export default function ThemesPage() {
             programs,
             userRows: Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
             summary: {
-              totalAssignments: normalizedAssignments.length,
+              totalAssignments: assignments.length,
               completedCount,
               overdueCount,
               inProgressCount
