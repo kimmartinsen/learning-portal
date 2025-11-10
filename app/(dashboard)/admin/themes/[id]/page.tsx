@@ -20,7 +20,6 @@ type ProgramRecord = {
   id: string
   title: string
   description: string | null
-  order_index: number
 }
 
 type ModuleRecord = {
@@ -168,7 +167,7 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
 
       const { data: programsData, error: programsError } = await supabase
         .from('training_programs')
-        .select('id, title, description, order_index')
+        .select('id, title, description')
         .eq('theme_id', params.id)
         .order('created_at', { ascending: true })
 

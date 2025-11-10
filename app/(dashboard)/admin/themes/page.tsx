@@ -31,7 +31,6 @@ type ThemeProgram = {
   id: string
   title: string
   description: string | null
-  order_index: number
 }
 
 type ProfileRecord = {
@@ -193,17 +192,12 @@ export default function ThemesPage() {
         toast.success('Tema oppdatert!')
       } else {
         // Create new theme
-        const nextOrderIndex = themes.length > 0 
-          ? Math.max(...themes.map(t => t.order_index)) + 1 
-          : 0
-
         const { error } = await supabase
           .from('themes')
           .insert([{
             name: formData.name,
             description: formData.description || null,
             company_id: user.company_id,
-            order_index: nextOrderIndex,
           }])
 
         if (error) throw error
@@ -309,7 +303,7 @@ export default function ThemesPage() {
     try {
       const { data: programsData, error: programsError } = await supabase
         .from('training_programs')
-        .select('id, title, description, order_index')
+        .select('id, title, description')
         .eq('theme_id', themeId)
         .order('created_at', { ascending: true })
 
