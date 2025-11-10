@@ -510,54 +510,27 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
                           </td>
                           {programs.map((program) => {
                             const status = row.programs[program.id]
+
                             if (!status) {
                               return (
                                 <td key={`${row.userId}-${program.id}`} className="px-4 py-4">
-                                  <div className="text-xs text-gray-400">
+                                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500">
                                     Ikke tildelt
-                                  </div>
+                                  </span>
                                 </td>
                               )
                             }
 
                             const config = statusConfig[status.status]
-                            const dueText = new Date(status.dueDate).toLocaleDateString('no-NO')
 
                             return (
                               <td key={`${row.userId}-${program.id}`} className="px-4 py-4">
-                                <div className="space-y-3">
-                                  <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${config.badgeClass}`}>
-                                    {config.icon}
-                                    <span>{config.label}</span>
-                                  </span>
-
-                                  <div>
-                                    <p className="text-xs text-gray-600">
-                                      Fremdrift: {status.completedModules}/{status.totalModules || '-'} moduler
-                                    </p>
-                                    <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                                      <div
-                                        className={`h-2 rounded-full ${
-                                          status.status === 'completed'
-                                            ? 'bg-green-500'
-                                            : status.status === 'overdue'
-                                            ? 'bg-red-500'
-                                            : 'bg-primary-500'
-                                        }`}
-                                        style={{ width: `${status.progressPercent}%` }}
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div className="flex justify-between text-xs text-gray-500">
-                                    <span>Frist: {dueText}</span>
-                                    {status.completedAt && (
-                                      <span>
-                                        Fullført: {new Date(status.completedAt).toLocaleDateString('no-NO')}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
+                                <span
+                                  className={`inline-flex items-center space-x-1 rounded-full border px-2 py-1 text-xs font-medium ${config.badgeClass}`}
+                                >
+                                  {config.icon}
+                                  <span>{config.label}</span>
+                                </span>
                               </td>
                             )
                           })}
