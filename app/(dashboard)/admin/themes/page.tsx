@@ -656,13 +656,13 @@ export default function ThemesPage() {
                               <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                   <tr>
-                                    <th className="w-64 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                                    <th className="w-64 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
                                       Bruker
                                     </th>
                                     {data.programs.map((program) => (
                                       <th
                                         key={program.id}
-                                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600"
+                                        className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600"
                                       >
                                         {program.title}
                                       </th>
@@ -672,7 +672,7 @@ export default function ThemesPage() {
                                 <tbody className="divide-y divide-gray-100 bg-white">
                                   {data.userRows.map((row) => (
                                     <tr key={row.userId}>
-                                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                      <td className="px-3 py-3 text-sm font-medium text-gray-900">
                                         {row.name}
                                       </td>
                                       {data.programs.map((program) => {
@@ -680,8 +680,8 @@ export default function ThemesPage() {
 
                                         if (!status) {
                                           return (
-                                            <td key={`${row.userId}-${program.id}`} className="px-4 py-3 align-middle">
-                                              <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500">
+                                            <td key={`${row.userId}-${program.id}`} className="px-3 py-3 text-center align-middle">
+                                              <span className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500">
                                                 Ikke tildelt
                                               </span>
                                             </td>
@@ -691,9 +691,9 @@ export default function ThemesPage() {
                                         const config = statusConfig[status.status]
 
                                         return (
-                                          <td key={`${row.userId}-${program.id}`} className="px-4 py-3 align-middle">
+                                          <td key={`${row.userId}-${program.id}`} className="px-3 py-3 text-center align-middle">
                                             <span
-                                              className={`inline-flex items-center space-x-1 rounded-full border px-2 py-1 text-xs font-medium ${config.badgeClass}`}
+                                              className={`inline-flex items-center justify-center gap-1 rounded-full border px-2 py-1 text-xs font-medium ${config.badgeClass}`}
                                             >
                                               {config.icon}
                                               <span>{config.label}</span>

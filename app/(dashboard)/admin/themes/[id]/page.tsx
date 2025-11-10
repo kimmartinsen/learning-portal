@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { ArrowLeft, Users, BookOpen, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -478,22 +477,15 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-64">
+                        <th className="w-64 px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                           Bruker
                         </th>
                         {programs.map((program) => (
                           <th
                             key={program.id}
-                            className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                            className="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"
                           >
-                            <div className="flex items-center space-x-2">
-                              <span>{program.title}</span>
-                              <Link href={`/dashboard/admin/programs/${program.id}`}>
-                                <span className="text-primary-600 text-xs font-medium hover:underline">
-                                  Detaljer
-                                </span>
-                              </Link>
-                            </div>
+                            {program.title}
                           </th>
                         ))}
                       </tr>
@@ -501,7 +493,7 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
                     <tbody className="divide-y divide-gray-100 bg-white">
                       {userRows.map((row) => (
                         <tr key={row.userId}>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                          <td className="px-3 py-3 text-sm font-medium text-gray-900">
                             {row.name}
                           </td>
                           {programs.map((program) => {
@@ -509,8 +501,8 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
 
                             if (!status) {
                               return (
-                                <td key={`${row.userId}-${program.id}`} className="px-4 py-3 align-middle">
-                                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500">
+                                <td key={`${row.userId}-${program.id}`} className="px-3 py-3 text-center align-middle">
+                                  <span className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500">
                                     Ikke tildelt
                                   </span>
                                 </td>
@@ -520,9 +512,9 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
                             const config = statusConfig[status.status]
 
                             return (
-                              <td key={`${row.userId}-${program.id}`} className="px-4 py-3 align-middle">
+                              <td key={`${row.userId}-${program.id}`} className="px-3 py-3 text-center align-middle">
                                 <span
-                                  className={`inline-flex items-center space-x-1 rounded-full border px-2 py-1 text-xs font-medium ${config.badgeClass}`}
+                                  className={`inline-flex items-center justify-center gap-1 rounded-full border px-2 py-1 text-xs font-medium ${config.badgeClass}`}
                                 >
                                   {config.icon}
                                   <span>{config.label}</span>
