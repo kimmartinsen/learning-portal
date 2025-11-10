@@ -174,7 +174,6 @@ export default async function MyLearningPage() {
                       </td>
                       {themeAssignments.map((assignment) => {
                         const status = assignment.calculated_status
-                        const dueText = formatDaysRemaining(assignment.days_remaining, status)
 
                         const actionConfig =
                           status === 'completed'
@@ -202,7 +201,7 @@ export default async function MyLearningPage() {
                               }
 
                         return (
-                          <td key={`${assignment.id}-status`} className="w-0 px-1 py-2 align-top text-center">
+                          <td key={`${assignment.id}-status`} className="w-0 px-1 py-2 text-center align-top">
                             <div className="flex flex-col items-center gap-2">
                               <span
                                 className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(
@@ -212,31 +211,16 @@ export default async function MyLearningPage() {
                                 {getStatusIcon(status)}
                                 <span>{getStatusText(status)}</span>
                               </span>
-                              <span
-                                className={`text-xs ${
-                                  status === 'overdue' ? 'text-red-600 font-medium' : 'text-gray-500'
-                                }`}
-                              >
-                                {dueText}
-                              </span>
-                              {assignment.progress_percentage > 0 && (
-                                <span className="text-xs text-gray-500">
-                                  {assignment.progress_percentage}% fullført
-                                </span>
-                              )}
                               <Link href={`/programs/${assignment.program_id}`} className="w-full">
                                 <Button
                                   size="sm"
                                   variant={actionConfig.variant}
-                                  className="w-full flex items-center justify-center gap-2"
+                                  className="flex items-center justify-center gap-2 px-4"
                                 >
                                   {actionConfig.icon}
                                   <span>{actionConfig.label}</span>
                                 </Button>
                               </Link>
-                              {assignment.notes && (
-                                <span className="text-xs text-gray-500">{assignment.notes}</span>
-                              )}
                             </div>
                           </td>
                         )
