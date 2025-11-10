@@ -52,8 +52,13 @@ type UserAssignmentView = {
   notes: string | null
   calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | null
   progress_percentage: number | null
-  total_modules: number | null
-  completed_modules: number | null
+}
+
+type UserProgressRow = {
+  user_id: string
+  program_id: string
+  module_id: string
+  status: string | null
 }
 
 type UserProgramStatus = {
@@ -336,10 +341,29 @@ export default function ThemesPage() {
 
       const programIds = programs.map(program => program.id)
 
+      const { data: moduleRows, error: modulesError } = await supabase
+        .from('modules')
+        .select('id, program_id')
+        .in('program_id', programIds)
+
+      if (modulesError) {
+        throw modulesError
+      }
+
+      const modulesByProgram = ((moduleRows as { id: string; program_id: string }[] | null) || []).reduce<
+        Record<string, string[]>
+      >((acc, module) => {
+        if (!acc[module.program_id]) {
+          acc[module.program_id] = []
+        }
+        acc[module.program_id].push(module.id)
+        return acc
+      }, {})
+
       const { data: assignmentRows, error: assignmentError } = await supabase
         .from('user_assignments')
         .select(
-          'id, program_id, user_id, due_date, status, completed_at, assigned_at, notes, calculated_status, progress_percentage, total_modules, completed_modules'
+          'id, program_id, user_id, due_date, status, completed_at, assigned_at, notes, calculated_status, progress_percentage'
         )
         .in('program_id', programIds)
         .not('user_id', 'is', null)
@@ -373,6 +397,47 @@ export default function ThemesPage() {
           ((profileRows as ProfileRecord[] | null) || []).map((profile) => [profile.id, profile])
         )
       }
+
+      let progressRows: UserProgressRow[] = []
+      if (userIds.length > 0) {
+        const { data: progressData, error: progressError } = await supabase
+          .from('user_progress')
+          .select('user_id, program_id, module_id, status')
+          .in('program_id', programIds)
+          .in('user_id', userIds)
+
+        if (progressError) {
+          throw progressError
+        }
+
+        progressRows = (progressData as UserProgressRow[] | null) || []
+      }
+
+      const progressMap = new Map<
+        string,
+        { completed: number; hasInProgress: boolean; hasStarted: boolean }
+      >()
+
+      progressRows.forEach((entry) => {
+        const key = `${entry.user_id}:${entry.program_id}`
+        const existing = progressMap.get(key) || {
+          completed: 0,
+          hasInProgress: false,
+          hasStarted: false
+        }
+
+        if (entry.status === 'completed') {
+          existing.completed += 1
+          existing.hasStarted = true
+        } else if (entry.status === 'in_progress') {
+          existing.hasInProgress = true
+          existing.hasStarted = true
+        } else if (entry.status && entry.status !== 'not_started') {
+          existing.hasStarted = true
+        }
+
+        progressMap.set(key, existing)
+      })
 
       const { data: departmentsData, error: departmentsError } = await supabase
         .from('departments')
@@ -420,12 +485,31 @@ export default function ThemesPage() {
         }
 
         const row = userMap.get(userId)!
-        const totalModules = assignment.total_modules ?? 0
-        const completedModules = assignment.completed_modules ?? 0
+        const totalModules = modulesByProgram[assignment.program_id]?.length ?? 0
 
-        const status: UserProgramStatus['status'] =
+        const progressKey = `${userId}:${assignment.program_id}`
+        const progressInfo = progressMap.get(progressKey)
+        const completedModules = progressInfo?.completed ?? 0
+        const hasInProgress = progressInfo?.hasInProgress ?? false
+        const hasStarted = progressInfo?.hasStarted ?? false
+
+        let status: UserProgramStatus['status'] =
           (assignment.calculated_status as UserProgramStatus['status']) ||
-          (assignment.completed_at ? 'completed' : assignment.status === 'started' ? 'in_progress' : 'not_started')
+          (assignment.completed_at
+            ? 'completed'
+            : assignment.status === 'started' || hasStarted
+            ? 'in_progress'
+            : 'not_started')
+
+        if (
+          status !== 'completed' &&
+          assignment.due_date &&
+          new Date(assignment.due_date) < new Date()
+        ) {
+          status = 'overdue'
+        } else if (status === 'not_started' && hasInProgress) {
+          status = 'in_progress'
+        }
 
         if (status === 'completed') {
           completedCount += 1
