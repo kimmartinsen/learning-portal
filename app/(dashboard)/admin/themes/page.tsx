@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight } from 'lucide-react'
+import { Edit2, Trash2, AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -532,13 +532,9 @@ export default function ThemesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Temaer</h1>
-          <p className="text-gray-600">Organiser kurs i temaer for bedre struktur</p>
+          <h1 className="text-2xl font-bold text-gray-900">Oversikt</h1>
+          <p className="text-gray-600">Status og progresjon for alle temaer</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nytt tema
-        </Button>
       </div>
 
       {/* Form Modal */}
@@ -726,12 +722,8 @@ export default function ThemesPage() {
                 Ingen temaer ennå
               </h3>
               <p className="text-gray-600">
-                Opprett ditt første tema for å organisere kursene
+                Opprett tema fra kurs-siden for å komme i gang.
               </p>
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Opprett tema
-              </Button>
             </CardContent>
           </Card>
         )}

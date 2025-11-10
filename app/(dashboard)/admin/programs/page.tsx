@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import type { EnhancedTrainingProgram, Theme } from '@/types/enhanced-database.types'
+import type { EnhancedTrainingProgram, Theme, CreateThemeFormData } from '@/types/enhanced-database.types'
 import { AssignmentSelector } from '@/components/admin/AssignmentSelector'
 
 interface User {
@@ -39,6 +39,12 @@ export default function AdminProgramsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingProgram, setEditingProgram] = useState<EnhancedTrainingProgram | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [showThemeForm, setShowThemeForm] = useState(false)
+  const [themeFormData, setThemeFormData] = useState<CreateThemeFormData>({
+    name: '',
+    description: ''
+  })
+  const [creatingTheme, setCreatingTheme] = useState(false)
   
   const [formData, setFormData] = useState({
     title: '',
@@ -265,6 +271,45 @@ export default function AdminProgramsPage() {
     })
   }
 
+  const resetThemeForm = () => {
+    setShowThemeForm(false)
+    setThemeFormData({ name: '', description: '' })
+    setCreatingTheme(false)
+  }
+
+  const handleCreateTheme = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    try {
+      setCreatingTheme(true)
+      const { data, error } = await supabase
+        .from('themes')
+        .insert([
+          {
+            name: themeFormData.name,
+            description: themeFormData.description || null,
+            company_id: user.company_id
+          }
+        ])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      toast.success('Tema opprettet!')
+      await fetchThemes(user.company_id)
+      setFormData((prev) => ({
+        ...prev,
+        themeId: data?.id || prev.themeId
+      }))
+      resetThemeForm()
+    } catch (error: any) {
+      toast.error(error.message)
+      setCreatingTheme(false)
+    }
+  }
+
   // Group programs by theme
   const programsByTheme = programs.reduce((acc, program) => {
     const themeId = program.theme_id || 'no-theme'
@@ -285,13 +330,61 @@ export default function AdminProgramsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Kurs</h1>
-          <p className="text-gray-600">Administrer bedriftens kurs organisert i temaer</p>
+          <p className="text-gray-600">Administrer kurs og temaer for bedriften</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nytt kurs
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setShowThemeForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nytt tema
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nytt kurs
+          </Button>
+        </div>
       </div>
+
+      {/* Theme Form Modal */}
+      {showThemeForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <h3 className="text-lg font-semibold">Nytt tema</h3>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateTheme} className="space-y-4">
+                <Input
+                  label="Temanavn"
+                  value={themeFormData.name}
+                  onChange={(e) => setThemeFormData((prev) => ({ ...prev, name: e.target.value }))}
+                  required
+                  placeholder="F.eks. HMS og sikkerhet"
+                />
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Beskrivelse</label>
+                  <textarea
+                    value={themeFormData.description}
+                    onChange={(e) =>
+                      setThemeFormData((prev) => ({ ...prev, description: e.target.value }))
+                    }
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                    rows={3}
+                    placeholder="Valgfri beskrivelse av temaet"
+                  />
+                </div>
+                <div className="flex space-x-3 pt-4">
+                  <Button type="submit" className="flex-1" loading={creatingTheme}>
+                    Opprett tema
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={resetThemeForm} disabled={creatingTheme}>
+                    Avbryt
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Form Modal */}
       {showForm && (
