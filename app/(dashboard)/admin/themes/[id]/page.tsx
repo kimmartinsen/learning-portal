@@ -170,7 +170,7 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
         .from('training_programs')
         .select('id, title, description, order_index')
         .eq('theme_id', params.id)
-        .order('order_index', { ascending: true })
+        .order('created_at', { ascending: true })
 
       if (programsError) {
         throw programsError
@@ -189,7 +189,7 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
           .from('modules')
           .select('id, program_id, order_index')
           .in('program_id', programIds)
-          .order('order_index', { ascending: true })
+          .order('created_at', { ascending: true })
 
         if (modulesError) {
           throw modulesError

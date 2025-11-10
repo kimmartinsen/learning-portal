@@ -99,7 +99,7 @@ export default function AdminProgramsPage() {
       .from('themes')
       .select('*')
       .eq('company_id', companyId)
-      .order('order_index', { ascending: true })
+      .order('created_at', { ascending: true })
 
     if (error) throw error
     setThemes(data || [])

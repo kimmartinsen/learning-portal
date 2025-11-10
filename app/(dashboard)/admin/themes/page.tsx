@@ -163,7 +163,7 @@ export default function ThemesPage() {
         .from('themes')
         .select('*')
         .eq('company_id', profile.company_id)
-        .order('order_index', { ascending: true })
+        .order('created_at', { ascending: true })
 
       if (error) throw error
       setThemes(themesData || [])
@@ -311,7 +311,7 @@ export default function ThemesPage() {
         .from('training_programs')
         .select('id, title, description, order_index')
         .eq('theme_id', themeId)
-        .order('order_index', { ascending: true })
+        .order('created_at', { ascending: true })
 
       if (programsError) {
         throw programsError
