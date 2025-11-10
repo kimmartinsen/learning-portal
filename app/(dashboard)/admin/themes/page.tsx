@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2, BookOpen, GripVertical } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Theme, CreateThemeFormData } from '@/types/enhanced-database.types'
@@ -271,6 +272,14 @@ export default function ThemesPage() {
                   </div>
                   
                   <div className="flex space-x-2">
+                    <Link href={`/dashboard/admin/themes/${theme.id}`}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                      >
+                        Se progresjon
+                      </Button>
+                    </Link>
                     <Button
                       variant="ghost"
                       size="sm"
