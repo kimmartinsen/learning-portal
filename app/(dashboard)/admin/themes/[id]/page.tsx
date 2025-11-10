@@ -29,6 +29,13 @@ type ModuleRecord = {
   order_index: number
 }
 
+type ProfileRecord = {
+  id: string
+  full_name: string | null
+  department_id: string | null
+  email: string | null
+}
+
 type AssignmentRecord = {
   id: string
   program_id: string
@@ -39,12 +46,7 @@ type AssignmentRecord = {
   assigned_at: string | null
   notes: string | null
   is_mandatory: boolean | null
-  profiles: {
-    id: string
-    full_name: string | null
-    department_id: string | null
-    email: string | null
-  } | null
+  profiles: ProfileRecord | null
   user_progress: {
     id: string
     module_id: string
@@ -234,7 +236,16 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
           throw assignmentError
         }
 
-        setAssignments(assignmentData as AssignmentRecord[] || [])
+        const normalizedAssignments: AssignmentRecord[] = (assignmentData || []).map(
+          (assignment: any) => ({
+            ...assignment,
+            profiles: Array.isArray(assignment.profiles)
+              ? (assignment.profiles[0] as ProfileRecord | undefined) || null
+              : (assignment.profiles as ProfileRecord | null)
+          })
+        )
+
+        setAssignments(normalizedAssignments)
       }
 
       const { data: departmentsData, error: departmentsError } = await supabase
