@@ -329,8 +329,8 @@ export default function AdminProgramsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Kurs</h1>
-          <p className="text-gray-600">Administrer kurs og temaer for bedriften</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Kurs</h1>
+          <p className="text-gray-600 dark:text-gray-300">Administrer kurs og temaer for bedriften</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={() => setShowThemeForm(true)}>
@@ -701,14 +701,14 @@ export default function AdminProgramsPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Ingen kurs ennå
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
                 Opprett ditt første kurs for å komme i gang
               </p>
               {themes.length === 0 && (
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                   Tip: <a href="/admin/themes" className="text-primary-600 hover:text-primary-700">
                     Opprett temaer først
                   </a> for bedre organisering

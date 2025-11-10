@@ -266,8 +266,8 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Brukere</h1>
-          <p className="text-gray-600">Administrer bedriftens brukere</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Brukere</h1>
+          <p className="text-gray-600 dark:text-gray-300">Administrer bedriftens brukere</p>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
@@ -383,12 +383,14 @@ export default function UsersPage() {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {profile.full_name}
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        {profile.full_name || 'Ukjent bruker'}
                       </h3>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">{profile.email}</span>
+                      <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
+                        <div className="flex items-center space-x-1">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-600 dark:text-gray-300">{profile.email}</span>
+                        </div>
                       </div>
                       <div className="flex items-center space-x-3 mt-2">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(profile.role)}`}>
@@ -400,7 +402,7 @@ export default function UsersPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         Opprettet: {new Date(profile.created_at).toLocaleDateString('no-NO')}
                       </p>
                     </div>
@@ -431,10 +433,10 @@ export default function UsersPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Ingen brukere ennå
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
                 Opprett din første bruker for å komme i gang
               </p>
               <Button onClick={() => setShowForm(true)}>

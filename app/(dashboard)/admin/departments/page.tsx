@@ -153,8 +153,8 @@ export default function DepartmentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Avdelinger</h1>
-          <p className="text-gray-600">Administrer bedriftens avdelinger</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Avdelinger</h1>
+          <p className="text-gray-600 dark:text-gray-300">Administrer bedriftens avdelinger</p>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
@@ -182,7 +182,7 @@ export default function DepartmentsPage() {
                 />
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Beskrivelse
                   </label>
                   <textarea
@@ -218,15 +218,15 @@ export default function DepartmentsPage() {
                   <div className="flex items-center space-x-3">
                     <Building2 className="w-6 h-6 text-primary-600" />
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         {department.name}
                       </h3>
                       {department.description && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          {department.description}
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                          {department.description || 'Ingen beskrivelse'}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         Opprettet: {new Date(department.created_at).toLocaleDateString('no-NO')}
                       </p>
                     </div>
@@ -257,10 +257,10 @@ export default function DepartmentsPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Ingen avdelinger ennå
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
                 Opprett din første avdeling for å organisere brukerne
               </p>
               <Button onClick={() => setShowForm(true)}>
