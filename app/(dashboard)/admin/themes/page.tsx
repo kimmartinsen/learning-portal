@@ -722,35 +722,8 @@ export default function ThemesPage() {
                             Ingen brukere er tildelt kurs i dette temaet ennå.
                           </div>
                         ) : (
-                          <div className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                              <div className="bg-gray-50 rounded-lg p-4">
-                                <p className="text-xs text-gray-500">Brukere</p>
-                                <p className="text-xl font-semibold text-gray-900">
-                                  {data.userRows.length}
-                                </p>
-                              </div>
-                              <div className="bg-gray-50 rounded-lg p-4">
-                                <p className="text-xs text-gray-500">Kurs</p>
-                                <p className="text-xl font-semibold text-gray-900">
-                                  {data.programs.length}
-                                </p>
-                              </div>
-                              <div className="bg-green-50 rounded-lg p-4">
-                                <p className="text-xs text-green-600">Fullført</p>
-                                <p className="text-xl font-semibold text-green-700">
-                                  {data.summary.completedCount}
-                                </p>
-                              </div>
-                              <div className="bg-red-50 rounded-lg p-4">
-                                <p className="text-xs text-red-600">Forsinket</p>
-                                <p className="text-xl font-semibold text-red-700">
-                                  {data.summary.overdueCount}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="overflow-x-auto">
+                            <div className="space-y-6">
+                              <div className="overflow-x-auto">
                               <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                   <tr>
