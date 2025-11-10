@@ -153,7 +153,25 @@ export default function ThemesPage() {
         .order('created_at', { ascending: true })
 
       if (error) throw error
-      setThemes(themesData || [])
+
+      let filteredThemes = themesData || []
+
+      const { data: programThemeRows } = await supabase
+        .from('training_programs')
+        .select('theme_id')
+        .eq('company_id', profile.company_id)
+
+      if (programThemeRows) {
+        const themeIdsWithPrograms = new Set(
+          programThemeRows
+            .map((row) => row.theme_id)
+            .filter((id): id is string => Boolean(id))
+        )
+
+        filteredThemes = filteredThemes.filter((theme) => themeIdsWithPrograms.has(theme.id))
+      }
+
+      setThemes(filteredThemes)
     } catch (error: any) {
       toast.error('Kunne ikke hente temaer: ' + error.message)
     } finally {
