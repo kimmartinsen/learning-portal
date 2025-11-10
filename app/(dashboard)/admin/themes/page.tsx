@@ -671,20 +671,16 @@ export default function ThemesPage() {
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 bg-white">
                                   {data.userRows.map((row) => (
-                                    <tr key={row.userId} className="align-top">
-                                      <td className="px-4 py-4">
-                                        <div className="space-y-1">
-                                          <p className="font-medium text-gray-900">{row.name}</p>
-                                          <p className="text-xs text-gray-500">{row.email}</p>
-                                          <p className="text-xs text-gray-500">{row.departmentName}</p>
-                                        </div>
+                                    <tr key={row.userId}>
+                                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                        {row.name}
                                       </td>
                                       {data.programs.map((program) => {
                                         const status = row.programs[program.id]
 
                                         if (!status) {
                                           return (
-                                            <td key={`${row.userId}-${program.id}`} className="px-4 py-4">
+                                            <td key={`${row.userId}-${program.id}`} className="px-4 py-3 align-middle">
                                               <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500">
                                                 Ikke tildelt
                                               </span>
@@ -695,7 +691,7 @@ export default function ThemesPage() {
                                         const config = statusConfig[status.status]
 
                                         return (
-                                          <td key={`${row.userId}-${program.id}`} className="px-4 py-4">
+                                          <td key={`${row.userId}-${program.id}`} className="px-4 py-3 align-middle">
                                             <span
                                               className={`inline-flex items-center space-x-1 rounded-full border px-2 py-1 text-xs font-medium ${config.badgeClass}`}
                                             >
