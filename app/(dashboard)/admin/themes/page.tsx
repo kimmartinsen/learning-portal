@@ -44,15 +44,16 @@ type ProfileRecord = {
 type UserAssignmentView = {
   id: string
   program_id: string
-  assigned_to_user_id: string | null
+  user_id: string | null
   due_date: string | null
   status: string | null
   completed_at: string | null
   assigned_at: string | null
   notes: string | null
-  is_mandatory: boolean | null
   calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | null
   progress_percentage: number | null
+  total_modules: number | null
+  completed_modules: number | null
 }
 
 type UserProgramStatus = {
@@ -338,10 +339,10 @@ export default function ThemesPage() {
       const { data: assignmentRows, error: assignmentError } = await supabase
         .from('user_assignments')
         .select(
-          'id, program_id, assigned_to_user_id, due_date, status, completed_at, assigned_at, notes, is_mandatory, calculated_status, progress_percentage'
+          'id, program_id, user_id, due_date, status, completed_at, assigned_at, notes, calculated_status, progress_percentage, total_modules, completed_modules'
         )
         .in('program_id', programIds)
-        .not('assigned_to_user_id', 'is', null)
+        .not('user_id', 'is', null)
 
       if (assignmentError) {
         throw assignmentError
@@ -352,7 +353,7 @@ export default function ThemesPage() {
       const userIds = Array.from(
         new Set(
           assignments
-            .map((assignment) => assignment.assigned_to_user_id)
+            .map((assignment) => assignment.user_id)
             .filter((id): id is string => Boolean(id))
         )
       )
@@ -395,11 +396,11 @@ export default function ThemesPage() {
       let inProgressCount = 0
 
       assignments.forEach(assignment => {
-        if (!assignment.assigned_to_user_id) {
+        if (!assignment.user_id) {
           return
         }
 
-        const profile = profileMap.get(assignment.assigned_to_user_id)
+        const profile = profileMap.get(assignment.user_id)
         if (!profile) {
           return
         }
@@ -419,12 +420,12 @@ export default function ThemesPage() {
         }
 
         const row = userMap.get(userId)!
-        const totalModules = 0
-        const completedModules = 0
+        const totalModules = assignment.total_modules ?? 0
+        const completedModules = assignment.completed_modules ?? 0
 
         const status: UserProgramStatus['status'] =
           (assignment.calculated_status as UserProgramStatus['status']) ||
-          (assignment.completed_at ? 'completed' : 'not_started')
+          (assignment.completed_at ? 'completed' : assignment.status === 'started' ? 'in_progress' : 'not_started')
 
         if (status === 'completed') {
           completedCount += 1
@@ -434,12 +435,17 @@ export default function ThemesPage() {
           inProgressCount += 1
         }
 
-        const progressPercent =
-          typeof assignment.progress_percentage === 'number'
-            ? Math.round(assignment.progress_percentage)
+        const derivedProgress =
+          totalModules > 0
+            ? Math.round((completedModules / totalModules) * 100)
             : status === 'completed'
             ? 100
             : 0
+
+        const progressPercent =
+          typeof assignment.progress_percentage === 'number'
+            ? Math.max(0, Math.min(100, Math.round(assignment.progress_percentage)))
+            : derivedProgress
 
         row.programs[assignment.program_id] = {
           status,
