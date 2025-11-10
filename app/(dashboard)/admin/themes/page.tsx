@@ -660,12 +660,13 @@ export default function ThemesPage() {
                         <div className="py-6 text-center text-sm text-red-600">
                           {progress.error}
                         </div>
-                      ) : progress?.data ? (
-                        progress.data.programs.length === 0 ? (
+                      ) : progress?.data ? (() => {
+                        const data = progress.data
+                        return data.programs.length === 0 ? (
                           <div className="py-6 text-center text-sm text-gray-500">
                             Ingen kurs er knyttet til dette temaet.
                           </div>
-                        ) : progress.data.userRows.length === 0 ? (
+                        ) : data.userRows.length === 0 ? (
                           <div className="py-6 text-center text-sm text-gray-500">
                             Ingen brukere er tildelt kurs i dette temaet ennå.
                           </div>
@@ -675,25 +676,25 @@ export default function ThemesPage() {
                               <div className="bg-gray-50 rounded-lg p-4">
                                 <p className="text-xs text-gray-500">Brukere</p>
                                 <p className="text-xl font-semibold text-gray-900">
-                                  {progress.data.userRows.length}
+                                  {data.userRows.length}
                                 </p>
                               </div>
                               <div className="bg-gray-50 rounded-lg p-4">
                                 <p className="text-xs text-gray-500">Kurs</p>
                                 <p className="text-xl font-semibold text-gray-900">
-                                  {progress.data.programs.length}
+                                  {data.programs.length}
                                 </p>
                               </div>
                               <div className="bg-green-50 rounded-lg p-4">
                                 <p className="text-xs text-green-600">Fullført</p>
                                 <p className="text-xl font-semibold text-green-700">
-                                  {progress.data.summary.completedCount}
+                                  {data.summary.completedCount}
                                 </p>
                               </div>
                               <div className="bg-red-50 rounded-lg p-4">
                                 <p className="text-xs text-red-600">Forsinket</p>
                                 <p className="text-xl font-semibold text-red-700">
-                                  {progress.data.summary.overdueCount}
+                                  {data.summary.overdueCount}
                                 </p>
                               </div>
                             </div>
@@ -705,7 +706,7 @@ export default function ThemesPage() {
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-64">
                                       Bruker
                                     </th>
-                                    {progress.data.programs.map((program) => (
+                                    {data.programs.map((program) => (
                                       <th
                                         key={program.id}
                                         className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
@@ -723,7 +724,7 @@ export default function ThemesPage() {
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 bg-white">
-                                  {progress.data.userRows.map((row) => (
+                                  {data.userRows.map((row) => (
                                     <tr key={row.userId} className="align-top">
                                       <td className="px-4 py-4">
                                         <div className="space-y-1">
@@ -732,7 +733,7 @@ export default function ThemesPage() {
                                           <p className="text-xs text-gray-500">{row.departmentName}</p>
                                         </div>
                                       </td>
-                                      {progress.data.programs.map((program) => {
+                                      {data.programs.map((program) => {
                                         const status = row.programs[program.id]
 
                                         if (!status) {
@@ -797,7 +798,7 @@ export default function ThemesPage() {
                             </div>
                           </div>
                         )
-                      ) : (
+                      })() : (
                         <div className="py-6 text-center text-sm text-gray-500">
                           Ingen data å vise ennå.
                         </div>
