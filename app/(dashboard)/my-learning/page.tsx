@@ -1,7 +1,15 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { BookOpen, Clock, PlayCircle, CheckCircle, AlertTriangle, Tag } from 'lucide-react'
+import {
+  BookOpen,
+  Clock,
+  PlayCircle,
+  CheckCircle,
+  AlertTriangle,
+  Tag,
+  ChevronRight
+} from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -139,93 +147,106 @@ export default async function MyLearningPage() {
       )}
 
       {/* Assignments List - Grouped by Theme */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {Object.entries(assignmentsByTheme).map(([themeName]) => {
           const themeAssignments = getThemeAssignments(themeName)
           return (
-            <div key={themeName} className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Tag className="w-5 h-5 text-primary-600" />
-                <h2 className="text-lg font-semibold text-gray-900">{themeName}</h2>
-                <span className="text-sm text-gray-500">({themeAssignments.length} kurs)</span>
+            <details
+              key={themeName}
+              className="group rounded-lg border border-gray-200 bg-white shadow-sm"
+              open
+            >
+              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 list-none [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center gap-2">
+                  <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
+                  <Tag className="h-4 w-4 text-primary-600" />
+                  <span className="text-base font-semibold">{themeName}</span>
+                  <span className="text-sm text-gray-500">({themeAssignments.length} kurs)</span>
+                </div>
+              </summary>
+
+              <div className="border-t border-gray-200 px-4 py-4">
+                {themeAssignments.length === 0 ? (
+                  <p className="text-sm text-gray-500">Ingen kurs i dette temaet.</p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {themeAssignments.map((assignment) => {
+                      const status = assignment.calculated_status
+
+                      const actionConfig =
+                        status === 'completed'
+                          ? {
+                              label: 'Se igjen',
+                              icon: <CheckCircle className="w-4 h-4" />,
+                              variant: 'secondary' as const
+                            }
+                          : status === 'in_progress'
+                          ? {
+                              label: 'Fortsett',
+                              icon: <PlayCircle className="w-4 h-4" />,
+                              variant: 'primary' as const
+                            }
+                          : status === 'overdue'
+                          ? {
+                              label: 'Start nå',
+                              icon: <AlertTriangle className="w-4 h-4" />,
+                              variant: 'danger' as const
+                            }
+                          : {
+                              label: 'Start',
+                              icon: <PlayCircle className="w-4 h-4" />,
+                              variant: 'primary' as const
+                            }
+
+                      return (
+                        <Card
+                          key={assignment.id}
+                          className={
+                            status === 'overdue'
+                              ? 'border-red-200 shadow-sm'
+                              : status === 'completed'
+                              ? 'border-green-200 shadow-sm'
+                              : 'shadow-sm'
+                          }
+                        >
+                          <CardContent className="space-y-4 p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <h3 className="text-sm font-semibold leading-tight text-gray-900">
+                                {assignment.program_title}
+                              </h3>
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(
+                                  status
+                                )}`}
+                              >
+                                {getStatusIcon(status)}
+                                <span>{getStatusText(status)}</span>
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <Clock className="h-4 w-4" />
+                              <span>{formatDaysRemaining(assignment.days_remaining, status)}</span>
+                            </div>
+
+                            <Link href={`/programs/${assignment.program_id}`} className="block">
+                              <Button
+                                size="sm"
+                                variant={actionConfig.variant}
+                                className="flex w-full items-center justify-center gap-2"
+                              >
+                                {actionConfig.icon}
+                                <span>{actionConfig.label}</span>
+                              </Button>
+                            </Link>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-              
-              <div className="ml-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {themeAssignments.map((assignment) => {
-                  const status = assignment.calculated_status
-
-                  const actionConfig =
-                    status === 'completed'
-                      ? {
-                          label: 'Se igjen',
-                          icon: <CheckCircle className="w-4 h-4" />,
-                          variant: 'secondary' as const
-                        }
-                      : status === 'in_progress'
-                      ? {
-                          label: 'Fortsett',
-                          icon: <PlayCircle className="w-4 h-4" />,
-                          variant: 'primary' as const
-                        }
-                      : status === 'overdue'
-                      ? {
-                          label: 'Start nå',
-                          icon: <AlertTriangle className="w-4 h-4" />,
-                          variant: 'danger' as const
-                        }
-                      : {
-                          label: 'Start',
-                          icon: <PlayCircle className="w-4 h-4" />,
-                          variant: 'primary' as const
-                        }
-
-                  return (
-                    <Card
-                      key={assignment.id}
-                      className={
-                        status === 'overdue'
-                          ? 'border-red-200 shadow-sm'
-                          : status === 'completed'
-                          ? 'border-green-200 shadow-sm'
-                          : 'shadow-sm'
-                      }
-                    >
-                      <CardContent className="space-y-4 p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm font-semibold leading-tight text-gray-900">
-                            {assignment.program_title}
-                          </h3>
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(
-                              status
-                            )}`}
-                          >
-                            {getStatusIcon(status)}
-                            <span>{getStatusText(status)}</span>
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <Clock className="h-4 w-4" />
-                          <span>{formatDaysRemaining(assignment.days_remaining, status)}</span>
-                        </div>
-
-                        <Link href={`/programs/${assignment.program_id}`} className="block">
-                          <Button
-                            size="sm"
-                            variant={actionConfig.variant}
-                            className="flex w-full items-center justify-center gap-2"
-                          >
-                            {actionConfig.icon}
-                            <span>{actionConfig.label}</span>
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </div>
+            </details>
           )
         })}
 
