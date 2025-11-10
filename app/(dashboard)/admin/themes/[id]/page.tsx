@@ -484,7 +484,7 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
                         {programs.map((program) => (
                           <th
                             key={program.id}
-                            className="w-0 px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap"
+                            className="w-0 px-2 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap"
                           >
                             {program.title}
                           </th>
