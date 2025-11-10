@@ -103,7 +103,6 @@ CREATE TABLE user_progress (
   status VARCHAR(50) DEFAULT 'not_started' CHECK (status IN ('not_started', 'in_progress', 'completed')),
   started_at TIMESTAMPTZ,
   completed_at TIMESTAMPTZ,
-  time_spent_minutes INTEGER DEFAULT 0,
   attempts INTEGER DEFAULT 0,
   score DECIMAL(5,2),
   data JSONB DEFAULT '{}',

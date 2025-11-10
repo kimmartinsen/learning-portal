@@ -430,7 +430,6 @@ export interface Database {
           score: number | null
           started_at: string | null
           status: string | null
-          time_spent_minutes: number | null
           user_id: string
         }
         Insert: {
@@ -444,7 +443,6 @@ export interface Database {
           score?: number | null
           started_at?: string | null
           status?: string | null
-          time_spent_minutes?: number | null
           user_id: string
         }
         Update: {
@@ -458,7 +456,6 @@ export interface Database {
           score?: number | null
           started_at?: string | null
           status?: string | null
-          time_spent_minutes?: number | null
           user_id?: string
         }
         Relationships: [

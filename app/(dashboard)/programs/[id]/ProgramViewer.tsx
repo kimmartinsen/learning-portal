@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  ArrowLeft, 
-  BookOpen, 
-  PlayCircle, 
-  CheckCircle, 
-  Lock, 
-  Clock,
+import {
+  ArrowLeft,
+  BookOpen,
+  PlayCircle,
+  CheckCircle,
+  Lock,
   Calendar,
   User,
   ChevronRight
@@ -48,7 +47,6 @@ interface UserProgress {
   module_id: string
   status: string
   completed_at: string | null
-  time_spent_minutes: number
   questions_answered: any[]
   questions_correct: number
   questions_total: number

@@ -111,7 +111,6 @@ export interface EnhancedUserProgress {
   status: 'not_started' | 'in_progress' | 'completed'
   started_at: string | null
   completed_at: string | null
-  time_spent_minutes: number
   attempts: number
   score: number | null
   data: any

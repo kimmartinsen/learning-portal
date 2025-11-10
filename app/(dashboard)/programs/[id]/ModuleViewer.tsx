@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  CheckCircle, 
+import {
+  ArrowLeft,
+  CheckCircle,
   X,
-  Clock,
   BookOpen,
   PlayCircle,
   Award,
@@ -38,7 +36,6 @@ interface UserProgress {
   id: string
   status: string
   completed_at: string | null
-  time_spent_minutes: number
   questions_answered: any[]
   questions_correct: number
   questions_total: number
@@ -90,7 +87,6 @@ export default function ModuleViewer({
   moduleIndex,
   totalModules 
 }: Props) {
-  const [startTime] = useState(Date.now())
   const [questionAnswers, setQuestionAnswers] = useState<Map<string, number>>(new Map())
   const [showQuestionFeedback, setShowQuestionFeedback] = useState<Map<string, boolean>>(new Map())
   const [quizStarted, setQuizStarted] = useState(false)
@@ -123,7 +119,6 @@ export default function ModuleViewer({
           module_id: module.id,
           status: 'in_progress',
           started_at: new Date().toISOString(),
-          time_spent_minutes: 0,
           questions_answered: [],
           questions_correct: 0,
           questions_total: 0,
@@ -144,15 +139,12 @@ export default function ModuleViewer({
 
   const markModuleCompleted = async (additionalData: any = {}) => {
     try {
-      const timeSpent = Math.round((Date.now() - startTime) / 60000) // minutes
-      
       const updateData = {
         user_id: userId,
         program_id: program.id,
         module_id: module.id,
         status: 'completed',
         completed_at: new Date().toISOString(),
-        time_spent_minutes: (progress?.time_spent_minutes || 0) + timeSpent,
         questions_answered: additionalData.questions_answered || [],
         questions_correct: additionalData.questions_correct || 0,
         questions_total: additionalData.questions_total || 0,
