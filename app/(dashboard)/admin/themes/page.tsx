@@ -1,22 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  BookOpen,
-  GripVertical,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  ChevronDown,
-  ChevronRight
-} from 'lucide-react'
+import { Plus, Edit2, Trash2, AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Theme, CreateThemeFormData } from '@/types/enhanced-database.types'
@@ -246,36 +234,6 @@ export default function ThemesPage() {
   }
 
   // Get program count for each theme
-  const [programCounts, setProgramCounts] = useState<Record<string, number>>({})
-
-  useEffect(() => {
-    if (themes.length > 0 && user) {
-      fetchProgramCounts()
-    }
-  }, [themes, user])
-
-  const fetchProgramCounts = async () => {
-    if (!user) return
-
-    try {
-      const counts: Record<string, number> = {}
-      
-      for (const theme of themes) {
-        const { count } = await supabase
-          .from('training_programs')
-          .select('id', { count: 'exact', head: true })
-          .eq('theme_id', theme.id)
-          .eq('company_id', user.company_id)
-        
-        counts[theme.id] = count || 0
-      }
-
-      setProgramCounts(counts)
-    } catch (error: any) {
-      console.error('Error fetching program counts:', error)
-    }
-  }
-
   const handleToggleTheme = (themeId: string) => {
     if (expandedThemeId === themeId) {
       setExpandedThemeId(null)
@@ -638,71 +596,42 @@ export default function ThemesPage() {
 
             return (
               <Card key={theme.id}>
-                <CardContent className="p-6 space-y-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3 w-full">
-                      <div className="cursor-move mt-1">
-                        <GripVertical className="w-5 h-5 text-gray-400" />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleTheme(theme.id)}
-                        className="flex-1 text-left"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            {isExpanded ? (
-                              <ChevronDown className="w-5 h-5 text-gray-500" />
-                            ) : (
-                              <ChevronRight className="w-5 h-5 text-gray-500" />
-                            )}
-                            <BookOpen className="w-6 h-6 text-primary-600" />
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {theme.name}
-                            </h3>
-                          </div>
-                        </div>
-                        {theme.description && (
-                          <p className="text-sm text-gray-600 mt-2">
-                            {theme.description}
-                          </p>
-                        )}
-                        <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-gray-500">
-                          <span>{programCounts[theme.id] || 0} kurs</span>
-                          <span>Opprettet: {new Date(theme.created_at).toLocaleDateString('no-NO')}</span>
-                          {progress?.data && (
-                            <>
-                              <span>{progress.data.summary.completedCount} fullført</span>
-                              <span className={progress.data.summary.overdueCount > 0 ? 'text-red-600 font-medium' : ''}>
-                                {progress.data.summary.overdueCount} forsinket
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </button>
-                    </div>
-
-                    <div className="flex space-x-2">
+                <CardContent className="p-0">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTheme(theme.id)}
+                      className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 focus:outline-none"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-gray-500" />
+                      )}
+                      <span>{theme.name}</span>
+                    </button>
+                    <div className="flex items-center space-x-1">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEdit(theme)}
+                        className="h-8 w-8 p-0"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(theme.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div className="border-t border-gray-200 pt-6">
+                    <div className="border-t border-gray-200 px-4 py-4">
                       {progress?.loading ? (
                         <div className="py-6 text-center text-sm text-gray-500">
                           Laster progresjon...
@@ -722,27 +651,20 @@ export default function ThemesPage() {
                             Ingen brukere er tildelt kurs i dette temaet ennå.
                           </div>
                         ) : (
-                            <div className="space-y-6">
-                              <div className="overflow-x-auto">
+                          <div className="space-y-6">
+                            <div className="overflow-x-auto">
                               <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                   <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-64">
+                                    <th className="w-64 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
                                       Bruker
                                     </th>
                                     {data.programs.map((program) => (
                                       <th
                                         key={program.id}
-                                        className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600"
                                       >
-                                        <div className="flex items-center space-x-2">
-                                          <span>{program.title}</span>
-                                          <Link href={`/dashboard/admin/programs/${program.id}`}>
-                                            <span className="text-primary-600 text-xs font-medium hover:underline">
-                                              Åpne
-                                            </span>
-                                          </Link>
-                                        </div>
+                                        {program.title}
                                       </th>
                                     ))}
                                   </tr>
@@ -803,12 +725,11 @@ export default function ThemesPage() {
           })
         ) : (
           <Card>
-            <CardContent className="p-12 text-center">
-              <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <CardContent className="p-12 text-center space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">
                 Ingen temaer ennå
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600">
                 Opprett ditt første tema for å organisere kursene
               </p>
               <Button onClick={() => setShowForm(true)}>
