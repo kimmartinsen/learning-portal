@@ -124,57 +124,6 @@ export default async function MyLearningPage() {
         <p className="text-gray-600">Oversikt over dine personlige kursoppdrag</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tildelte kurs</p>
-                <p className="text-2xl font-bold text-gray-900">{assignments?.length || 0}</p>
-              </div>
-              <BookOpen className="h-8 w-8 text-primary-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">I gang</p>
-                <p className="text-2xl font-bold text-blue-600">{inProgress.length}</p>
-              </div>
-              <PlayCircle className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Fullførte</p>
-                <p className="text-2xl font-bold text-green-600">{completed.length}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Forsinkede</p>
-                <p className="text-2xl font-bold text-red-600">{overdue.length}</p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Priority Alert for Overdue */}
       {overdue.length > 0 && (
         <Card className="border-red-200 bg-red-50">
