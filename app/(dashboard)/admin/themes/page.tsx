@@ -653,16 +653,16 @@ export default function ThemesPage() {
                         ) : (
                           <div className="space-y-6">
                             <div className="overflow-x-auto">
-                              <table className="min-w-full divide-y divide-gray-200">
+                              <table className="min-w-full table-auto divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                   <tr>
-                                    <th className="w-64 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                                    <th className="w-48 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
                                       Bruker
                                     </th>
                                     {data.programs.map((program) => (
                                       <th
                                         key={program.id}
-                                        className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600"
+                                        className="px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600"
                                       >
                                         {program.title}
                                       </th>
@@ -672,7 +672,7 @@ export default function ThemesPage() {
                                 <tbody className="divide-y divide-gray-100 bg-white">
                                   {data.userRows.map((row) => (
                                     <tr key={row.userId}>
-                                      <td className="px-3 py-3 text-sm font-medium text-gray-900">
+                                      <td className="px-2 py-2 text-sm font-medium text-gray-900 text-left">
                                         {row.name}
                                       </td>
                                       {data.programs.map((program) => {
@@ -680,8 +680,8 @@ export default function ThemesPage() {
 
                                         if (!status) {
                                           return (
-                                            <td key={`${row.userId}-${program.id}`} className="px-3 py-3 align-middle">
-                                              <span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500">
+                                            <td key={`${row.userId}-${program.id}`} className="px-2 py-2 text-left align-middle">
+                                              <span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500">
                                                 Ikke tildelt
                                               </span>
                                             </td>
@@ -691,9 +691,9 @@ export default function ThemesPage() {
                                         const config = statusConfig[status.status]
 
                                         return (
-                                          <td key={`${row.userId}-${program.id}`} className="px-3 py-3 align-middle">
+                                          <td key={`${row.userId}-${program.id}`} className="px-2 py-2 text-left align-middle">
                                             <span
-                                              className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-1 text-xs font-medium ${config.badgeClass}`}
+                                              className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${config.badgeClass}`}
                                             >
                                               {config.icon}
                                               <span>{config.label}</span>
