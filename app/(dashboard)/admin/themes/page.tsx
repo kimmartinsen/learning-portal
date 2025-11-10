@@ -88,22 +88,22 @@ const statusConfig: Record<
 > = {
   completed: {
     label: 'Fullført',
-    badgeClass: 'bg-green-100 text-green-700 border border-green-200',
+    badgeClass: 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-500/20 dark:text-green-200 dark:border-green-500/40',
     icon: <CheckCircle className="w-4 h-4" />
   },
   in_progress: {
     label: 'I gang',
-    badgeClass: 'bg-blue-100 text-blue-700 border border-blue-200',
+    badgeClass: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-200 dark:border-blue-500/40',
     icon: <Clock className="w-4 h-4" />
   },
   overdue: {
     label: 'Forsinket',
-    badgeClass: 'bg-red-100 text-red-700 border border-red-200',
+    badgeClass: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-200 dark:border-red-500/40',
     icon: <AlertTriangle className="w-4 h-4" />
   },
   not_started: {
     label: 'Ikke startet',
-    badgeClass: 'bg-gray-100 text-gray-700 border border-gray-200',
+    badgeClass: 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
     icon: <Clock className="w-4 h-4" />
   }
 }
@@ -550,8 +550,8 @@ export default function ThemesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Oversikt</h1>
-          <p className="text-gray-600">Status og progresjon for alle temaer</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Oversikt</h1>
+          <p className="text-gray-600 dark:text-gray-300">Status og progresjon for alle temaer</p>
         </div>
       </div>
 
@@ -615,7 +615,7 @@ export default function ThemesPage() {
                     <button
                       type="button"
                       onClick={() => handleToggleTheme(theme.id)}
-                      className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 focus:outline-none"
+                      className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none"
                     >
                       {isExpanded ? (
                         <ChevronDown className="h-4 w-4 text-gray-500" />
@@ -637,7 +637,7 @@ export default function ThemesPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(theme.id)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 dark:hover:text-red-400"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -645,9 +645,9 @@ export default function ThemesPage() {
                   </div>
 
                   {isExpanded && (
-                    <div className="border-t border-gray-200 px-4 py-4">
+                    <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
                       {progress?.loading ? (
-                        <div className="py-6 text-center text-sm text-gray-500">
+                        <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                           Laster progresjon...
                         </div>
                       ) : progress?.error ? (
@@ -657,36 +657,36 @@ export default function ThemesPage() {
                       ) : progress?.data ? (() => {
                         const data = progress.data
                         return data.programs.length === 0 ? (
-                          <div className="py-6 text-center text-sm text-gray-500">
+                          <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                             Ingen kurs er knyttet til dette temaet.
                           </div>
                         ) : data.userRows.length === 0 ? (
-                          <div className="py-6 text-center text-sm text-gray-500">
+                          <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                             Ingen brukere er tildelt kurs i dette temaet ennå.
                           </div>
                         ) : (
                           <div className="space-y-6">
                             <div className="overflow-x-auto">
                               <table className="inline-table w-auto divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-gray-50 dark:bg-gray-900/50">
                                   <tr>
-                                    <th className="w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                                    <th className="w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
                                       Bruker
                                     </th>
                                     {data.programs.map((program) => (
                                       <th
                                         key={program.id}
-                                        className="w-0 px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap"
+                                        className="w-0 px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap"
                                       >
                                         {program.title}
                                       </th>
                                     ))}
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100 bg-white">
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
                                   {data.userRows.map((row) => (
                                     <tr key={row.userId}>
-                                      <td className="w-40 px-2 py-2 text-left text-sm font-medium text-gray-900 whitespace-nowrap">
+                                      <td className="w-40 px-2 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
                                         {row.name}
                                       </td>
                                       {data.programs.map((program) => {
@@ -694,8 +694,8 @@ export default function ThemesPage() {
 
                                         if (!status) {
                                           return (
-                                            <td key={`${row.userId}-${program.id}`} className="w-0 px-1 py-2 text-left align-middle">
-                                              <span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 whitespace-nowrap">
+                                            <td key={`${row.userId}-${program.id}`} className="px-2 py-2 text-left align-middle">
+                                              <span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                                                 Ikke tildelt
                                               </span>
                                             </td>
@@ -705,9 +705,9 @@ export default function ThemesPage() {
                                         const config = statusConfig[status.status]
 
                                         return (
-                                          <td key={`${row.userId}-${program.id}`} className="w-0 px-1 py-2 text-left align-middle">
+                                          <td key={`${row.userId}-${program.id}`} className="px-2 py-2 text-left align-middle">
                                             <span
-                                              className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${config.badgeClass} whitespace-nowrap`}
+                                              className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${config.badgeClass}`}
                                             >
                                               {config.icon}
                                               <span>{config.label}</span>
@@ -736,10 +736,10 @@ export default function ThemesPage() {
         ) : (
           <Card>
             <CardContent className="p-12 text-center space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Ingen temaer ennå
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-300">
                 Opprett tema fra kurs-siden for å komme i gang.
               </p>
             </CardContent>

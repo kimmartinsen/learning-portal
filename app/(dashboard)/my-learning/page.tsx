@@ -90,11 +90,15 @@ export default async function MyLearningPage() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'text-green-600 bg-green-50 border-green-200'
-      case 'in_progress': return 'text-blue-600 bg-blue-50 border-blue-200'
-      case 'overdue': return 'text-red-600 bg-red-50 border-red-200'
-      default: return 'text-gray-600 bg-gray-50 border-gray-200'
+     switch (status) {
+      case 'completed':
+        return 'text-green-600 bg-green-50 border-green-200 dark:text-green-200 dark:bg-green-500/20 dark:border-green-500/40'
+      case 'in_progress':
+        return 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-200 dark:bg-blue-500/20 dark:border-blue-500/40'
+      case 'overdue':
+        return 'text-red-600 bg-red-50 border-red-200 dark:text-red-200 dark:bg-red-500/20 dark:border-red-500/40'
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200 dark:text-gray-300 dark:bg-gray-800 dark:border-gray-700'
     }
   }
 
@@ -128,17 +132,17 @@ export default async function MyLearningPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Min opplæring</h1>
-        <p className="text-gray-600">Oversikt over dine personlige kursoppdrag</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Min opplæring</h1>
+        <p className="text-gray-600 dark:text-gray-300">Oversikt over dine personlige kursoppdrag</p>
       </div>
 
       {/* Priority Alert for Overdue */}
       {overdue.length > 0 && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-4">
+        <Card className="border-red-200 bg-red-50 dark:border-red-500/40 dark:bg-red-900/20">
+          <CardContent className="p-4 text-red-800 dark:text-red-200">
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-              <span className="font-medium text-red-800">
+              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-300" />
+              <span className="font-medium">
                 Du har {overdue.length} forsinkede kurs som trenger oppmerksomhet
               </span>
             </div>
@@ -153,21 +157,21 @@ export default async function MyLearningPage() {
           return (
             <details
               key={themeName}
-              className="group rounded-lg border border-gray-200 bg-white shadow-sm"
+              className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800 transition-colors duration-200"
               open
             >
-              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 list-none [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-2">
                   <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
                   <Tag className="h-4 w-4 text-primary-600" />
                   <span className="text-base font-semibold">{themeName}</span>
-                  <span className="text-sm text-gray-500">({themeAssignments.length} kurs)</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">({themeAssignments.length} kurs)</span>
                 </div>
               </summary>
 
-              <div className="border-t border-gray-200 px-4 py-4">
+              <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
                 {themeAssignments.length === 0 ? (
-                  <p className="text-sm text-gray-500">Ingen kurs i dette temaet.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette temaet.</p>
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {themeAssignments.map((assignment) => {
@@ -203,15 +207,15 @@ export default async function MyLearningPage() {
                           key={assignment.id}
                           className={
                             status === 'overdue'
-                              ? 'border-red-200 shadow-sm'
+                              ? 'border-red-200 dark:border-red-500/40 shadow-sm'
                               : status === 'completed'
-                              ? 'border-green-200 shadow-sm'
+                              ? 'border-green-200 dark:border-green-500/40 shadow-sm'
                               : 'shadow-sm'
                           }
                         >
                           <CardContent className="space-y-4 p-4">
                             <div className="flex items-start justify-between gap-3">
-                              <h3 className="text-sm font-semibold leading-tight text-gray-900">
+                              <h3 className="text-sm font-semibold leading-tight text-gray-900 dark:text-gray-100">
                                 {assignment.program_title}
                               </h3>
                               <span
@@ -224,7 +228,7 @@ export default async function MyLearningPage() {
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                               <Clock className="h-4 w-4" />
                               <span>{formatDaysRemaining(assignment.days_remaining, status)}</span>
                             </div>
@@ -254,10 +258,10 @@ export default async function MyLearningPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Ingen kurs ennå
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-300">
                 Du har ikke blitt tildelt noen kurs ennå. 
                 Kontakt din administrator for mer informasjon.
               </p>

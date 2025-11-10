@@ -534,34 +534,34 @@ export default function AdminProgramsPage() {
           return (
             <details
               key={theme.id}
-              className="group rounded-lg border border-gray-200 bg-white shadow-sm"
+              className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800"
               open
             >
-              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 list-none [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-2">
                   <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
                   <Tag className="h-4 w-4 text-primary-600" />
                   <span className="text-base font-semibold">{theme.name}</span>
-                  <span className="text-sm text-gray-500">({themePrograms.length} kurs)</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">({themePrograms.length} kurs)</span>
                 </div>
               </summary>
 
-              <div className="border-t border-gray-200 px-4 py-4">
+              <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {themePrograms.map((program) => (
                     <Card key={program.id}>
                       <CardContent className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start justify_between gap-3">
                           <div className="flex-1 space-y-2">
-                            <h3 className="text-base font-semibold text-gray-900 leading-tight">
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
                               {program.title}
                             </h3>
 
                             {program.description && (
-                              <p className="text-sm text-gray-600">{program.description}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">{program.description}</p>
                             )}
 
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                               {program.instructor && (
                                 <span className="inline-flex items-center gap-1">
                                   <Users className="h-3 w-3" />
@@ -599,7 +599,7 @@ export default function AdminProgramsPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(program.id)}
-                              className="text-red-600 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 dark:hover:text-red-400"
                               title="Slett kurs"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -617,34 +617,34 @@ export default function AdminProgramsPage() {
 
         {/* Programs without theme */}
         {programsByTheme['no-theme'] && programsByTheme['no-theme'].length > 0 && (
-          <details className="group rounded-lg border border-gray-200 bg-white shadow-sm" open>
-            <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 list-none [&::-webkit-details-marker]:hidden">
+          <details className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800" open>
+            <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
               <div className="flex items-center gap-2">
                 <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
                 <BookOpen className="h-4 w-4 text-gray-400" />
-                <span className="text-base font-semibold text-gray-600">Uten tema</span>
-                <span className="text-sm text-gray-400">
+                <span className="text-base font-semibold text-gray-600 dark:text-gray-300">Uten tema</span>
+                <span className="text-sm text-gray-400 dark:text-gray-500">
                   ({programsByTheme['no-theme'].length} kurs)
                 </span>
               </div>
             </summary>
 
-            <div className="border-t border-gray-200 px-4 py-4">
+            <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {programsByTheme['no-theme'].map((program) => (
                   <Card key={program.id}>
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 space-y-2">
-                          <h3 className="text-base font-semibold text-gray-900 leading-tight">
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
                             {program.title}
                           </h3>
 
                           {program.description && (
-                            <p className="text-sm text-gray-600">{program.description}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{program.description}</p>
                           )}
 
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                             {program.instructor && (
                               <span className="inline-flex items-center gap-1">
                                 <Users className="h-3 w-3" />
@@ -682,7 +682,7 @@ export default function AdminProgramsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDelete(program.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 dark:hover:text-red-400"
                             title="Slett kurs"
                           >
                             <Trash2 className="h-4 w-4" />
