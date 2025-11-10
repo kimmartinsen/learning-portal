@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { generateInitials } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import { cn } from '@/lib/utils'
 
 interface Notification {
   id: string
@@ -28,9 +29,10 @@ interface User {
 
 interface TopbarProps {
   user: User | null
+  className?: string
 }
 
-export function Topbar({ user }: TopbarProps) {
+export function Topbar({ user, className }: TopbarProps) {
   const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
@@ -107,10 +109,36 @@ export function Topbar({ user }: TopbarProps) {
   }
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-8 py-4 transition-colors duration-200">
-      <div className="flex items-center justify-end">
+    <header
+      className={cn(
+        'sticky top-0 z-40 bg-white/90 dark:bg-gray-950/90 border-b border-gray-200 dark:border-gray-900 backdrop-blur-sm px-4 py-4 transition-colors duration-200 lg:px-8',
+        className
+      )}
+    >
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white font-semibold">
+              O
+            </div>
+            <div className="text-base font-semibold text-gray-900 dark:text-gray-100">
+              Opplæringsportal
+            </div>
+          </div>
+          <div className="hidden md:flex md:max-w-md lg:max-w-lg w-full">
+            <div className="relative w-full">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                className="pl-9"
+                placeholder="Søk etter kurs, temaer eller brukere"
+                type="search"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Right side */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3 md:space-x-4">
           <Button variant="ghost" size="sm" onClick={toggleTheme} className="p-2">
             {theme === 'dark' ? (
               <Sun className="h-5 w-5" />
