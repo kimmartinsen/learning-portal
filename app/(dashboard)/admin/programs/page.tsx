@@ -1,7 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, BookOpen, Users, Clock, Settings, Tag } from 'lucide-react'
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  BookOpen,
+  Users,
+  Clock,
+  Settings,
+  Tag,
+  ChevronRight
+} from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -423,50 +433,141 @@ export default function AdminProgramsPage() {
       )}
 
       {/* Programs List - Grouped by Theme */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {themes.map(theme => {
           const themePrograms = programsByTheme[theme.id] || []
           if (themePrograms.length === 0) return null
 
           return (
-            <div key={theme.id} className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Tag className="w-5 h-5 text-primary-600" />
-                <h2 className="text-lg font-semibold text-gray-900">{theme.name}</h2>
-                <span className="text-sm text-gray-500">({themePrograms.length} kurs)</span>
-              </div>
-              
-              <div className="grid gap-3 ml-7">
-                {themePrograms.map((program) => (
-                  <Card key={program.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-base font-semibold text-gray-900 mb-1">
-                            {program.title}
-                          </h3>
-                          
-                          {program.description && (
-                            <p className="text-sm text-gray-600 mb-2">{program.description}</p>
-                          )}
-                          
-                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                            {program.instructor && (
-                              <div className="flex items-center space-x-1">
-                                <Users className="w-3 h-3" />
-                                <span>{program.instructor.full_name}</span>
-                              </div>
+            <details
+              key={theme.id}
+              className="group rounded-lg border border-gray-200 bg-white shadow-sm"
+              open
+            >
+              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 list-none [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center gap-2">
+                  <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
+                  <Tag className="h-4 w-4 text-primary-600" />
+                  <span className="text-base font-semibold">{theme.name}</span>
+                  <span className="text-sm text-gray-500">({themePrograms.length} kurs)</span>
+                </div>
+              </summary>
+
+              <div className="border-t border-gray-200 px-4 py-4">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {themePrograms.map((program) => (
+                    <Card key={program.id}>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 space-y-2">
+                            <h3 className="text-base font-semibold text-gray-900 leading-tight">
+                              {program.title}
+                            </h3>
+
+                            {program.description && (
+                              <p className="text-sm text-gray-600">{program.description}</p>
                             )}
-                            
-                            <div className="flex items-center space-x-1">
-                              <Clock className="w-3 h-3" />
-                              <span>{program.deadline_days} dager frist</span>
+
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                              {program.instructor && (
+                                <span className="inline-flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {program.instructor.full_name}
+                                </span>
+                              )}
+                              <span className="inline-flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {program.deadline_days} dager frist
+                              </span>
+                              <span>
+                                Opprettet: {new Date(program.created_at).toLocaleDateString('no-NO')}
+                              </span>
                             </div>
-                            
-                            <span>Opprettet: {new Date(program.created_at).toLocaleDateString('no-NO')}</span>
+                          </div>
+
+                          <div className="flex space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditModules(program)}
+                              title="Rediger moduler"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(program)}
+                              title="Rediger kurs"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(program.id)}
+                              className="text-red-600 hover:text-red-700"
+                              title="Slett kurs"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                        
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </details>
+          )
+        })}
+
+        {/* Programs without theme */}
+        {programsByTheme['no-theme'] && programsByTheme['no-theme'].length > 0 && (
+          <details className="group rounded-lg border border-gray-200 bg-white shadow-sm" open>
+            <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 list-none [&::-webkit-details-marker]:hidden">
+              <div className="flex items-center gap-2">
+                <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
+                <BookOpen className="h-4 w-4 text-gray-400" />
+                <span className="text-base font-semibold text-gray-600">Uten tema</span>
+                <span className="text-sm text-gray-400">
+                  ({programsByTheme['no-theme'].length} kurs)
+                </span>
+              </div>
+            </summary>
+
+            <div className="border-t border-gray-200 px-4 py-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {programsByTheme['no-theme'].map((program) => (
+                  <Card key={program.id}>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 space-y-2">
+                          <h3 className="text-base font-semibold text-gray-900 leading-tight">
+                            {program.title}
+                          </h3>
+
+                          {program.description && (
+                            <p className="text-sm text-gray-600">{program.description}</p>
+                          )}
+
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                            {program.instructor && (
+                              <span className="inline-flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {program.instructor.full_name}
+                              </span>
+                            )}
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {program.deadline_days} dager frist
+                            </span>
+                            <span>
+                              Opprettet: {new Date(program.created_at).toLocaleDateString('no-NO')}
+                            </span>
+                          </div>
+                        </div>
+
                         <div className="flex space-x-1">
                           <Button
                             variant="ghost"
@@ -474,7 +575,7 @@ export default function AdminProgramsPage() {
                             onClick={() => handleEditModules(program)}
                             title="Rediger moduler"
                           >
-                            <Settings className="w-4 h-4" />
+                            <Settings className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -482,7 +583,7 @@ export default function AdminProgramsPage() {
                             onClick={() => handleEdit(program)}
                             title="Rediger kurs"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -491,7 +592,7 @@ export default function AdminProgramsPage() {
                             className="text-red-600 hover:text-red-700"
                             title="Slett kurs"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
@@ -500,82 +601,7 @@ export default function AdminProgramsPage() {
                 ))}
               </div>
             </div>
-          )
-        })}
-
-        {/* Programs without theme */}
-        {programsByTheme['no-theme'] && programsByTheme['no-theme'].length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <BookOpen className="w-5 h-5 text-gray-400" />
-              <h2 className="text-lg font-semibold text-gray-500">Uten tema</h2>
-              <span className="text-sm text-gray-400">({programsByTheme['no-theme'].length} kurs)</span>
-            </div>
-            
-            <div className="grid gap-3 ml-7">
-              {programsByTheme['no-theme'].map((program) => (
-                <Card key={program.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-base font-semibold text-gray-900 mb-1">
-                          {program.title}
-                        </h3>
-                        
-                        {program.description && (
-                          <p className="text-sm text-gray-600 mb-2">{program.description}</p>
-                        )}
-                        
-                        <div className="flex items-center space-x-4 text-xs text-gray-500">
-                          {program.instructor && (
-                            <div className="flex items-center space-x-1">
-                              <Users className="w-3 h-3" />
-                              <span>{program.instructor.full_name}</span>
-                            </div>
-                          )}
-                          
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{program.deadline_days} dager frist</span>
-                          </div>
-                          
-                          <span>Opprettet: {new Date(program.created_at).toLocaleDateString('no-NO')}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditModules(program)}
-                          title="Rediger moduler"
-                        >
-                          <Settings className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(program)}
-                          title="Rediger kurs"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(program.id)}
-                          className="text-red-600 hover:text-red-700"
-                          title="Slett kurs"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+          </details>
         )}
 
         {programs.length === 0 && (
