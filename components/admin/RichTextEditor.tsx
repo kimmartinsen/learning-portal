@@ -1,16 +1,15 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import TextAlign from '@tiptap/extension-text-align'
 import TextStyle from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
-import Highlight from '@tiptap/extension-highlight'
 import OrderedList from '@tiptap/extension-ordered-list'
 import BulletList from '@tiptap/extension-bullet-list'
-import { Bold, Italic, List, ListOrdered, Type, Highlighter, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Sparkles } from 'lucide-react'
+import { Bold, Italic, List, Type, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -26,14 +25,29 @@ const TOOLBAR_BUTTON =
   'inline-flex h-9 w-9 items-center justify-center rounded-md border border-transparent text-sm font-medium text-gray-600 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-300 dark:hover:bg-gray-800'
 
 const LIST_STYLES = [
+  { value: 'none', label: 'Ingen liste' },
   { value: 'disc', label: 'Punktliste' },
   { value: 'decimal', label: 'Tall' },
   { value: 'lower-alpha', label: 'Bokstaver' }
-]
+] as const
+
+const FONT_SIZES = [
+  { value: '14px', label: '14 px' },
+  { value: '16px', label: '16 px' },
+  { value: '18px', label: '18 px' },
+  { value: '22px', label: '22 px' },
+  { value: '28px', label: '28 px' }
+] as const
 
 export function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const [listStyle, setListStyle] = useState<'disc' | 'decimal' | 'lower-alpha'>('disc')
+  const [listStyle, setListStyle] = useState<(typeof LIST_STYLES)[number]['value']>('none')
+  const [fontSize, setFontSize] = useState('16px')
+  const [imageControls, setImageControls] = useState<{
+    visible: boolean
+    width: number
+    float: 'none' | 'left' | 'right' | 'center'
+  }>({ visible: false, width: 80, float: 'none' })
 
   const editor = useEditor({
     extensions: [
@@ -62,13 +76,12 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       }),
       TextStyle,
       Color,
-      Highlight.configure({ multicolor: true }),
       TextAlign.configure({
         types: ['heading', 'paragraph']
       }),
       Image.configure({
         HTMLAttributes: {
-          class: 'rounded-lg my-4 max-h-[360px]'
+          class: 'rounded-lg my-4 max-h-[480px]'
         }
       })
     ],
@@ -93,14 +106,65 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
   useEffect(() => {
     if (!editor) return
 
-    if (listStyle === 'disc') {
-      editor.chain().focus().updateAttributes('bulletList', { style: 'list-style-type: disc;' }).run()
+    if (listStyle === 'none') {
+      editor.chain().focus().unsetOrderedList().unsetBulletList().run()
+    } else if (listStyle === 'disc') {
+      editor.chain().focus().setBulletList().updateAttributes('bulletList', { style: 'list-style-type: disc;' }).run()
     } else if (listStyle === 'decimal') {
-      editor.chain().focus().updateAttributes('orderedList', { style: 'list-style-type: decimal;' }).run()
+      editor.chain().focus().setOrderedList().updateAttributes('orderedList', { style: 'list-style-type: decimal;' }).run()
     } else if (listStyle === 'lower-alpha') {
-      editor.chain().focus().updateAttributes('orderedList', { style: 'list-style-type: lower-alpha;' }).run()
+      editor.chain().focus().setOrderedList().updateAttributes('orderedList', { style: 'list-style-type: lower-alpha;' }).run()
     }
   }, [editor, listStyle])
+
+  useEffect(() => {
+    if (!editor) return
+
+    const updateStates = () => {
+      const attrs = editor.getAttributes('textStyle')
+      if (attrs?.fontSize) {
+        setFontSize(attrs.fontSize)
+      } else {
+        setFontSize('16px')
+      }
+
+      if (editor.isActive('bulletList')) {
+        setListStyle('disc')
+      } else if (editor.isActive('orderedList', { style: 'list-style-type: lower-alpha;' })) {
+        setListStyle('lower-alpha')
+      } else if (editor.isActive('orderedList')) {
+        setListStyle('decimal')
+      } else {
+        setListStyle('none')
+      }
+
+      if (editor.isActive('image')) {
+        const imageAttrs = editor.getAttributes('image') as { width?: string; style?: string }
+        const widthValue = imageAttrs.width ? parseInt(imageAttrs.width.replace('%', ''), 10) : 80
+        let float: 'none' | 'left' | 'right' | 'center' = 'none'
+        if (imageAttrs.style?.includes('float: left')) float = 'left'
+        else if (imageAttrs.style?.includes('float: right')) float = 'right'
+        else if (imageAttrs.style?.includes('margin: 0 auto')) float = 'center'
+
+        setImageControls({
+          visible: true,
+          width: Number.isNaN(widthValue) ? 80 : widthValue,
+          float
+        })
+      editor.chain().focus().updateAttributes('bulletList', { style: 'list-style-type: disc;' }).run()
+      } else {
+        setImageControls((prev) => ({ ...prev, visible: false }))
+      }
+    }
+
+    editor.on('selectionUpdate', updateStates)
+    editor.on('transaction', updateStates)
+
+    return () => {
+      editor.off('selectionUpdate', updateStates)
+      editor.off('transaction', updateStates)
+    }
+  }, [editor])
 
   const applyImage = useCallback(
     async (file: File) => {
@@ -174,14 +238,6 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         >
           <Italic className="h-4 w-4" />
         </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-          className={cn(TOOLBAR_BUTTON, editor.isActive('highlight') && 'bg-gray-200 dark:bg-gray-800')}
-          aria-label="Marker tekst"
-        >
-          <Highlighter className="h-4 w-4" />
-        </button>
 
         <select
           className="h-9 rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
@@ -237,14 +293,6 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           >
             <List className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={cn(TOOLBAR_BUTTON, editor.isActive('orderedList') && 'bg-gray-200 dark:bg-gray-800')}
-            aria-label="Nummerert liste"
-          >
-            <ListOrdered className="h-4 w-4" />
-          </button>
           <select
             className="h-9 rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
             value={listStyle}
@@ -269,16 +317,21 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           />
         </label>
 
-        <label className="flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 focus-within:ring-2 focus-within:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
-          <Sparkles className="h-4 w-4" />
-          <input
-            type="color"
-            onChange={(event) => editor.chain().focus().setHighlight({ color: event.target.value }).run()}
-            value={editor.isActive('highlight') ? editor.getAttributes('highlight').color || '#ffc078' : '#ffc078'}
-            title="Bakgrunnsfarge"
-            className="h-6 w-10 border-0 bg-transparent p-0"
-          />
-        </label>
+        <select
+          className="h-9 rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+          value={fontSize}
+          onChange={(event) => {
+            const size = event.target.value
+            setFontSize(size)
+            editor.chain().focus().setMark('textStyle', { fontSize: size }).run()
+          }}
+        >
+          {FONT_SIZES.map((size) => (
+            <option key={size.value} value={size.value}>
+              {size.label}
+            </option>
+          ))}
+        </select>
 
         <button
           type="button"
@@ -299,6 +352,115 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       </div>
 
       <EditorContent editor={editor} />
+
+      {imageControls.visible && (
+        <div className="flex flex-wrap items-center gap-4 rounded-md border border-gray-200 bg-white px-4 py-3 text-sm dark:border-gray-700 dark:bg-gray-900">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600 dark:text-gray-300">Bredde</span>
+            <input
+              type="range"
+              min={20}
+              max={100}
+              value={imageControls.width}
+              onChange={(event) => {
+                const width = Number(event.target.value)
+                setImageControls((prev) => ({ ...prev, width }))
+                editor
+                  ?.chain()
+                  .focus()
+                  .updateAttributes('image', {
+                    width: `${width}%`,
+                    style:
+                      imageControls.float === 'left'
+                        ? `width: ${width}%; float: left; margin: 0 1rem 1rem 0;`
+                        : imageControls.float === 'right'
+                          ? `width: ${width}%; float: right; margin: 0 0 1rem 1rem;`
+                          : imageControls.float === 'center'
+                            ? `width: ${width}%; display: block; margin: 1rem auto;`
+                            : `width: ${width}%; display: block; margin: 1.5rem auto;`
+                  })
+                  .run()
+              }}
+              className="w-40"
+            />
+            <span className="w-10 text-right text-gray-600 dark:text-gray-300">{imageControls.width}%</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setImageControls((prev) => ({ ...prev, float: 'left' }))
+                editor
+                  ?.chain()
+                  .focus()
+                  .updateAttributes('image', {
+                    style: `width: ${imageControls.width}%; float: left; margin: 0 1rem 1rem 0;`
+                  })
+                  .run()
+              }}
+              className={cn(TOOLBAR_BUTTON, 'w-10', imageControls.float === 'left' && 'bg-gray-200 dark:bg-gray-800')}
+              aria-label="Flyt til venstre"
+            >
+              <AlignLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setImageControls((prev) => ({ ...prev, float: 'center' }))
+                editor
+                  ?.chain()
+                  .focus()
+                  .updateAttributes('image', {
+                    style: `width: ${imageControls.width}%; display: block; margin: 1rem auto;`
+                  })
+                  .run()
+              }}
+              className={cn(TOOLBAR_BUTTON, 'w-10', imageControls.float === 'center' && 'bg-gray-200 dark:bg-gray-800')}
+              aria-label="Sentrer"
+            >
+              <AlignCenter className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setImageControls((prev) => ({ ...prev, float: 'right' }))
+                editor
+                  ?.chain()
+                  .focus()
+                  .updateAttributes('image', {
+                    style: `width: ${imageControls.width}%; float: right; margin: 0 0 1rem 1rem;`
+                  })
+                  .run()
+              }}
+              className={cn(TOOLBAR_BUTTON, 'w-10', imageControls.float === 'right' && 'bg-gray-200 dark:bg-gray-800')}
+              aria-label="Flyt til høyre"
+            >
+              <AlignRight className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setImageControls((prev) => ({ ...prev, float: 'none' }))
+                editor
+                  ?.chain()
+                  .focus()
+                  .updateAttributes('image', {
+                    style: `width: ${imageControls.width}%; display: block; margin: 1.5rem auto;`
+                  })
+                  .run()
+              }}
+              className={cn(
+                TOOLBAR_BUTTON,
+                'w-16 text-xs',
+                imageControls.float === 'none' && 'bg-gray-200 dark:bg-gray-800'
+              )}
+            >
+              Standard
+            </button>
+          </div>
+        </div>
+      )}
 
       {placeholder && !editor.getText().length && (
         <p className="text-sm text-gray-500 dark:text-gray-400">{placeholder}</p>
