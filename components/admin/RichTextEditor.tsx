@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import type { Editor as TinyMCEInstance } from 'tinymce'
 
 const TinyEditor = dynamic(() => import('./TinyMCEEditor'), {
@@ -106,7 +107,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         body {
           font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           color: ${isDark ? '#e5e7eb' : '#111827'};
-          background-color: ${isDark ? '#111827' : '#ffffff'};
+          background-color: transparent;
           line-height: 1.7;
           padding: 12px;
         }
@@ -134,7 +135,12 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
   )
 
   return (
-    <div className={className}>
+    <div
+      className={cn(
+        'rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900',
+        className
+      )}
+    >
       <TinyEditor
         apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY || 'no-api-key'}
         value={value}
