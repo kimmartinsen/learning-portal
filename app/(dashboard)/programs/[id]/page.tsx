@@ -32,7 +32,13 @@ export default async function ProgramPage({ params }: PageProps) {
   const { data: program, error } = await supabase
     .from('training_programs')
     .select(`
-      *,
+      id,
+      title,
+      description,
+      is_mandatory,
+      deadline,
+      instructor_id,
+      company_id,
       modules (
         *
       ),

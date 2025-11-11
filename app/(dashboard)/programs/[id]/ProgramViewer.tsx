@@ -36,6 +36,7 @@ interface Program {
   description: string | null
   is_mandatory: boolean
   deadline: string | null
+  instructor_id?: string | null
   instructor?: {
     full_name: string
   } | null
