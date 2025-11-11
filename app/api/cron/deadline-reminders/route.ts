@@ -72,12 +72,15 @@ export async function GET(request: Request) {
       // Create notifications for each assignment
       const notifications = assignments.map((assignment: any) => {
         const urgencyLevel = daysRemaining <= 1 ? '🔴' : daysRemaining <= 3 ? '🟡' : '🔵'
+        const trainingProgram = Array.isArray(assignment.training_programs) 
+          ? assignment.training_programs[0] 
+          : assignment.training_programs
         
         return {
           user_id: assignment.assigned_to_user_id,
           type: 'deadline_reminder',
           title: `${urgencyLevel} Frist nærmer seg`,
-          message: `Du har ${daysRemaining} dag${daysRemaining !== 1 ? 'er' : ''} igjen på "${assignment.training_programs.title}"`,
+          message: `Du har ${daysRemaining} dag${daysRemaining !== 1 ? 'er' : ''} igjen på "${trainingProgram?.title}"`,
           link: `/programs/${assignment.program_id}`,
           read: false,
           metadata: {
@@ -102,7 +105,10 @@ export async function GET(request: Request) {
       const instructorPrograms = new Map<string, Map<string, any[]>>()
       
       for (const assignment of assignments) {
-        const instructorId = assignment.training_programs.instructor_id
+        const trainingProgram = Array.isArray(assignment.training_programs) 
+          ? assignment.training_programs[0] 
+          : assignment.training_programs
+        const instructorId = trainingProgram?.instructor_id
         if (!instructorId) continue
         
         if (!instructorPrograms.has(instructorId)) {
@@ -121,7 +127,10 @@ export async function GET(request: Request) {
       const instructorNotifications = []
       for (const [instructorId, programs] of instructorPrograms) {
         for (const [programId, programAssignments] of programs) {
-          const programTitle = programAssignments[0].training_programs.title
+          const trainingProgram = Array.isArray(programAssignments[0].training_programs)
+            ? programAssignments[0].training_programs[0]
+            : programAssignments[0].training_programs
+          const programTitle = trainingProgram?.title
           const userCount = programAssignments.length
           const urgencyLevel = daysRemaining <= 1 ? '🔴' : daysRemaining <= 3 ? '🟡' : '🔵'
           
@@ -207,19 +216,25 @@ export async function GET(request: Request) {
     if (overdueError) throw overdueError
 
     if (overdueAssignments && overdueAssignments.length > 0) {
-      const overdueNotifications = overdueAssignments.map((assignment: any) => ({
-        user_id: assignment.assigned_to_user_id,
-        type: 'deadline_reminder',
-        title: '🚨 Fristen har gått ut',
-        message: `Fristen for "${assignment.training_programs.title}" har gått ut. Fullfør kurset snarest.`,
-        link: `/programs/${assignment.program_id}`,
-        read: false,
-        metadata: {
-          programId: assignment.program_id,
-          overdue: true,
-          deadline: assignment.due_date
+      const overdueNotifications = overdueAssignments.map((assignment: any) => {
+        const trainingProgram = Array.isArray(assignment.training_programs) 
+          ? assignment.training_programs[0] 
+          : assignment.training_programs
+        
+        return {
+          user_id: assignment.assigned_to_user_id,
+          type: 'deadline_reminder',
+          title: '🚨 Fristen har gått ut',
+          message: `Fristen for "${trainingProgram?.title}" har gått ut. Fullfør kurset snarest.`,
+          link: `/programs/${assignment.program_id}`,
+          read: false,
+          metadata: {
+            programId: assignment.program_id,
+            overdue: true,
+            deadline: assignment.due_date
+          }
         }
-      }))
+      })
 
       const { error: overdueInsertError } = await supabaseAdmin
         .from('notifications')
@@ -233,7 +248,10 @@ export async function GET(request: Request) {
       const instructorOverduePrograms = new Map<string, Map<string, any[]>>()
       
       for (const assignment of overdueAssignments) {
-        const instructorId = assignment.training_programs.instructor_id
+        const trainingProgram = Array.isArray(assignment.training_programs) 
+          ? assignment.training_programs[0] 
+          : assignment.training_programs
+        const instructorId = trainingProgram?.instructor_id
         if (!instructorId) continue
         
         if (!instructorOverduePrograms.has(instructorId)) {
@@ -252,7 +270,10 @@ export async function GET(request: Request) {
       const instructorOverdueNotifications = []
       for (const [instructorId, programs] of instructorOverduePrograms) {
         for (const [programId, programAssignments] of programs) {
-          const programTitle = programAssignments[0].training_programs.title
+          const trainingProgram = Array.isArray(programAssignments[0].training_programs)
+            ? programAssignments[0].training_programs[0]
+            : programAssignments[0].training_programs
+          const programTitle = trainingProgram?.title
           const userCount = programAssignments.length
           
           // Get user names
