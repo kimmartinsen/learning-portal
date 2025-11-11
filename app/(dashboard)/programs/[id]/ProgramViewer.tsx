@@ -39,7 +39,7 @@ interface Program {
   instructor_id?: string | null
   instructor?: {
     full_name: string
-  } | null
+  }[] | null
   modules: Module[]
 }
 
@@ -231,6 +231,8 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
             
             if (instructorNotifError) {
               console.error('Error creating instructor notification:', instructorNotifError)
+            } else {
+              console.log('Instructor notification sent successfully')
             }
           }
           
