@@ -107,7 +107,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     if (!editor) return
 
     if (listStyle === 'none') {
-      editor.chain().focus().unsetOrderedList().unsetBulletList().run()
+      editor.chain().focus().setParagraph().unsetOrderedList?.().unsetBulletList?.().run()
     } else if (listStyle === 'disc') {
       editor.chain().focus().setBulletList().updateAttributes('bulletList', { style: 'list-style-type: disc;' }).run()
     } else if (listStyle === 'decimal') {
