@@ -60,8 +60,8 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           }
         }
       }),
-      TextStyle.configure({ types: ['textStyle'] }),
-      Color.configure({ types: ['textStyle'] }),
+      TextStyle,
+      Color,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({
         types: ['heading', 'paragraph']
