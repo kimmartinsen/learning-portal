@@ -366,15 +366,15 @@ export default function UsersPage() {
         {profiles.length > 0 ? (
           profiles.map((profile) => (
             <Card key={profile.id}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+              <CardContent className="px-4 py-3">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <div className="flex min-w-[220px] items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-100">
                       {profile.avatar_url ? (
                         <img
                           src={profile.avatar_url}
                           alt={profile.full_name}
-                          className="w-12 h-12 rounded-full object-cover"
+                          className="h-11 w-11 rounded-full object-cover"
                         />
                       ) : (
                         <span className="text-primary-700 font-medium">
@@ -382,39 +382,35 @@ export default function UsersPage() {
                         </span>
                       )}
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                         {profile.full_name || 'Ukjent bruker'}
                       </h3>
-                      <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-300">
-                        <div className="flex items-center space-x-1">
-                          <Mail className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600 dark:text-gray-300">{profile.email}</span>
-                        </div>
+                      <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
+                        <Mail className="h-3.5 w-3.5 text-gray-400" />
+                        <span className="truncate">{profile.email}</span>
                       </div>
-                      <div className="flex items-center space-x-3 mt-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(profile.role)}`}>
-                          {getRoleText(profile.role)}
-                        </span>
-                        {profile.departments && (
-                          <span className="text-sm text-gray-600">
-                            {profile.departments.name}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Opprettet: {new Date(profile.created_at).toLocaleDateString('no-NO')}
-                      </p>
                     </div>
                   </div>
-                  
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(profile)}
-                    >
-                      <Edit2 className="w-4 h-4" />
+
+                  <div className="flex items-center gap-2 text-xs font-medium">
+                    <span className={`inline-flex items-center rounded-full px-2 py-1 ${getRoleColor(profile.role)}`}>
+                      {getRoleText(profile.role)}
+                    </span>
+                    {profile.departments && (
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                        {profile.departments.name}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Opprettet {new Date(profile.created_at).toLocaleDateString('no-NO')}
+                  </p>
+
+                  <div className="ml-auto flex items-center gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)}>
+                      <Edit2 className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -422,7 +418,7 @@ export default function UsersPage() {
                       onClick={() => handleDelete(profile.id)}
                       className="text-red-600 hover:text-red-700"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
