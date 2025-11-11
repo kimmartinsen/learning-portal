@@ -23,6 +23,7 @@ import {
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { RichTextEditor } from '@/components/admin/RichTextEditor'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
@@ -55,7 +56,6 @@ type ComponentType = 'content_section' | 'question' | 'video_section' | 'final_q
 export default function ModuleBuilder({ program, companyId }: Props) {
   const router = useRouter()
   const [modules, setModules] = useState<Module[]>(program.modules.sort((a, b) => a.order_index - b.order_index))
-  const [showAddMenu, setShowAddMenu] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingModule, setEditingModule] = useState<Module | null>(null)
   const [formType, setFormType] = useState<ComponentType>('content_section')
@@ -151,7 +151,6 @@ export default function ModuleBuilder({ program, companyId }: Props) {
       setFormData(prev => ({ ...prev, quizTitle: 'Avsluttende Quiz', estimatedMinutes: 10 }))
     }
     
-    setShowAddMenu(false)
     setShowForm(true)
   }
 
@@ -430,15 +429,14 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Innhold *
                     </label>
-                    <textarea
-                      className="w-full h-64 p-3 border border-gray-300 rounded-lg resize-vertical focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
+                    <RichTextEditor
                       value={formData.content}
-                      onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                      placeholder="Skriv opplæringsinnholdet her...&#10;&#10;Du kan bruke:&#10;- Punktlister&#10;- **fet tekst**&#10;- *kursiv tekst*"
+                      onChange={(html) => setFormData(prev => ({ ...prev, content: html }))}
+                      placeholder="Skriv innholdet her. Du kan legge til tekst, bilder, lister og mer."
                     />
                   </div>
                 </>

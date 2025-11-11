@@ -277,9 +277,9 @@ export default function ModuleViewer({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -291,17 +291,17 @@ export default function ModuleViewer({
               <div className="flex items-center space-x-3">
                 {getModuleTypeIcon()}
                 <div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
                     {getModuleTypeLabel()} {moduleIndex + 1} av {totalModules}
                   </div>
-                  <div className="font-medium text-gray-900">
+                  <div className="font-medium text-gray-900 dark:text-gray-100">
                     {module.title}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
+            <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-300">
               {/* Removed estimated time display */}
             </div>
           </div>
@@ -315,11 +315,10 @@ export default function ModuleViewer({
             {/* Content Section */}
             {isContentSection && (
               <div className="space-y-6">
-                <div className="prose max-w-none">
-                  <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">
-                    {content.text}
-                  </div>
-                </div>
+                <div
+                  className="prose max-w-none text-gray-900 dark:text-gray-100 prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: content.text || '' }}
+                />
 
                 {/* Images if any */}
                 {content.images && content.images.length > 0 && (
