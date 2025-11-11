@@ -91,7 +91,15 @@ export default function SignupPage() {
         .select()
         .single()
 
-      if (companyError) throw companyError
+      if (companyError) {
+        // Check if it's a duplicate org number error
+        if (companyError.message?.includes('duplicate') && companyError.message?.includes('org_number')) {
+          toast.error('Dette organisasjonsnummeret er allerede registrert. Kontakt din bedrifts administrator for å få tilgang.')
+          setLoading(false)
+          return
+        }
+        throw companyError
+      }
 
       // 3. Create profile
       const { error: profileError } = await supabase
@@ -123,7 +131,19 @@ export default function SignupPage() {
       
     } catch (error: any) {
       console.error('Signup error:', error)
-      toast.error(error.message || 'Kunne ikke opprette konto')
+      
+      // User-friendly error messages
+      let errorMessage = 'Kunne ikke opprette konto'
+      
+      if (error.message?.includes('duplicate') && error.message?.includes('org_number')) {
+        errorMessage = 'Dette organisasjonsnummeret er allerede registrert. Kontakt din bedrifts administrator for å få tilgang.'
+      } else if (error.message?.includes('User already registered')) {
+        errorMessage = 'Denne e-postadressen er allerede i bruk'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
