@@ -1,5 +1,4 @@
-import Link from 'next/link'
-import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { AuthHeader } from '@/components/auth/AuthHeader'
 
 export default function AuthLayout({
   children,
@@ -11,28 +10,7 @@ export default function AuthLayout({
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-100 via-white to-transparent dark:from-blue-900/20 dark:via-gray-950 dark:to-transparent" />
 
-        <header className="px-6 py-6 sm:px-10">
-          <nav className="flex items-center justify-between">
-            <Link href="/" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Opplæringsportal
-            </Link>
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
-              <Link
-                href="/login"
-                className="rounded-full border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-              >
-                Logg inn
-              </Link>
-              <Link
-                href="/signup"
-                className="hidden rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:text-gray-900 dark:border-gray-700 dark:text-gray-200 dark:hover:border-gray-500 sm:inline-flex"
-              >
-                Registrer deg
-              </Link>
-            </div>
-          </nav>
-        </header>
+        <AuthHeader />
 
         <main className="px-6 pb-16 pt-12 sm:px-10">
           <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
