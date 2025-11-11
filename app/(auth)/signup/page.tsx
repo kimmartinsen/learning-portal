@@ -62,7 +62,27 @@ export default function SignupPage() {
     setLoading(true)
 
     try {
-      // 1. Create auth user
+      // 1. Check if org number already exists BEFORE creating user
+      if (cleanOrgNumber) {
+        const { data: existingCompany, error: checkError } = await supabase
+          .from('companies')
+          .select('id, name')
+          .eq('org_number', cleanOrgNumber)
+          .single()
+
+        if (existingCompany) {
+          toast.error('Dette organisasjonsnummeret er allerede registrert. Kontakt din bedrifts administrator for å få tilgang.')
+          setLoading(false)
+          return
+        }
+        
+        // Ignore error if no company found (that's what we want)
+        if (checkError && checkError.code !== 'PGRST116') {
+          throw checkError
+        }
+      }
+
+      // 2. Create auth user (only after org number check passes)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -77,7 +97,7 @@ export default function SignupPage() {
       if (authError) throw authError
       if (!authData.user) throw new Error('Kunne ikke opprette bruker')
 
-      // 2. Create company (store without spaces)
+      // 3. Create company (store without spaces)
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
         .insert([{
@@ -91,17 +111,9 @@ export default function SignupPage() {
         .select()
         .single()
 
-      if (companyError) {
-        // Check if it's a duplicate org number error
-        if (companyError.message?.includes('duplicate') && companyError.message?.includes('org_number')) {
-          toast.error('Dette organisasjonsnummeret er allerede registrert. Kontakt din bedrifts administrator for å få tilgang.')
-          setLoading(false)
-          return
-        }
-        throw companyError
-      }
+      if (companyError) throw companyError
 
-      // 3. Create profile
+      // 4. Create profile
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([{
@@ -114,7 +126,7 @@ export default function SignupPage() {
 
       if (profileError) throw profileError
 
-      // 4. Create notification preferences (in case trigger didn't work)
+      // 5. Create notification preferences (in case trigger didn't work)
       const { error: notifPrefError } = await supabase
         .from('notification_preferences')
         .insert([{
