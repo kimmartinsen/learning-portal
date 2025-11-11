@@ -745,63 +745,46 @@ export default function ModuleBuilder({ program, companyId }: Props) {
           {/* Add Components */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Legg til komponenter</h2>
-                {showAddMenu && (
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setShowAddMenu(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Legg til komponenter</h2>
             </CardHeader>
             <CardContent>
-              {!showAddMenu ? (
-                <Button onClick={() => setShowAddMenu(true)} className="w-full">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Legg til komponent
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Button
+                  variant="secondary"
+                  onClick={() => handleAddComponent('content_section')}
+                  className="h-20 flex flex-col items-center justify-center space-y-2"
+                >
+                  <FileText className="w-6 h-6" />
+                  <span className="text-sm">Opplæringsdel</span>
                 </Button>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleAddComponent('content_section')}
-                    className="h-20 flex flex-col items-center justify-center space-y-2"
-                  >
-                    <FileText className="w-6 h-6" />
-                    <span className="text-sm">Opplæringsdel</span>
-                  </Button>
 
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleAddComponent('question')}
-                    className="h-20 flex flex-col items-center justify-center space-y-2"
-                  >
-                    <MessageCircleQuestion className="w-6 h-6" />
-                    <span className="text-sm">Spørsmål</span>
-                  </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => handleAddComponent('question')}
+                  className="h-20 flex flex-col items-center justify-center space-y-2"
+                >
+                  <MessageCircleQuestion className="w-6 h-6" />
+                  <span className="text-sm">Spørsmål</span>
+                </Button>
 
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleAddComponent('video_section')}
-                    className="h-20 flex flex-col items-center justify-center space-y-2"
-                  >
-                    <Video className="w-6 h-6" />
-                    <span className="text-sm">Video</span>
-                  </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => handleAddComponent('video_section')}
+                  className="h-20 flex flex-col items-center justify-center space-y-2"
+                >
+                  <Video className="w-6 h-6" />
+                  <span className="text-sm">Video</span>
+                </Button>
 
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleAddComponent('final_quiz')}
-                    className="h-20 flex flex-col items-center justify-center space-y-2"
-                  >
-                    <CheckCircle className="w-6 h-6" />
-                    <span className="text-sm">Avsluttende Quiz</span>
-                  </Button>
-                </div>
-              )}
+                <Button
+                  variant="secondary"
+                  onClick={() => handleAddComponent('final_quiz')}
+                  className="h-20 flex flex-col items-center justify-center space-y-2"
+                >
+                  <CheckCircle className="w-6 h-6" />
+                  <span className="text-sm">Avsluttende Quiz</span>
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
