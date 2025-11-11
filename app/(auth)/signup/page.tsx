@@ -17,6 +17,10 @@ export default function SignupPage() {
     confirmPassword: '',
     fullName: '',
     companyName: '',
+    orgNumber: '',
+    address: '',
+    postalCode: '',
+    city: '',
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,6 +40,18 @@ export default function SignupPage() {
 
     if (formData.password.length < 6) {
       toast.error('Passord må være minst 6 tegn')
+      return
+    }
+
+    // Validate organisasjonsnummer (9 digits)
+    if (formData.orgNumber && !/^\d{9}$/.test(formData.orgNumber)) {
+      toast.error('Organisasjonsnummer må være 9 siffer')
+      return
+    }
+
+    // Validate postnummer (4 digits)
+    if (formData.postalCode && !/^\d{4}$/.test(formData.postalCode)) {
+      toast.error('Postnummer må være 4 siffer')
       return
     }
 
@@ -62,6 +78,10 @@ export default function SignupPage() {
         .from('companies')
         .insert([{
           name: formData.companyName,
+          org_number: formData.orgNumber || null,
+          address: formData.address || null,
+          postal_code: formData.postalCode || null,
+          city: formData.city || null,
           badge_system_enabled: true,
         }])
         .select()
@@ -117,25 +137,73 @@ export default function SignupPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label="Bedriftsnavn"
-          name="companyName"
-          type="text"
-          required
-          value={formData.companyName}
-          onChange={handleChange}
-          placeholder="Skriv inn bedriftsnavn"
-        />
+        <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Bedriftsinformasjon</h3>
+          
+          <Input
+            label="Bedriftsnavn"
+            name="companyName"
+            type="text"
+            required
+            value={formData.companyName}
+            onChange={handleChange}
+            placeholder="Skriv inn bedriftsnavn"
+          />
 
-        <Input
-          label="Fullt navn"
-          name="fullName"
-          type="text"
-          required
-          value={formData.fullName}
-          onChange={handleChange}
-          placeholder="Skriv inn ditt fulle navn"
-        />
+          <Input
+            label="Organisasjonsnummer"
+            name="orgNumber"
+            type="text"
+            required
+            value={formData.orgNumber}
+            onChange={handleChange}
+            placeholder="9 siffer (f.eks. 123456789)"
+            maxLength={9}
+          />
+
+          <Input
+            label="Adresse"
+            name="address"
+            type="text"
+            value={formData.address}
+            onChange={handleChange}
+            placeholder="Gate og nummer"
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Postnummer"
+              name="postalCode"
+              type="text"
+              value={formData.postalCode}
+              onChange={handleChange}
+              placeholder="4 siffer"
+              maxLength={4}
+            />
+
+            <Input
+              label="Poststed"
+              name="city"
+              type="text"
+              value={formData.city}
+              onChange={handleChange}
+              placeholder="By"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Din informasjon</h3>
+          
+          <Input
+            label="Fullt navn"
+            name="fullName"
+            type="text"
+            required
+            value={formData.fullName}
+            onChange={handleChange}
+            placeholder="Skriv inn ditt fulle navn"
+          />
 
         <Input
           label="E-post"
@@ -166,6 +234,7 @@ export default function SignupPage() {
           onChange={handleChange}
           placeholder="Gjenta passord"
         />
+        </div>
 
         <Button type="submit" loading={loading} className="w-full">
           Opprett bedriftskonto
