@@ -1,7 +1,8 @@
+import { cache } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-export default async function DashboardPage() {
+const getSessionAndProfile = cache(async () => {
   const supabase = createServerSupabaseClient()
 
   const {
@@ -9,7 +10,7 @@ export default async function DashboardPage() {
   } = await supabase.auth.getSession()
 
   if (!session) {
-    redirect('/login')
+    return { session: null, profile: null }
   }
 
   const { data: profile } = await supabase
@@ -18,12 +19,23 @@ export default async function DashboardPage() {
     .eq('id', session.user.id)
     .single()
 
+  return { session, profile }
+})
+
+export default async function DashboardPage() {
+  const { session, profile } = await getSessionAndProfile()
+
+  if (!session) {
+    redirect('/login')
+  }
+
   if (!profile) {
     redirect('/login')
   }
 
   if (profile.role === 'admin') {
-    redirect('/dashboard/admin')
+    // Midlertidig: gå direkte til programmer til en dedikert admin-landing er klar i prod
+    redirect('/dashboard/admin/programs')
   }
 
   if (profile.role === 'instructor') {
