@@ -4,9 +4,7 @@ import { useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import type { EditorProps } from '@tinymce/tinymce-react'
-
-const TinyEditor = dynamic<EditorProps>(() => import('./TinyMCEEditor'), {
+const TinyEditor = dynamic(() => import('./TinyMCEEditor'), {
   ssr: false,
   loading: () => <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">Laster editor...</div>
 })
