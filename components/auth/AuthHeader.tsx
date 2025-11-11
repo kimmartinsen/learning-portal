@@ -6,7 +6,7 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle'
 export function AuthHeader() {
   return (
     <header className="px-6 py-6 sm:px-10">
-      <nav className="flex items-center justify-between">
+      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between">
         <Link href="/" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           Opplæringsportal
         </Link>
