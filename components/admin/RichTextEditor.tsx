@@ -24,13 +24,6 @@ type RichTextEditorProps = {
 const TOOLBAR_BUTTON =
   'inline-flex h-9 w-9 items-center justify-center rounded-md border border-transparent text-sm font-medium text-gray-600 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-300 dark:hover:bg-gray-800'
 
-const LIST_STYLES = [
-  { value: 'none', label: 'Ingen liste' },
-  { value: 'disc', label: 'Punktliste' },
-  { value: 'decimal', label: 'Tall' },
-  { value: 'lower-alpha', label: 'Bokstaver' }
-] as const
-
 const FONT_SIZES = [
   { value: '14px', label: '14 px' },
   { value: '16px', label: '16 px' },
@@ -126,16 +119,6 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         setFontSize(attrs.fontSize)
       } else {
         setFontSize('16px')
-      }
-
-      if (editor.isActive('bulletList')) {
-        setListStyle('disc')
-      } else if (editor.isActive('orderedList', { style: 'list-style-type: lower-alpha;' })) {
-        setListStyle('lower-alpha')
-      } else if (editor.isActive('orderedList')) {
-        setListStyle('decimal')
-      } else {
-        setListStyle('none')
       }
 
       if (editor.isActive('image')) {
@@ -239,24 +222,6 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           <Italic className="h-4 w-4" />
         </button>
 
-        <select
-          className="h-9 rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
-          value={['paragraph', 'heading'].find((type) => editor.isActive(type, { level: 1 })) ? 'h1' : editor.isActive('heading', { level: 2 }) ? 'h2' : editor.isActive('heading', { level: 3 }) ? 'h3' : 'p'}
-          onChange={(event) => {
-            const level = event.target.value
-            if (level === 'p') {
-              editor.chain().focus().setParagraph().run()
-            } else {
-              editor.chain().focus().toggleHeading({ level: Number(level.replace('h', '')) as 1 | 2 | 3 }).run()
-            }
-          }}
-        >
-          <option value="p">Brødtekst</option>
-          <option value="h1">Overskrift 1</option>
-          <option value="h2">Overskrift 2</option>
-          <option value="h3">Overskrift 3</option>
-        </select>
-
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -284,27 +249,22 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           </button>
         </div>
 
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={cn(TOOLBAR_BUTTON, editor.isActive('bulletList') && 'bg-gray-200 dark:bg-gray-800')}
-            aria-label="Punktliste"
-          >
-            <List className="h-4 w-4" />
-          </button>
-          <select
-            className="h-9 rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
-            value={listStyle}
-            onChange={(event) => setListStyle(event.target.value as typeof listStyle)}
-          >
-            {LIST_STYLES.map((style) => (
-              <option key={style.value} value={style.value}>
-                {style.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={cn(TOOLBAR_BUTTON, editor.isActive('bulletList') && 'bg-gray-200 dark:bg-gray-800')}
+          aria-label="Punktliste"
+        >
+          <List className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          className={cn(TOOLBAR_BUTTON, editor.isActive('orderedList') && 'bg-gray-200 dark:bg-gray-800')}
+          aria-label="Nummerert liste"
+        >
+          <ListOrdered className="h-4 w-4" />
+        </button>
 
         <label className="flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 focus-within:ring-2 focus-within:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
           <Type className="h-4 w-4" />
@@ -323,7 +283,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           onChange={(event) => {
             const size = event.target.value
             setFontSize(size)
-            editor.chain().focus().setMark('textStyle', { fontSize: size }).run()
+            editor.commands.setMark('textStyle', { fontSize: size })
           }}
         >
           {FONT_SIZES.map((size) => (
