@@ -60,10 +60,10 @@ function LoginForm() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           Logg inn på kontoen din
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
           Velkommen tilbake til opplæringsportalen
         </p>
       </div>
@@ -95,14 +95,14 @@ function LoginForm() {
       </form>
 
       <div className="text-center space-y-2">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
           Har du ikke konto ennå?{' '}
           <Link href="/signup" className="font-medium text-primary-600 hover:text-primary-500">
             Opprett bedriftskonto
           </Link>
         </p>
         <div>
-          <Link href="/forgot-password" className="text-sm text-primary-600 hover:text-primary-500">
+          <Link href="/forgot-password" className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
             Glemt passord?
           </Link>
         </div>

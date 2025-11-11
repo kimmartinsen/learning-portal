@@ -96,10 +96,10 @@ export default function SignupPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           Opprett bedriftskonto
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
           Registrer din bedrift og bli den første administratoren
         </p>
       </div>
@@ -161,7 +161,7 @@ export default function SignupPage() {
       </form>
 
       <div className="text-center">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
           Har du allerede en konto?{' '}
           <Link href="/login" className="font-medium text-primary-600 hover:text-primary-500">
             Logg inn her
