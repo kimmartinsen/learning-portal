@@ -43,14 +43,18 @@ export default function SignupPage() {
       return
     }
 
+    // Remove spaces from org number and postal code before validation
+    const cleanOrgNumber = formData.orgNumber.replace(/\s/g, '')
+    const cleanPostalCode = formData.postalCode.replace(/\s/g, '')
+
     // Validate organisasjonsnummer (9 digits)
-    if (formData.orgNumber && !/^\d{9}$/.test(formData.orgNumber)) {
+    if (cleanOrgNumber && !/^\d{9}$/.test(cleanOrgNumber)) {
       toast.error('Organisasjonsnummer må være 9 siffer')
       return
     }
 
     // Validate postnummer (4 digits)
-    if (formData.postalCode && !/^\d{4}$/.test(formData.postalCode)) {
+    if (cleanPostalCode && !/^\d{4}$/.test(cleanPostalCode)) {
       toast.error('Postnummer må være 4 siffer')
       return
     }
@@ -73,14 +77,14 @@ export default function SignupPage() {
       if (authError) throw authError
       if (!authData.user) throw new Error('Kunne ikke opprette bruker')
 
-      // 2. Create company
+      // 2. Create company (store without spaces)
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
         .insert([{
           name: formData.companyName,
-          org_number: formData.orgNumber || null,
+          org_number: cleanOrgNumber || null,
           address: formData.address || null,
-          postal_code: formData.postalCode || null,
+          postal_code: cleanPostalCode || null,
           city: formData.city || null,
           badge_system_enabled: true,
         }])
@@ -157,8 +161,8 @@ export default function SignupPage() {
             required
             value={formData.orgNumber}
             onChange={handleChange}
-            placeholder="9 siffer (f.eks. 123456789)"
-            maxLength={9}
+            placeholder="9 siffer (f.eks. 123 456 789)"
+            maxLength={11}
           />
 
           <Input
@@ -177,8 +181,8 @@ export default function SignupPage() {
               type="text"
               value={formData.postalCode}
               onChange={handleChange}
-              placeholder="4 siffer"
-              maxLength={4}
+              placeholder="4 siffer (f.eks. 0157)"
+              maxLength={5}
             />
 
             <Input
