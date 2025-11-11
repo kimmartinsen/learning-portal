@@ -109,11 +109,11 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     if (listStyle === 'none') {
       editor.chain().focus().setParagraph().run()
     } else if (listStyle === 'disc') {
-      editor.chain().focus().setBulletList().updateAttributes('bulletList', { style: 'list-style-type: disc;' }).run()
+      editor.chain().focus().toggleBulletList().run()
     } else if (listStyle === 'decimal') {
-      editor.chain().focus().setOrderedList().updateAttributes('orderedList', { style: 'list-style-type: decimal;' }).run()
+      editor.chain().focus().toggleOrderedList().run()
     } else if (listStyle === 'lower-alpha') {
-      editor.chain().focus().setOrderedList().updateAttributes('orderedList', { style: 'list-style-type: lower-alpha;' }).run()
+      editor.chain().focus().toggleOrderedList().run()
     }
   }, [editor, listStyle])
 
