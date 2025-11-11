@@ -346,10 +346,12 @@ export default function AdminProgramsPage() {
 
       {/* Theme Form Modal */}
       {showThemeForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <Card className="w-full max-w-md mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={resetThemeForm} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none" />
+          <Card className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-gray-900 dark:border-gray-700">
             <CardHeader>
-              <h3 className="text-lg font-semibold">Nytt tema</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nytt tema</h3>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateTheme} className="space-y-4">
@@ -361,13 +363,15 @@ export default function AdminProgramsPage() {
                   placeholder="F.eks. HMS og sikkerhet"
                 />
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Beskrivelse</label>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Beskrivelse
+                  </label>
                   <textarea
                     value={themeFormData.description}
                     onChange={(e) =>
                       setThemeFormData((prev) => ({ ...prev, description: e.target.value }))
                     }
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                    className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
                     rows={3}
                     placeholder="Valgfri beskrivelse av temaet"
                   />
@@ -388,10 +392,12 @@ export default function AdminProgramsPage() {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={resetForm} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none" />
+          <Card className="relative z-10 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 dark:border-gray-700">
             <CardHeader>
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {editingProgram ? 'Rediger kurs' : 'Nytt kurs'}
               </h3>
             </CardHeader>
@@ -406,26 +412,26 @@ export default function AdminProgramsPage() {
                 />
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Beskrivelse
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                    className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
                     rows={3}
                     placeholder="Beskrivelse av kurset"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Tema
                   </label>
                   <select
                     value={formData.themeId}
                     onChange={(e) => setFormData(prev => ({ ...prev, themeId: e.target.value }))}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                    className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                   >
                     <option value="">Velg tema (valgfritt)</option>
                     {themes.map(theme => (
@@ -435,8 +441,8 @@ export default function AdminProgramsPage() {
                     ))}
                   </select>
                   {themes.length === 0 && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      <a href="/admin/themes" className="text-primary-600 hover:text-primary-700">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      <a href="/admin/themes" className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
                         Opprett temaer først
                       </a> for å organisere kursene
                     </p>
@@ -444,13 +450,13 @@ export default function AdminProgramsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Instruktør
                   </label>
                   <select
                     value={formData.instructorId}
                     onChange={(e) => setFormData(prev => ({ ...prev, instructorId: e.target.value }))}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                    className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                   >
                     <option value="">Ingen instruktør</option>
                     {instructors.map(instructor => (
@@ -473,14 +479,14 @@ export default function AdminProgramsPage() {
                 />
 
                 <div>
-                  <label className="flex items-center mb-2">
+                  <label className="flex items-center mb-2 text-sm text-gray-700 dark:text-gray-300">
                     <input
                       type="checkbox"
                       checked={formData.repetitionEnabled}
                       onChange={(e) => setFormData(prev => ({ ...prev, repetitionEnabled: e.target.checked }))}
                       className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Aktiver repetisjon</span>
+                    <span className="ml-2">Aktiver repetisjon</span>
                   </label>
                   
                   {formData.repetitionEnabled && (

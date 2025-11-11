@@ -557,10 +557,12 @@ export default function ThemesPage() {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={resetForm} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none" />
+          <Card className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-gray-900 dark:border-gray-700">
             <CardHeader>
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {editingTheme ? 'Rediger tema' : 'Nytt tema'}
               </h3>
             </CardHeader>
@@ -575,13 +577,13 @@ export default function ThemesPage() {
                 />
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Beskrivelse
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                    className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
                     rows={3}
                     placeholder="Valgfri beskrivelse av temaet"
                   />
