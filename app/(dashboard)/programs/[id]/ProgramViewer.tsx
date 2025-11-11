@@ -354,10 +354,10 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
                   </div>
                 )}
 
-                {program.instructor && (
+                {program.instructor?.[0] && (
                   <div className="flex items-center space-x-1">
                     <User className="w-4 h-4" />
-                    <span>{program.instructor.full_name}</span>
+                    <span>{program.instructor[0].full_name}</span>
                   </div>
                 )}
               </div>
