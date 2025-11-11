@@ -39,7 +39,7 @@ export default async function HomePage() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-100 via-white to-transparent dark:from-blue-900/20 dark:via-gray-950 dark:to-transparent" />
 
         <header className="px-6 py-6 sm:px-10">
-          <nav className="mx-auto flex w-full max-w-6xl items-center justify-between">
+          <nav className="flex items-center justify-between">
             <Link href="/" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Opplæringsportal
             </Link>
