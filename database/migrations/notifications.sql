@@ -98,6 +98,12 @@ CREATE POLICY "Users can insert their own preferences"
   ON notification_preferences FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+-- Allow system/triggers to insert notification preferences
+DROP POLICY IF EXISTS "System can insert notification preferences" ON notification_preferences;
+CREATE POLICY "System can insert notification preferences"
+  ON notification_preferences FOR INSERT
+  WITH CHECK (true);
+
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
