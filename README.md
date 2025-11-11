@@ -12,11 +12,17 @@ npm install
 ### 2. Sett opp miljøvariabler
 Opprett en `.env.local` fil i rotmappen med følgende innhold:
 
+```bash
+# Kopier fra .env.example og fyll inn dine egne verdier
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://njumqvxjaktxicxwucki.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qdW1xdnhqYWt0eGljeHd1Y2tpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDgwNzgsImV4cCI6MjA3NzEyNDA3OH0.XAiL_r-4cXWys7UcJdMmtcnnMwq5vNGlECAIVdaUKs4
-# SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-```
+
+**⚠️ VIKTIG SIKKERHET:**
+- Aldri commit `.env.local` til git
+- Roter nøkler umiddelbart hvis de eksponeres
+- Bruk environment-spesifikke nøkler for dev/staging/prod
 
 ### 3. Sett opp database
 
@@ -307,23 +313,31 @@ npm run dev
 - ✅ Dashboard for alle roller
 - ✅ Avdelingsstyring (admin)
 - ✅ Brukerstyring (admin)
+- ✅ Tema-hierarki for organisering
+- ✅ Opplæringsprogrammer (CRUD)
+- ✅ Moduler med rich text editor (TinyMCE)
+- ✅ Individuelle og avdelingsbaserte tildelinger
+- ✅ Fremdriftssporing
 - ✅ Min opplæring (brukere)
-- ✅ Responsiv design
+- ✅ Responsiv design med dark mode
 - ✅ Database-skjema med RLS
+- ✅ Error boundaries for bedre feilhåndtering
+- ✅ Accessibility (ARIA-labels, keyboard navigation)
+- ✅ Optimaliserte database queries
+- ✅ Loading states og skeletons
 
 ### 🚧 Under utvikling
-- 🚧 Opplæringsprogrammer (CRUD)
-- 🚧 Moduler (video, dokument, quiz, interaktiv)
-- 🚧 Fremdriftssporing
 - 🚧 Badge-system
+- 🚧 Rapporter og eksport
+- 🚧 E-postvarsling
+- 🚧 Automatiske påminnelser
 
 ### 📋 Planlagt
-- 📋 Instructor-dashboard
-- 📋 Rapporter og eksport
-- 📋 E-postvarsling
-- 📋 Automatiske påminnelser
-- 📋 Fileopplasting
+- 📋 Instructor-dashboard med statistikk
 - 📋 Avanserte quiz-funksjoner
+- 📋 Video-hosting og streaming
+- 📋 Sertifikatgenerering
+- 📋 Integrasjoner (Slack, Teams, etc.)
 
 ## 🚀 Deployment til Vercel
 

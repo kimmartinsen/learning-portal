@@ -37,7 +37,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     return () => observer.disconnect()
   }, [])
 
-  const imagesUploadHandler = useCallback(async (blobInfo: any) => {
+  const imagesUploadHandler = useCallback(async (blobInfo: { blob: () => Blob; filename: () => string }) => {
     const file = blobInfo.blob()
     const fileName = `module-images/${Date.now()}-${blobInfo.filename()}`
     const uploadToast = toast.loading('Laster opp bilde...')
@@ -59,9 +59,10 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       toast.success('Bilde lastet opp!')
       toast.dismiss(uploadToast)
       return data.publicUrl
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Kunne ikke laste opp bilde.'
       console.error('Image upload failed', error)
-      toast.error('Kunne ikke laste opp bilde.')
+      toast.error(errorMessage)
       toast.dismiss(uploadToast)
       throw error
     }

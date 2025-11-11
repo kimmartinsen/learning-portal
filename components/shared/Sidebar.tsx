@@ -89,8 +89,10 @@ export function Sidebar({ user }: SidebarProps) {
           size="sm"
           onClick={toggleSidebar}
           className="bg-white shadow-sm"
+          aria-label={isOpen ? 'Lukk meny' : 'Åpne meny'}
+          aria-expanded={isOpen}
         >
-          {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {isOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
         </Button>
       </div>
 
@@ -99,6 +101,10 @@ export function Sidebar({ user }: SidebarProps) {
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
+          aria-label="Lukk meny"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Escape' && setIsOpen(false)}
         />
       )}
 
