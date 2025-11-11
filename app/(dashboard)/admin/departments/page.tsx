@@ -164,9 +164,12 @@ export default function DepartmentsPage() {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/40" />
-          <Card className="w-full max-w-md mx-4 bg-white dark:bg-gray-900 dark:border-gray-700">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={resetForm}
+          />
+          <Card className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-gray-900 dark:border-gray-700">
             <CardHeader>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {editingDepartment ? 'Rediger avdeling' : 'Ny avdeling'}
