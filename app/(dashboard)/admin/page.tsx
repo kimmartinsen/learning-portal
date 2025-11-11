@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -12,6 +12,7 @@ type AdminProfile = {
 
 export default function AdminOverviewPage() {
   const [profile, setProfile] = useState<AdminProfile | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -84,8 +85,12 @@ export default function AdminOverviewPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-gray-600 dark:text-gray-300">{link.description}</p>
-              <Button asChild variant="secondary" className="w-full justify-center">
-                <Link href={link.href}>Åpne</Link>
+              <Button
+                variant="secondary"
+                className="w-full justify-center"
+                onClick={() => router.push(link.href)}
+              >
+                Åpne
               </Button>
             </CardContent>
           </Card>
