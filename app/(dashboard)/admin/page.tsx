@@ -1,42 +1,24 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 
-type AdminProfile = {
-  full_name: string | null
-}
+export default async function AdminOverviewPage() {
+  const supabase = createServerSupabaseClient()
 
-export default function AdminOverviewPage() {
-  const [profile, setProfile] = useState<AdminProfile | null>(null)
-  const router = useRouter()
+  const {
+    data: { session }
+  } = await supabase.auth.getSession()
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
+  if (!session) {
+    redirect('/login')
+  }
 
-      if (!session) {
-        return
-      }
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', session.user.id)
-        .single()
-
-      if (data) {
-        setProfile(data)
-      }
-    }
-
-    fetchProfile()
-  }, [])
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', session.user.id)
+    .single()
 
   const adminLinks = [
     {
@@ -85,13 +67,12 @@ export default function AdminOverviewPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-gray-600 dark:text-gray-300">{link.description}</p>
-              <Button
-                variant="secondary"
-                className="w-full justify-center"
-                onClick={() => router.push(link.href)}
+              <Link
+                href={link.href}
+                className="inline-flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-100"
               >
                 Åpne
-              </Button>
+              </Link>
             </CardContent>
           </Card>
         ))}
