@@ -38,8 +38,8 @@ export default async function DashboardPage() {
   }
 
   if (profile.role === 'instructor') {
-    redirect('/dashboard/instructor/programs')
+    redirect('/instructor/programs')
   }
 
-  redirect('/dashboard/my-learning')
+  redirect('/my-learning')
 }
