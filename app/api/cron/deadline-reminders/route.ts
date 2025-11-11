@@ -95,7 +95,8 @@ export async function GET(request: Request) {
       totalNotifications += notifications.length
 
       // Also check user preferences and send emails if enabled
-      const userIds = [...new Set(assignments.map((a: any) => a.user_id))]
+      const userIdsSet = new Set(assignments.map((a: any) => a.user_id))
+      const userIds = Array.from(userIdsSet)
       
       const { data: preferences } = await supabaseAdmin
         .from('notification_preferences')
