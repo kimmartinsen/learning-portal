@@ -334,7 +334,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
       case 'question': return <MessageCircleQuestion className="w-5 h-5 text-green-600" />
       case 'video_section': return <Video className="w-5 h-5 text-purple-600" />
       case 'final_quiz': return <CheckCircle className="w-5 h-5 text-yellow-600" />
-      default: return <BookOpen className="w-5 h-5 text-gray-600" />
+      default: return <BookOpen className="w-5 h-5 text-gray-600 dark:text-gray-400" />
     }
   }
 
@@ -385,9 +385,9 @@ export default function ModuleBuilder({ program, companyId }: Props) {
   // Form component rendering
   if (showForm) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
           <div className="max-w-4xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -395,7 +395,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Tilbake
                 </Button>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   {editingModule ? 'Rediger' : 'Ny'} {getTypeLabel(formType)}
                 </h1>
               </div>
@@ -420,7 +420,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
               {formType === 'content_section' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Tittel *
                     </label>
                     <Input
@@ -431,11 +431,11 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Innhold *
                     </label>
                     <textarea
-                      className="w-full h-64 p-3 border border-gray-300 rounded-lg resize-vertical focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full h-64 p-3 border border-gray-300 rounded-lg resize-vertical focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
                       value={formData.content}
                       onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
                       placeholder="Skriv opplæringsinnholdet her...&#10;&#10;Du kan bruke:&#10;- Punktlister&#10;- **fet tekst**&#10;- *kursiv tekst*"
@@ -448,7 +448,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
               {formType === 'question' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Tittel
                     </label>
                     <Input
@@ -459,7 +459,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Spørsmål *
                     </label>
                     <Input
@@ -470,7 +470,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Svaralternativer
                     </label>
                     <div className="space-y-2">
@@ -493,7 +493,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                             placeholder={`Alternativ ${String.fromCharCode(65 + index)}`}
                             className="flex-1"
                           />
-                          <span className="text-xs text-gray-500 w-12">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 w-12">
                             {formData.correctIndex === index ? 'Riktig' : ''}
                           </span>
                         </div>
@@ -502,7 +502,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Forklaring (vises etter svar)
                     </label>
                     <Input
@@ -519,7 +519,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
               {formType === 'video_section' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Tittel *
                     </label>
                     <Input
@@ -530,14 +530,14 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Video
                     </label>
                     
                     <div className="space-y-4">
                       {/* YouTube URL Option */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-1">
+                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
                           YouTube URL
                         </label>
                         <Input
@@ -549,17 +549,17 @@ export default function ModuleBuilder({ program, companyId }: Props) {
 
                       {/* OR Divider */}
                       <div className="flex items-center my-4">
-                        <div className="flex-1 border-t border-gray-300"></div>
-                        <span className="px-3 text-sm text-gray-500 bg-white">ELLER</span>
-                        <div className="flex-1 border-t border-gray-300"></div>
+                        <div className="flex-1 border-t border-gray-300 dark:border-gray-700"></div>
+                        <span className="px-3 text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900">ELLER</span>
+                        <div className="flex-1 border-t border-gray-300 dark:border-gray-700"></div>
                       </div>
 
                       {/* Video Upload */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-2">
+                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
                           Last opp video
                         </label>
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center dark:bg-gray-900">
                           <input
                             type="file"
                             accept="video/*"
@@ -572,10 +572,10 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                             className="cursor-pointer flex flex-col items-center"
                           >
                             <Video className="w-8 h-8 text-gray-400 mb-2" />
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-gray-600 dark:text-gray-300">
                               Klikk for å laste opp video
                             </span>
-                            <span className="text-xs text-gray-500 mt-1">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                               MP4, MOV, AVI (maks 100MB)
                             </span>
                           </label>
@@ -596,7 +596,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
               {formType === 'final_quiz' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Quiz tittel
                     </label>
                     <Input
@@ -621,7 +621,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
 
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Quiz-spørsmål ({formData.questions.length})
                       </label>
                       <Button onClick={addQuizQuestion} size="sm">
@@ -631,13 +631,13 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                     </div>
 
                     {formData.questions.length === 0 ? (
-                      <p className="text-gray-600 text-center py-8">
+                      <p className="text-gray-600 dark:text-gray-300 text-center py-8">
                         Ingen spørsmål lagt til ennå. Klikk "Legg til spørsmål" for å starte.
                       </p>
                     ) : (
                       <div className="space-y-6">
                         {formData.questions.map((question, qIndex) => (
-                          <div key={qIndex} className="border border-gray-200 rounded-lg p-4">
+                          <div key={qIndex} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900/60">
                             <div className="flex items-start justify-between mb-4">
                               <h3 className="font-medium text-gray-900">
                                 Spørsmål {qIndex + 1}
@@ -678,7 +678,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                                       placeholder={`Alternativ ${String.fromCharCode(65 + oIndex)}`}
                                       className="flex-1"
                                     />
-                                    <span className="text-xs text-gray-500 w-12">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 w-12">
                                       {question.correctIndex === oIndex ? 'Riktig' : ''}
                                     </span>
                                   </div>
@@ -707,9 +707,9 @@ export default function ModuleBuilder({ program, companyId }: Props) {
 
   // Main module list view
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -721,10 +721,10 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                 Tilbake til programmer
               </Button>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Bygg: {program.title}
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Legg til innhold og spørsmål del for del
                 </p>
               </div>
@@ -746,7 +746,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Legg til komponenter</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Legg til komponenter</h2>
                 {showAddMenu && (
                   <Button 
                     variant="ghost" 
@@ -808,7 +808,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
           {/* Program Structure */}
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Programstruktur ({modules.length} komponenter)
               </h2>
             </CardHeader>
@@ -816,10 +816,10 @@ export default function ModuleBuilder({ program, companyId }: Props) {
               {modules.length === 0 ? (
                 <div className="text-center py-12">
                   <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                     Tomt program
                   </h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-gray-600 dark:text-gray-300 mb-6">
                     Begynn å bygge programmet ditt ved å legge til den første komponenten.
                   </p>
                 </div>
@@ -828,7 +828,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                   {modules.map((module, index) => (
                     <div
                       key={module.id}
-                      className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+                      className="flex items-center space-x-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-sm transition-shadow bg-white dark:bg-gray-900/60"
                     >
                       <div className="flex-shrink-0">
                         <GripVertical className="w-5 h-5 text-gray-400" />
@@ -840,16 +840,16 @@ export default function ModuleBuilder({ program, companyId }: Props) {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-3 mb-1">
-                          <h3 className="text-base font-medium text-gray-900 truncate">
+                          <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 truncate">
                             {index + 1}. {module.title}
                           </h3>
                           
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
                             {getTypeLabel(module.type)}
                           </span>
                         </div>
                         
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                        <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-300">
                           {module.has_questions && (
                             <span>
                               {module.is_single_question ? '1 spørsmål' : 
