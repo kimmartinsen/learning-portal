@@ -23,7 +23,7 @@ export default async function DashboardPage() {
   }
 
   if (profile.role === 'admin') {
-    redirect('/dashboard/admin/programs')
+    redirect('/dashboard/admin')
   }
 
   if (profile.role === 'instructor') {
