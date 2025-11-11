@@ -248,6 +248,33 @@ export default function AdminProgramsPage() {
             console.log('Notifications created successfully:', notifData)
             toast.success(`Varsling sendt til ${assignedUserIds.length} bruker(e)`)
           }
+          
+          // Send notification to instructor if assigned
+          if (formData.instructorId) {
+            const instructorNotification = {
+              user_id: formData.instructorId,
+              type: 'course_updated',
+              title: '👥 Brukere tildelt til ditt kurs',
+              message: `${assignedUserIds.length} bruker(e) har fått tildelt "${formData.title}"`,
+              link: `/programs/${programId}`,
+              read: false,
+              metadata: {
+                programId,
+                assignedCount: assignedUserIds.length,
+                deadlineDays: formData.deadlineDays
+              }
+            }
+            
+            const { error: instructorNotifError } = await supabase
+              .from('notifications')
+              .insert([instructorNotification])
+            
+            if (instructorNotifError) {
+              console.error('Error creating instructor notification:', instructorNotifError)
+            } else {
+              console.log('Instructor notification sent successfully')
+            }
+          }
         } else {
           console.log('No notifications sent. assignedUserIds:', assignedUserIds.length, 'editingProgram:', editingProgram)
         }

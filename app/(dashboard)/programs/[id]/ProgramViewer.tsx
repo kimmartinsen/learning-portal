@@ -186,7 +186,7 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
             .eq('assigned_to_user_id', userId)
             .eq('program_id', program.id)
           
-          // Send completion notification
+          // Send completion notification to user
           const { error: notifError } = await supabase.from('notifications').insert({
             user_id: userId,
             type: 'course_completed',
@@ -201,6 +201,36 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
           
           if (notifError) {
             console.error('Error creating completion notification:', notifError)
+          }
+          
+          // Send notification to instructor if assigned
+          if (program.instructor_id) {
+            // Get user's name for the notification
+            const { data: userData } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', userId)
+              .single()
+            
+            const userName = userData?.full_name || 'En bruker'
+            
+            const { error: instructorNotifError } = await supabase.from('notifications').insert({
+              user_id: program.instructor_id,
+              type: 'course_completed',
+              title: '✅ Kurs fullført',
+              message: `${userName} har fullført "${program.title}"`,
+              link: `/programs/${program.id}`,
+              read: false,
+              metadata: {
+                programId: program.id,
+                completedByUserId: userId,
+                completedByUserName: userName
+              }
+            })
+            
+            if (instructorNotifError) {
+              console.error('Error creating instructor notification:', instructorNotifError)
+            }
           }
           
           // Go back to overview when program is complete

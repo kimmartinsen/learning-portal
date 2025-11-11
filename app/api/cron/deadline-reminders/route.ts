@@ -52,7 +52,8 @@ export async function GET(request: Request) {
           due_date,
           status,
           training_programs!inner (
-            title
+            title,
+            instructor_id
           )
         `)
         .neq('status', 'completed')
@@ -95,6 +96,70 @@ export async function GET(request: Request) {
       if (insertError) throw insertError
 
       totalNotifications += notifications.length
+      
+      // Send notifications to instructors about their courses' upcoming deadlines
+      // Group assignments by instructor and program
+      const instructorPrograms = new Map<string, Map<string, any[]>>()
+      
+      for (const assignment of assignments) {
+        const instructorId = assignment.training_programs.instructor_id
+        if (!instructorId) continue
+        
+        if (!instructorPrograms.has(instructorId)) {
+          instructorPrograms.set(instructorId, new Map())
+        }
+        
+        const programs = instructorPrograms.get(instructorId)!
+        if (!programs.has(assignment.program_id)) {
+          programs.set(assignment.program_id, [])
+        }
+        
+        programs.get(assignment.program_id)!.push(assignment)
+      }
+      
+      // Create instructor notifications
+      const instructorNotifications = []
+      for (const [instructorId, programs] of instructorPrograms) {
+        for (const [programId, programAssignments] of programs) {
+          const programTitle = programAssignments[0].training_programs.title
+          const userCount = programAssignments.length
+          const urgencyLevel = daysRemaining <= 1 ? '🔴' : daysRemaining <= 3 ? '🟡' : '🔵'
+          
+          // Get user names for better context
+          const userIds = programAssignments.map(a => a.assigned_to_user_id)
+          const { data: users } = await supabaseAdmin
+            .from('profiles')
+            .select('full_name')
+            .in('id', userIds)
+          
+          const userNames = users?.map(u => u.full_name).join(', ') || 'brukere'
+          
+          instructorNotifications.push({
+            user_id: instructorId,
+            type: 'deadline_reminder',
+            title: `${urgencyLevel} Frist nærmer seg for ditt kurs`,
+            message: `${userCount} bruker(e) har ${daysRemaining} dag${daysRemaining !== 1 ? 'er' : ''} igjen på "${programTitle}": ${userNames}`,
+            link: `/programs/${programId}`,
+            read: false,
+            metadata: {
+              programId,
+              daysRemaining,
+              userCount,
+              isInstructorNotification: true
+            }
+          })
+        }
+      }
+      
+      if (instructorNotifications.length > 0) {
+        const { error: instructorInsertError } = await supabaseAdmin
+          .from('notifications')
+          .insert(instructorNotifications)
+        
+        if (instructorInsertError) throw instructorInsertError
+        
+        totalNotifications += instructorNotifications.length
+      }
 
       // Also check user preferences and send emails if enabled
       const userIdsSet = new Set(assignments.map((a: any) => a.assigned_to_user_id))
@@ -129,7 +194,8 @@ export async function GET(request: Request) {
         due_date,
         status,
         training_programs!inner (
-          title
+          title,
+          instructor_id
         )
       `)
       .neq('status', 'completed')
@@ -162,6 +228,68 @@ export async function GET(request: Request) {
       if (overdueInsertError) throw overdueInsertError
 
       totalNotifications += overdueNotifications.length
+      
+      // Send notifications to instructors about overdue assignments
+      const instructorOverduePrograms = new Map<string, Map<string, any[]>>()
+      
+      for (const assignment of overdueAssignments) {
+        const instructorId = assignment.training_programs.instructor_id
+        if (!instructorId) continue
+        
+        if (!instructorOverduePrograms.has(instructorId)) {
+          instructorOverduePrograms.set(instructorId, new Map())
+        }
+        
+        const programs = instructorOverduePrograms.get(instructorId)!
+        if (!programs.has(assignment.program_id)) {
+          programs.set(assignment.program_id, [])
+        }
+        
+        programs.get(assignment.program_id)!.push(assignment)
+      }
+      
+      // Create instructor overdue notifications
+      const instructorOverdueNotifications = []
+      for (const [instructorId, programs] of instructorOverduePrograms) {
+        for (const [programId, programAssignments] of programs) {
+          const programTitle = programAssignments[0].training_programs.title
+          const userCount = programAssignments.length
+          
+          // Get user names
+          const userIds = programAssignments.map(a => a.assigned_to_user_id)
+          const { data: users } = await supabaseAdmin
+            .from('profiles')
+            .select('full_name')
+            .in('id', userIds)
+          
+          const userNames = users?.map(u => u.full_name).join(', ') || 'brukere'
+          
+          instructorOverdueNotifications.push({
+            user_id: instructorId,
+            type: 'deadline_reminder',
+            title: '🚨 Forsinket frist for ditt kurs',
+            message: `${userCount} bruker(e) har overskredet fristen for "${programTitle}": ${userNames}`,
+            link: `/programs/${programId}`,
+            read: false,
+            metadata: {
+              programId,
+              overdue: true,
+              userCount,
+              isInstructorNotification: true
+            }
+          })
+        }
+      }
+      
+      if (instructorOverdueNotifications.length > 0) {
+        const { error: instructorOverdueInsertError } = await supabaseAdmin
+          .from('notifications')
+          .insert(instructorOverdueNotifications)
+        
+        if (instructorOverdueInsertError) throw instructorOverdueInsertError
+        
+        totalNotifications += instructorOverdueNotifications.length
+      }
     }
 
     return NextResponse.json({
