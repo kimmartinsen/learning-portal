@@ -103,7 +103,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY || 'no-api-key'}
         value={value}
         init={editorInit}
-        onEditorChange={(content) => onChange(content)}
+        onEditorChange={(content: string) => onChange(content)}
         tinymceScriptSrc="https://cdn.jsdelivr.net/npm/tinymce@7.2.1/tinymce.min.js"
       />
     </div>
