@@ -34,7 +34,7 @@ const FONT_SIZES = [
 
 export function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const [listStyle, setListStyle] = useState<(typeof LIST_STYLES)[number]['value']>('none')
+  const [listStyle, setListStyle] = useState<'none' | 'disc' | 'decimal'>('none')
   const [fontSize, setFontSize] = useState('16px')
   const [imageControls, setImageControls] = useState<{
     visible: boolean
