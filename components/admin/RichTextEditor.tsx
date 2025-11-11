@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import type { Editor as TinyMCEInstance } from 'tinymce'
 
 const TinyEditor = dynamic(() => import('./TinyMCEEditor'), {
   ssr: false,
@@ -73,7 +74,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       branding: false,
       height: 420,
       object_resizing: 'img',
-      toolbar_mode: 'sliding',
+      toolbar_mode: 'wrap',
       toolbar_sticky: true,
       automatic_uploads: true,
       images_upload_handler: imagesUploadHandler,
@@ -90,7 +91,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       ],
       plugins: 'advlist autolink lists link image table code autoresize',
       toolbar:
-        'undo redo | styleselect fontsizeselect | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image table | code removeformat',
+        'undo redo | formatselect fontsizeselect | bold italic underline forecolor backcolor removeformat | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image table | code',
       fontsize_formats: '12px 14px 16px 18px 20px 22px 24px 28px 32px 36px',
       style_formats: [
         { title: 'Avsnitt', format: 'p' },
@@ -98,6 +99,14 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         { title: 'Overskrift 3', format: 'h3' },
         { title: 'Sitater', format: 'blockquote' }
       ],
+      setup: (editor: TinyMCEInstance) => {
+        editor.on('init', () => {
+          const body = editor.getBody()
+          if (body) {
+            body.setAttribute('data-placeholder', placeholderText)
+          }
+        })
+      },
       content_style: `
         :root { color-scheme: ${isDark ? 'dark' : 'light'}; }
         body {
@@ -124,22 +133,13 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           margin: 1rem auto;
           text-align: center;
         }
-        table {
-          border-collapse: collapse;
-          width: 100%;
-        }
-        table td,
-        table th {
-          border: 1px solid ${isDark ? '#374151' : '#d1d5db'};
-          padding: 0.5rem;
-        }
         body.mce-content-body:empty::before {
           content: '${placeholderText}';
           color: ${isDark ? '#6b7280' : '#9ca3af'};
         }
       `,
-      skin_url: `https://cdn.jsdelivr.net/npm/tinymce@7.2.1/skins/ui/${isDark ? 'oxide-dark' : 'oxide'}`,
-      content_css: `https://cdn.jsdelivr.net/npm/tinymce@7.2.1/skins/content/${isDark ? 'dark' : 'default'}/content.min.css`
+      skin: isDark ? 'oxide-dark' : 'oxide',
+      content_css: isDark ? 'dark' : 'default'
     }),
     [imagesUploadHandler, isDark, placeholderText]
   )
