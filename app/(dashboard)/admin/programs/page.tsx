@@ -361,7 +361,7 @@ export default function AdminProgramsPage() {
                 placeholder="F.eks. HMS og sikkerhet"
               />
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Beskrivelse
                 </label>
                 <textarea
@@ -369,7 +369,7 @@ export default function AdminProgramsPage() {
                   onChange={(e) =>
                     setThemeFormData((prev) => ({ ...prev, description: e.target.value }))
                   }
-                  className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
+                  className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
                   rows={3}
                   placeholder="Valgfri beskrivelse av temaet"
                 />
@@ -388,8 +388,8 @@ export default function AdminProgramsPage() {
       </Modal>
 
       {/* Form Modal */}
-      <Modal isOpen={showForm} onClose={resetForm}>
-        <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 dark:border-gray-700">
+      <Modal isOpen={showForm} onClose={resetForm} size="lg">
+        <Card className="bg-white dark:bg-gray-900 dark:border-gray-700">
           <CardHeader>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {editingProgram ? 'Rediger kurs' : 'Nytt kurs'}
@@ -412,7 +412,7 @@ export default function AdminProgramsPage() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
+                  className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
                   rows={3}
                   placeholder="Beskrivelse av kurset"
                 />
@@ -425,7 +425,7 @@ export default function AdminProgramsPage() {
                 <select
                   value={formData.themeId}
                   onChange={(e) => setFormData(prev => ({ ...prev, themeId: e.target.value }))}
-                  className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                  className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                 >
                   <option value="">Velg tema (valgfritt)</option>
                   {themes.map(theme => (
@@ -450,7 +450,7 @@ export default function AdminProgramsPage() {
                 <select
                   value={formData.instructorId}
                   onChange={(e) => setFormData(prev => ({ ...prev, instructorId: e.target.value }))}
-                  className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                  className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                 >
                   <option value="">Ingen instruktør</option>
                   {instructors.map(instructor => (

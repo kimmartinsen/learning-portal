@@ -7,9 +7,10 @@ interface ModalProps {
   isOpen: boolean
   onClose: () => void
   children: React.ReactNode
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
-export function Modal({ isOpen, onClose, children }: ModalProps) {
+export function Modal({ isOpen, onClose, children, size = 'md' }: ModalProps) {
   const portalRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -28,13 +29,20 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
 
   if (!isOpen || !portalRef.current) return null
 
+  const sizeClasses = {
+    sm: 'max-w-md',
+    md: 'max-w-2xl',
+    lg: 'max-w-4xl',
+    xl: 'max-w-6xl'
+  }
+
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div 
         className="absolute inset-0 bg-black/70" 
         onClick={onClose}
       />
-      <div className="relative z-10 mx-4 max-h-[90vh] overflow-y-auto">
+      <div className={`relative z-10 w-full ${sizeClasses[size]} max-h-[85vh] overflow-y-auto`}>
         {children}
       </div>
     </div>,
