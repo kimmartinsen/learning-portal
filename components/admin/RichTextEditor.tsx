@@ -115,11 +115,9 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
 
         if (error) throw error
 
-        const { data: urlData, error: urlError } = supabase.storage
+        const { data: urlData } = supabase.storage
           .from('learning-content')
           .getPublicUrl(fileName)
-
-        if (urlError) throw urlError
 
         const publicUrl = urlData.publicUrl
 
