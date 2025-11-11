@@ -43,29 +43,18 @@ export default async function HomePage() {
               Opplæringsportal
             </Link>
             <div className="flex items-center gap-3">
-              {isAuthenticated ? (
-                <Link
-                  href="/dashboard"
-                  className="rounded-full border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-                >
-                  Gå til dashboard
-                </Link>
-              ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="rounded-full border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-                  >
-                    Logg inn
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="hidden rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:text-gray-900 dark:border-gray-700 dark:text-gray-200 dark:hover:border-gray-500 sm:inline-flex"
-                  >
-                    Opprett konto
-                  </Link>
-                </>
-              )}
+              <Link
+                href={isAuthenticated ? '/dashboard' : '/login'}
+                className="rounded-full border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+              >
+                Logg inn
+              </Link>
+              <Link
+                href="/signup"
+                className="hidden rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-400 hover:text-gray-900 dark:border-gray-700 dark:text-gray-200 dark:hover:border-gray-500 sm:inline-flex"
+              >
+                Registrer deg
+              </Link>
             </div>
           </nav>
         </header>
@@ -84,17 +73,17 @@ export default async function HomePage() {
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
-                href={isAuthenticated ? '/dashboard' : '/signup'}
+                href={isAuthenticated ? '/dashboard' : '/login'}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950"
               >
-                {isAuthenticated ? 'Gå til dashboard' : 'Kom i gang'}
+                Logg inn
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href={isAuthenticated ? '/dashboard/my-learning' : '/login'}
+                href="/signup"
                 className="inline-flex items-center justify-center rounded-full border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:text-gray-900 dark:border-gray-700 dark:text-gray-200 dark:hover:border-gray-500"
               >
-                {isAuthenticated ? 'Se læringsløp' : 'Logg inn'}
+                Registrer deg
               </Link>
             </div>
           </div>
@@ -145,20 +134,15 @@ export default async function HomePage() {
         <div className="mx-auto flex max-w-5xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <p>© {new Date().getFullYear()} Opplæringsportal. Alle rettigheter forbeholdt.</p>
           <div className="flex items-center gap-6">
-            {isAuthenticated ? (
-              <Link href="/dashboard" className="hover:text-gray-900 dark:hover:text-gray-200">
-                Gå til dashboard
-              </Link>
-            ) : (
-              <>
-                <Link href="/login" className="hover:text-gray-900 dark:hover:text-gray-200">
-                  Logg inn
-                </Link>
-                <Link href="/signup" className="hover:text-gray-900 dark:hover:text-gray-200">
-                  Opprett konto
-                </Link>
-              </>
-            )}
+            <Link
+              href={isAuthenticated ? '/dashboard' : '/login'}
+              className="hover:text-gray-900 dark:hover:text-gray-200"
+            >
+              Logg inn
+            </Link>
+            <Link href="/signup" className="hover:text-gray-900 dark:hover:text-gray-200">
+              Registrer deg
+            </Link>
           </div>
         </div>
       </footer>
