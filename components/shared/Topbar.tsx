@@ -111,7 +111,7 @@ export function Topbar({ user, className }: TopbarProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-900 px-4 py-4 transition-colors duration-200 lg:px-8',
+        'sticky top-0 z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-900 px-4 py-4 transition-colors duration-200 lg:px-8',
         className
       )}
     >

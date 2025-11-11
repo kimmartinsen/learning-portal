@@ -164,8 +164,8 @@ export default function DepartmentsPage() {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={resetForm} />
+        <div className="fixed inset-0 z-[80] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70" onClick={resetForm} />
           <Card className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-gray-900 dark:border-gray-700">
             <CardHeader>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
