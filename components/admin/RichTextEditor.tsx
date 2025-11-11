@@ -34,7 +34,6 @@ const FONT_SIZES = [
 
 export function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const [listStyle, setListStyle] = useState<'none' | 'disc' | 'decimal'>('none')
   const [fontSize, setFontSize] = useState('16px')
   const [imageControls, setImageControls] = useState<{
     visible: boolean
@@ -99,20 +98,6 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
   useEffect(() => {
     if (!editor) return
 
-    if (listStyle === 'none') {
-      editor.chain().focus().setParagraph().run()
-    } else if (listStyle === 'disc') {
-      editor.chain().focus().toggleBulletList().run()
-    } else if (listStyle === 'decimal') {
-      editor.chain().focus().toggleOrderedList().run()
-    } else if (listStyle === 'lower-alpha') {
-      editor.chain().focus().toggleOrderedList().run()
-    }
-  }, [editor, listStyle])
-
-  useEffect(() => {
-    if (!editor) return
-
     const updateStates = () => {
       const attrs = editor.getAttributes('textStyle')
       if (attrs?.fontSize) {
@@ -134,7 +119,6 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           width: Number.isNaN(widthValue) ? 80 : widthValue,
           float
         })
-      editor.chain().focus().updateAttributes('bulletList', { style: 'list-style-type: disc;' }).run()
       } else {
         setImageControls((prev) => ({ ...prev, visible: false }))
       }
@@ -249,22 +233,24 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={cn(TOOLBAR_BUTTON, editor.isActive('bulletList') && 'bg-gray-200 dark:bg-gray-800')}
-          aria-label="Punktliste"
-        >
-          <List className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={cn(TOOLBAR_BUTTON, editor.isActive('orderedList') && 'bg-gray-200 dark:bg-gray-800')}
-          aria-label="Nummerert liste"
-        >
-          <ListOrdered className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            className={cn(TOOLBAR_BUTTON, editor.isActive('bulletList') && 'bg-gray-200 dark:bg-gray-800')}
+            aria-label="Punktliste"
+          >
+            <List className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            className={cn(TOOLBAR_BUTTON, editor.isActive('orderedList') && 'bg-gray-200 dark:bg-gray-800')}
+            aria-label="Nummerert liste"
+          >
+            <ListOrdered className="h-4 w-4" />
+          </button>
+        </div>
 
         <label className="flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 focus-within:ring-2 focus-within:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
           <Type className="h-4 w-4" />
@@ -283,7 +269,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           onChange={(event) => {
             const size = event.target.value
             setFontSize(size)
-            editor.commands.setMark('textStyle', { fontSize: size })
+            editor.chain().focus().setMark('textStyle', { fontSize: size }).run()
           }}
         >
           {FONT_SIZES.map((size) => (
