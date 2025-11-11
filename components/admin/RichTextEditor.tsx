@@ -85,8 +85,8 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       image_title: false,
       plugins: 'advlist autolink lists link image table code autoresize',
       toolbar:
-        'undo redo | fontsizeselect | bold italic underline forecolor backcolor removeformat | alignleft aligncenter alignright | bullist numlist outdent indent | link image table | code',
-      fontsize_formats: '12px 14px 16px 18px 20px 22px 24px 28px 32px 36px',
+        'undo redo | styleselect fontsizeselect | bold italic underline forecolor backcolor removeformat | alignleft aligncenter alignright | bullist numlist outdent indent | link image table | code',
+      fontsize_formats: '10px 12px 14px 16px 18px 20px 24px 28px 32px 36px 48px 60px',
       setup: (editor: TinyMCEInstance) => {
         editor.on('init', () => {
           const body = editor.getBody()
