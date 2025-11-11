@@ -316,7 +316,7 @@ export default function ModuleViewer({
             {isContentSection && (
               <div className="space-y-6">
                 <div
-                  className="prose max-w-none break-words text-gray-900 dark:text-gray-100 prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal dark:prose-invert"
+                  className="content-html prose max-w-none break-words text-gray-900 dark:text-gray-100 prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal dark:prose-invert"
                   dangerouslySetInnerHTML={{ __html: content.text || '' }}
                 />
 
