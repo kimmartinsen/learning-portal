@@ -16,7 +16,6 @@ import 'tinymce/plugins/image'
 import 'tinymce/plugins/table'
 import 'tinymce/plugins/code'
 import 'tinymce/plugins/quickbars'
-import 'tinymce/plugins/paste'
 
 type RichTextEditorProps = {
   value: string
