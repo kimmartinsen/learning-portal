@@ -44,7 +44,7 @@ export default async function HomePage() {
             </Link>
             <div className="flex items-center gap-3">
               <Link
-                href={isAuthenticated ? '/dashboard' : '/login'}
+                href="/login"
                 className="rounded-full border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
               >
                 Logg inn
@@ -73,7 +73,7 @@ export default async function HomePage() {
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
-                href={isAuthenticated ? '/dashboard' : '/login'}
+                href="/login"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950"
               >
                 Logg inn
@@ -134,10 +134,7 @@ export default async function HomePage() {
         <div className="mx-auto flex max-w-5xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <p>© {new Date().getFullYear()} Opplæringsportal. Alle rettigheter forbeholdt.</p>
           <div className="flex items-center gap-6">
-            <Link
-              href={isAuthenticated ? '/dashboard' : '/login'}
-              className="hover:text-gray-900 dark:hover:text-gray-200"
-            >
+            <Link href="/login" className="hover:text-gray-900 dark:hover:text-gray-200">
               Logg inn
             </Link>
             <Link href="/signup" className="hover:text-gray-900 dark:hover:text-gray-200">
