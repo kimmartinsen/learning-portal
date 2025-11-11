@@ -101,20 +101,6 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           scope: 'node'
         })
       },
-      setup: (editor: TinyMCEInstance) => {
-        editor.on('init', () => {
-          const body = editor.getBody()
-          if (body) {
-            body.setAttribute('data-placeholder', placeholderText)
-          }
-        })
-        editor.ui.registry.addContextToolbar('image-tools', {
-          predicate: (node) => node.nodeName.toLowerCase() === 'img',
-          items: 'alignleft aligncenter alignright',
-          position: 'node',
-          scope: 'node'
-        })
-      },
       content_style: `
         :root { color-scheme: ${isDark ? 'dark' : 'light'}; }
         body {
