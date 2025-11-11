@@ -79,32 +79,26 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       automatic_uploads: true,
       images_upload_handler: imagesUploadHandler,
       images_file_types: 'jpeg,jpg,png,gif,webp',
-      image_caption: true,
+      image_caption: false,
       image_dimensions: true,
-      image_advtab: true,
-      image_title: true,
-      image_class_list: [
-        { title: 'Standard', value: '' },
-        { title: 'Flyt venstre', value: 'float-left' },
-        { title: 'Flyt høyre', value: 'float-right' },
-        { title: 'Sentrert', value: 'float-center' }
-      ],
+      image_advtab: false,
+      image_title: false,
       plugins: 'advlist autolink lists link image table code autoresize',
       toolbar:
-        'undo redo | formatselect fontsizeselect | bold italic underline forecolor backcolor removeformat | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image table | code',
+        'undo redo | fontsizeselect | bold italic underline forecolor backcolor removeformat | alignleft aligncenter alignright | bullist numlist outdent indent | link image table | code',
       fontsize_formats: '12px 14px 16px 18px 20px 22px 24px 28px 32px 36px',
-      style_formats: [
-        { title: 'Avsnitt', format: 'p' },
-        { title: 'Overskrift 2', format: 'h2' },
-        { title: 'Overskrift 3', format: 'h3' },
-        { title: 'Sitater', format: 'blockquote' }
-      ],
       setup: (editor: TinyMCEInstance) => {
         editor.on('init', () => {
           const body = editor.getBody()
           if (body) {
             body.setAttribute('data-placeholder', placeholderText)
           }
+        })
+        editor.ui.registry.addContextToolbar('image-tools', {
+          predicate: (node) => node.nodeName.toLowerCase() === 'img',
+          items: 'alignleft aligncenter alignright',
+          position: 'node',
+          scope: 'node'
         })
       },
       content_style: `
@@ -119,19 +113,18 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         img {
           max-width: 100%;
           height: auto;
-        }
-        .float-left {
-          float: left;
-          margin: 0 1rem 1rem 0;
-        }
-        .float-right {
-          float: right;
-          margin: 0 0 1rem 1rem;
-        }
-        .float-center {
           display: block;
           margin: 1rem auto;
-          text-align: center;
+        }
+        img[style*="float: left"],
+        img[data-mce-style*="float: left"] {
+          margin: 0 1rem 1rem 0 !important;
+          display: inline-block;
+        }
+        img[style*="float: right"],
+        img[data-mce-style*="float: right"] {
+          margin: 0 0 1rem 1rem !important;
+          display: inline-block;
         }
         body.mce-content-body:empty::before {
           content: '${placeholderText}';
