@@ -176,18 +176,18 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
         })
 
         if (allModulesCompleted) {
-          // Mark program as completed
+          // Mark program as completed in program_assignments
           await supabase
-            .from('user_programs')
+            .from('program_assignments')
             .update({ 
-              completed: true,
+              status: 'completed',
               completed_at: new Date().toISOString()
             })
-            .eq('user_id', userId)
+            .eq('assigned_to_user_id', userId)
             .eq('program_id', program.id)
           
           // Send completion notification
-          await supabase.from('notifications').insert({
+          const { error: notifError } = await supabase.from('notifications').insert({
             user_id: userId,
             type: 'course_completed',
             title: '🎉 Gratulerer!',
@@ -198,6 +198,10 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
               programId: program.id
             }
           })
+          
+          if (notifError) {
+            console.error('Error creating completion notification:', notifError)
+          }
           
           // Go back to overview when program is complete
           setCurrentModuleIndex(null)

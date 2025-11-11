@@ -45,19 +45,21 @@ export async function GET(request: Request) {
 
       // Get all assignments with deadlines matching this reminder date
       const { data: assignments, error } = await supabaseAdmin
-        .from('user_programs')
+        .from('program_assignments')
         .select(`
-          user_id,
+          assigned_to_user_id,
           program_id,
-          deadline,
-          completed,
-          programs!inner (
+          due_date,
+          status,
+          training_programs!inner (
             title
           )
         `)
-        .eq('completed', false)
-        .gte('deadline', dateStart.toISOString())
-        .lte('deadline', dateEnd.toISOString())
+        .neq('status', 'completed')
+        .neq('status', 'cancelled')
+        .gte('due_date', dateStart.toISOString())
+        .lte('due_date', dateEnd.toISOString())
+        .not('assigned_to_user_id', 'is', null)
 
       if (error) throw error
 
@@ -71,16 +73,16 @@ export async function GET(request: Request) {
         const urgencyLevel = daysRemaining <= 1 ? '🔴' : daysRemaining <= 3 ? '🟡' : '🔵'
         
         return {
-          user_id: assignment.user_id,
+          user_id: assignment.assigned_to_user_id,
           type: 'deadline_reminder',
           title: `${urgencyLevel} Frist nærmer seg`,
-          message: `Du har ${daysRemaining} dag${daysRemaining !== 1 ? 'er' : ''} igjen på "${assignment.programs.title}"`,
+          message: `Du har ${daysRemaining} dag${daysRemaining !== 1 ? 'er' : ''} igjen på "${assignment.training_programs.title}"`,
           link: `/programs/${assignment.program_id}`,
           read: false,
           metadata: {
             programId: assignment.program_id,
             daysRemaining,
-            deadline: assignment.deadline
+            deadline: assignment.due_date
           }
         }
       })
@@ -95,7 +97,7 @@ export async function GET(request: Request) {
       totalNotifications += notifications.length
 
       // Also check user preferences and send emails if enabled
-      const userIdsSet = new Set(assignments.map((a: any) => a.user_id))
+      const userIdsSet = new Set(assignments.map((a: any) => a.assigned_to_user_id))
       const userIds = Array.from(userIdsSet)
       
       const { data: preferences } = await supabaseAdmin
@@ -120,33 +122,36 @@ export async function GET(request: Request) {
 
     // Also check for overdue assignments
     const { data: overdueAssignments, error: overdueError } = await supabaseAdmin
-      .from('user_programs')
+      .from('program_assignments')
       .select(`
-        user_id,
+        assigned_to_user_id,
         program_id,
-        deadline,
-        completed,
-        programs!inner (
+        due_date,
+        status,
+        training_programs!inner (
           title
         )
       `)
-      .eq('completed', false)
-      .lt('deadline', today.toISOString())
+      .neq('status', 'completed')
+      .neq('status', 'cancelled')
+      .neq('status', 'overdue')
+      .lt('due_date', today.toISOString())
+      .not('assigned_to_user_id', 'is', null)
 
     if (overdueError) throw overdueError
 
     if (overdueAssignments && overdueAssignments.length > 0) {
       const overdueNotifications = overdueAssignments.map((assignment: any) => ({
-        user_id: assignment.user_id,
+        user_id: assignment.assigned_to_user_id,
         type: 'deadline_reminder',
         title: '🚨 Fristen har gått ut',
-        message: `Fristen for "${assignment.programs.title}" har gått ut. Fullfør kurset snarest.`,
+        message: `Fristen for "${assignment.training_programs.title}" har gått ut. Fullfør kurset snarest.`,
         link: `/programs/${assignment.program_id}`,
         read: false,
         metadata: {
           programId: assignment.program_id,
           overdue: true,
-          deadline: assignment.deadline
+          deadline: assignment.due_date
         }
       }))
 
