@@ -125,8 +125,8 @@ export async function GET(request: Request) {
       
       // Create instructor notifications
       const instructorNotifications = []
-      for (const [instructorId, programs] of instructorPrograms) {
-        for (const [programId, programAssignments] of programs) {
+      for (const [instructorId, programs] of Array.from(instructorPrograms.entries())) {
+        for (const [programId, programAssignments] of Array.from(programs.entries())) {
           const trainingProgram = Array.isArray(programAssignments[0].training_programs)
             ? programAssignments[0].training_programs[0]
             : programAssignments[0].training_programs
@@ -268,8 +268,8 @@ export async function GET(request: Request) {
       
       // Create instructor overdue notifications
       const instructorOverdueNotifications = []
-      for (const [instructorId, programs] of instructorOverduePrograms) {
-        for (const [programId, programAssignments] of programs) {
+      for (const [instructorId, programs] of Array.from(instructorOverduePrograms.entries())) {
+        for (const [programId, programAssignments] of Array.from(programs.entries())) {
           const trainingProgram = Array.isArray(programAssignments[0].training_programs)
             ? programAssignments[0].training_programs[0]
             : programAssignments[0].training_programs
