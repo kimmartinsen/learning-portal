@@ -113,18 +113,14 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         img {
           max-width: 100%;
           height: auto;
-          display: block;
-          margin: 1rem auto;
         }
         img[style*="float: left"],
         img[data-mce-style*="float: left"] {
           margin: 0 1rem 1rem 0 !important;
-          display: inline-block;
         }
         img[style*="float: right"],
         img[data-mce-style*="float: right"] {
           margin: 0 0 1rem 1rem !important;
-          display: inline-block;
         }
         body.mce-content-body:empty::before {
           content: '${placeholderText}';
