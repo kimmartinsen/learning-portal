@@ -82,6 +82,18 @@ export default function SignupPage() {
 
       if (profileError) throw profileError
 
+      // 4. Create notification preferences (in case trigger didn't work)
+      const { error: notifPrefError } = await supabase
+        .from('notification_preferences')
+        .insert([{
+          user_id: authData.user.id
+        }])
+      
+      // Don't throw error if preferences already exist (trigger might have created it)
+      if (notifPrefError && !notifPrefError.message?.includes('duplicate')) {
+        console.warn('Could not create notification preferences:', notifPrefError)
+      }
+
       toast.success('Konto opprettet! Sjekk e-posten din for bekreftelse.')
       router.push('/login?message=Sjekk e-posten din for å bekrefte kontoen')
       
