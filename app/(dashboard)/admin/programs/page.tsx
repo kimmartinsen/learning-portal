@@ -219,6 +219,8 @@ export default function AdminProgramsPage() {
         
         // Send notifications to all assigned users
         if (assignedUserIds.length > 0 && !editingProgram) {
+          console.log('Creating notifications for users:', assignedUserIds)
+          
           const notifications = assignedUserIds.map(userId => ({
             user_id: userId,
             type: 'assignment_created',
@@ -232,7 +234,22 @@ export default function AdminProgramsPage() {
             }
           }))
           
-          await supabase.from('notifications').insert(notifications)
+          console.log('Notification data:', notifications)
+          
+          const { data: notifData, error: notifError } = await supabase
+            .from('notifications')
+            .insert(notifications)
+            .select()
+          
+          if (notifError) {
+            console.error('Error creating notifications:', notifError)
+            toast.error('Kurset ble opprettet, men varsling feilet: ' + notifError.message)
+          } else {
+            console.log('Notifications created successfully:', notifData)
+            toast.success(`Varsling sendt til ${assignedUserIds.length} bruker(e)`)
+          }
+        } else {
+          console.log('No notifications sent. assignedUserIds:', assignedUserIds.length, 'editingProgram:', editingProgram)
         }
       }
 
