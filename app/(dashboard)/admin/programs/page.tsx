@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { EnhancedTrainingProgram, Theme, CreateThemeFormData } from '@/types/enhanced-database.types'
@@ -345,189 +346,183 @@ export default function AdminProgramsPage() {
       </div>
 
       {/* Theme Form Modal */}
-      {showThemeForm && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/70" onClick={resetThemeForm} />
-          <Card className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-gray-900 dark:border-gray-700">
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nytt tema</h3>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreateTheme} className="space-y-4">
-                <Input
-                  label="Temanavn"
-                  value={themeFormData.name}
-                  onChange={(e) => setThemeFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  required
-                  placeholder="F.eks. HMS og sikkerhet"
+      <Modal isOpen={showThemeForm} onClose={resetThemeForm}>
+        <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
+          <CardHeader>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nytt tema</h3>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateTheme} className="space-y-4">
+              <Input
+                label="Temanavn"
+                value={themeFormData.name}
+                onChange={(e) => setThemeFormData((prev) => ({ ...prev, name: e.target.value }))}
+                required
+                placeholder="F.eks. HMS og sikkerhet"
+              />
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Beskrivelse
+                </label>
+                <textarea
+                  value={themeFormData.description}
+                  onChange={(e) =>
+                    setThemeFormData((prev) => ({ ...prev, description: e.target.value }))
+                  }
+                  className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
+                  rows={3}
+                  placeholder="Valgfri beskrivelse av temaet"
                 />
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Beskrivelse
-                  </label>
-                  <textarea
-                    value={themeFormData.description}
-                    onChange={(e) =>
-                      setThemeFormData((prev) => ({ ...prev, description: e.target.value }))
-                    }
-                    className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
-                    rows={3}
-                    placeholder="Valgfri beskrivelse av temaet"
-                  />
-                </div>
-                <div className="flex space-x-3 pt-4">
-                  <Button type="submit" className="flex-1" loading={creatingTheme}>
-                    Opprett tema
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={resetThemeForm} disabled={creatingTheme}>
-                    Avbryt
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <Button type="submit" className="flex-1" loading={creatingTheme}>
+                  Opprett tema
+                </Button>
+                <Button type="button" variant="secondary" onClick={resetThemeForm} disabled={creatingTheme}>
+                  Avbryt
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </Modal>
 
       {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/70" onClick={resetForm} />
-          <Card className="relative z-10 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 dark:border-gray-700">
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {editingProgram ? 'Rediger kurs' : 'Nytt kurs'}
-              </h3>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <Input
-                  label="Kurstittel"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  required
-                  placeholder="F.eks. Sikkerhet på arbeidsplassen"
+      <Modal isOpen={showForm} onClose={resetForm}>
+        <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 dark:border-gray-700">
+          <CardHeader>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {editingProgram ? 'Rediger kurs' : 'Nytt kurs'}
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Kurstittel"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                required
+                placeholder="F.eks. Sikkerhet på arbeidsplassen"
+              />
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Beskrivelse
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
+                  rows={3}
+                  placeholder="Beskrivelse av kurset"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Tema
+                </label>
+                <select
+                  value={formData.themeId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, themeId: e.target.value }))}
+                  className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                >
+                  <option value="">Velg tema (valgfritt)</option>
+                  {themes.map(theme => (
+                    <option key={theme.id} value={theme.id}>
+                      {theme.name}
+                    </option>
+                  ))}
+                </select>
+                {themes.length === 0 && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <a href="/admin/themes" className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+                      Opprett temaer først
+                    </a> for å organisere kursene
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Instruktør
+                </label>
+                <select
+                  value={formData.instructorId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, instructorId: e.target.value }))}
+                  className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                >
+                  <option value="">Ingen instruktør</option>
+                  {instructors.map(instructor => (
+                    <option key={instructor.id} value={instructor.id}>
+                      {instructor.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <Input
+                label="Frist (antall dager)"
+                type="number"
+                min="1"
+                max="365"
+                value={formData.deadlineDays}
+                onChange={(e) => setFormData(prev => ({ ...prev, deadlineDays: parseInt(e.target.value) || 14 }))}
+                placeholder="14"
+                helper="Antall dager brukere har til å fullføre kurset"
+              />
+
+              <div>
+                <label className="flex items-center mb-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={formData.repetitionEnabled}
+                    onChange={(e) => setFormData(prev => ({ ...prev, repetitionEnabled: e.target.checked }))}
+                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="ml-2">Aktiver repetisjon</span>
+                </label>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Beskrivelse
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
-                    rows={3}
-                    placeholder="Beskrivelse av kurset"
+                {formData.repetitionEnabled && (
+                  <Input
+                    label="Repetisjon hver (måneder)"
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={formData.repetitionInterval}
+                    onChange={(e) => setFormData(prev => ({ ...prev, repetitionInterval: parseInt(e.target.value) }))}
                   />
-                </div>
+                )}
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Tema
-                  </label>
-                  <select
-                    value={formData.themeId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, themeId: e.target.value }))}
-                    className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-                  >
-                    <option value="">Velg tema (valgfritt)</option>
-                    {themes.map(theme => (
-                      <option key={theme.id} value={theme.id}>
-                        {theme.name}
-                      </option>
-                    ))}
-                  </select>
-                  {themes.length === 0 && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      <a href="/admin/themes" className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
-                        Opprett temaer først
-                      </a> for å organisere kursene
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Instruktør
-                  </label>
-                  <select
-                    value={formData.instructorId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, instructorId: e.target.value }))}
-                    className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-                  >
-                    <option value="">Ingen instruktør</option>
-                    {instructors.map(instructor => (
-                      <option key={instructor.id} value={instructor.id}>
-                        {instructor.full_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <Input
-                  label="Frist (antall dager)"
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={formData.deadlineDays}
-                  onChange={(e) => setFormData(prev => ({ ...prev, deadlineDays: parseInt(e.target.value) || 14 }))}
-                  placeholder="14"
-                  helper="Antall dager brukere har til å fullføre kurset"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tildel kurs til
+                </label>
+                <AssignmentSelector
+                  companyId={user?.company_id || ''}
+                  onSelectionChange={(selection) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      assignment: selection
+                    }))
+                  }}
+                  initialSelection={formData.assignment}
                 />
+              </div>
 
-                <div>
-                  <label className="flex items-center mb-2 text-sm text-gray-700 dark:text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={formData.repetitionEnabled}
-                      onChange={(e) => setFormData(prev => ({ ...prev, repetitionEnabled: e.target.checked }))}
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                    />
-                    <span className="ml-2">Aktiver repetisjon</span>
-                  </label>
-                  
-                  {formData.repetitionEnabled && (
-                    <Input
-                      label="Repetisjon hver (måneder)"
-                      type="number"
-                      min="1"
-                      max="60"
-                      value={formData.repetitionInterval}
-                      onChange={(e) => setFormData(prev => ({ ...prev, repetitionInterval: parseInt(e.target.value) }))}
-                    />
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tildel kurs til
-                  </label>
-                  <AssignmentSelector
-                    companyId={user?.company_id || ''}
-                    onSelectionChange={(selection) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        assignment: selection
-                      }))
-                    }}
-                    initialSelection={formData.assignment}
-                  />
-                </div>
-
-                <div className="flex space-x-3 pt-4">
-                  <Button type="submit" className="flex-1">
-                    {editingProgram ? 'Oppdater kurs' : 'Opprett kurs'}
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={resetForm}>
-                    Avbryt
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              <div className="flex space-x-3 pt-4">
+                <Button type="submit" className="flex-1">
+                  {editingProgram ? 'Oppdater kurs' : 'Opprett kurs'}
+                </Button>
+                <Button type="button" variant="secondary" onClick={resetForm}>
+                  Avbryt
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </Modal>
 
       {/* Programs List - Grouped by Theme */}
       <div className="space-y-4">

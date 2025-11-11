@@ -5,6 +5,7 @@ import { Edit2, Trash2, AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronR
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Theme, CreateThemeFormData } from '@/types/enhanced-database.types'
@@ -556,51 +557,48 @@ export default function ThemesPage() {
       </div>
 
       {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/70" onClick={resetForm} />
-          <Card className="relative z-10 w-full max-w-md mx-4 bg-white dark:bg-gray-900 dark:border-gray-700">
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {editingTheme ? 'Rediger tema' : 'Nytt tema'}
-              </h3>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <Input
-                  label="Temanavn"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  required
-                  placeholder="F.eks. HMS og Sikkerhet"
+      <Modal isOpen={showForm} onClose={resetForm}>
+        <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
+          <CardHeader>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {editingTheme ? 'Rediger tema' : 'Nytt tema'}
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Temanavn"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                required
+                placeholder="F.eks. HMS og Sikkerhet"
+              />
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Beskrivelse
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
+                  rows={3}
+                  placeholder="Valgfri beskrivelse av temaet"
                 />
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Beskrivelse
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className="block w-full rounded-lg border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
-                    rows={3}
-                    placeholder="Valgfri beskrivelse av temaet"
-                  />
-                </div>
+              </div>
 
-                <div className="flex space-x-3 pt-4">
-                  <Button type="submit" className="flex-1">
-                    {editingTheme ? 'Oppdater' : 'Opprett'}
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={resetForm}>
-                    Avbryt
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              <div className="flex space-x-3 pt-4">
+                <Button type="submit" className="flex-1">
+                  {editingTheme ? 'Oppdater' : 'Opprett'}
+                </Button>
+                <Button type="button" variant="secondary" onClick={resetForm}>
+                  Avbryt
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </Modal>
 
       {/* Themes List */}
       <div className="grid gap-4">

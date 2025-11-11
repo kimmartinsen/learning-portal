@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2, Users, Mail, UserCheck } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { generateInitials } from '@/lib/utils'
@@ -276,91 +277,88 @@ export default function UsersPage() {
       </div>
 
       {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/70" onClick={resetForm} />
-          <Card className="relative z-10 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 dark:border-gray-700">
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {editingProfile ? 'Rediger bruker' : 'Ny bruker'}
-              </h3>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+      <Modal isOpen={showForm} onClose={resetForm}>
+        <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
+          <CardHeader>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {editingProfile ? 'Rediger bruker' : 'Ny bruker'}
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="E-post"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                required
+                disabled={!!editingProfile}
+                placeholder="bruker@bedrift.no"
+              />
+
+              <Input
+                label="Fullt navn"
+                value={formData.fullName}
+                onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                required
+                placeholder="Ola Nordmann"
+              />
+
+              {!editingProfile && (
                 <Input
-                  label="E-post"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  label="Passord"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                   required
-                  disabled={!!editingProfile}
-                  placeholder="bruker@bedrift.no"
+                  placeholder="Minst 6 tegn"
                 />
+              )}
 
-                <Input
-                  label="Fullt navn"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Rolle
+                </label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as any }))}
+                  className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                   required
-                  placeholder="Ola Nordmann"
-                />
+                >
+                  <option value="user">Bruker</option>
+                  <option value="instructor">Instruktør</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
 
-                {!editingProfile && (
-                  <Input
-                    label="Passord"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    required
-                    placeholder="Minst 6 tegn"
-                  />
-                )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Avdeling
+                </label>
+                <select
+                  value={formData.departmentId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, departmentId: e.target.value }))}
+                  className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                >
+                  <option value="">Ingen avdeling</option>
+                  {departments.map(dept => (
+                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                  ))}
+                </select>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Rolle
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as any }))}
-                    className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-                    required
-                  >
-                    <option value="user">Bruker</option>
-                    <option value="instructor">Instruktør</option>
-                    <option value="admin">Administrator</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Avdeling
-                  </label>
-                  <select
-                    value={formData.departmentId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, departmentId: e.target.value }))}
-                    className="block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-                  >
-                    <option value="">Ingen avdeling</option>
-                    {departments.map(dept => (
-                      <option key={dept.id} value={dept.id}>{dept.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex space-x-3 pt-4">
-                  <Button type="submit" className="flex-1">
-                    {editingProfile ? 'Oppdater' : 'Opprett'}
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={resetForm}>
-                    Avbryt
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              <div className="flex space-x-3 pt-4">
+                <Button type="submit" className="flex-1">
+                  {editingProfile ? 'Oppdater' : 'Opprett'}
+                </Button>
+                <Button type="button" variant="secondary" onClick={resetForm}>
+                  Avbryt
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </Modal>
 
       {/* Users List */}
       <div className="grid gap-4">
