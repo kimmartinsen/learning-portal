@@ -34,8 +34,7 @@ export default async function DashboardPage() {
   }
 
   if (profile.role === 'admin') {
-    // Midlertidig: gå direkte til programmer til en dedikert admin-landing er klar i prod
-    redirect('/dashboard/admin/programs')
+    redirect('/dashboard/admin')
   }
 
   if (profile.role === 'instructor') {
