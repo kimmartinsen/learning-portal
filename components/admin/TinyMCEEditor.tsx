@@ -1,9 +1,8 @@
 'use client'
 
 import { Editor } from '@tinymce/tinymce-react'
-import type { EditorProps } from '@tinymce/tinymce-react'
 
-export default function TinyMCEEditor(props: EditorProps) {
+export default function TinyMCEEditor(props: any) {
   return <Editor {...props} />
 }
 
