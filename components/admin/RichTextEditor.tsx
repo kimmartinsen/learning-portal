@@ -134,6 +134,8 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     [imagesUploadHandler, isDark, placeholderText]
   )
 
+  const themeKey = isDark ? 'dark' : 'light'
+
   return (
     <div
       className={cn(
@@ -142,6 +144,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       )}
     >
       <TinyEditor
+        key={themeKey}
         apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY || 'no-api-key'}
         value={value}
         init={editorInit}
