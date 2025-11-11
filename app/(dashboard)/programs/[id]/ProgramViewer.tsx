@@ -257,15 +257,15 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
   const deadline = formatDeadline(program.deadline)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200 dark:bg-gray-900/80 dark:border-gray-800">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center space-x-4 mb-4">
             <Button
               variant="ghost"
               onClick={() => router.push('/my-learning')}
-              className="text-gray-600"
+              className="text-gray-600 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Mine opplæringer
@@ -275,10 +275,11 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                 {program.title}
               </h1>
               
-              <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
+              <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-300 mb-4">
                 {program.is_mandatory && (
                   <span className="inline-flex px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
                     Obligatorisk
@@ -303,27 +304,27 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
               </div>
 
               {program.description && (
-                <p className="text-gray-600 mb-4">{program.description}</p>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">{program.description}</p>
               )}
 
               {/* Progress Bar */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     Fremdrift
                   </span>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
                     {completedModules} av {totalModules} moduler fullført
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-3">
                   <div
                     className="bg-gradient-to-r from-primary-500 to-primary-600 h-3 rounded-full transition-all duration-500"
                     style={{ width: `${overallProgress}%` }}
                   />
                 </div>
                 <div className="text-right mt-1">
-                  <span className="text-lg font-semibold text-primary-600">
+                  <span className="text-lg font-semibold text-primary-600 dark:text-primary-400">
                     {Math.round(overallProgress)}% fullført
                   </span>
                 </div>
@@ -338,18 +339,21 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Continue Button */}
         {getNextModule() !== null && (
-          <Card className="mb-6 bg-primary-50 border-primary-200">
+          <Card className="mb-6 bg-primary-50 border-primary-200 dark:bg-primary-950/30 dark:border-primary-900/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-primary-900 mb-1">
+                  <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-100 mb-1">
                     Fortsett der du slapp
                   </h3>
-                  <p className="text-primary-700">
+                  <p className="text-primary-700 dark:text-primary-300">
                     Neste: {sortedModules[getNextModule()!].title}
                   </p>
                 </div>
-                <Button onClick={handleContinue} className="bg-primary-600 hover:bg-primary-700">
+                <Button
+                  onClick={handleContinue}
+                  className="bg-primary-600 hover:bg-primary-700 text-white dark:bg-primary-500 dark:hover:bg-primary-400"
+                >
                   Fortsett
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -359,12 +363,12 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
         )}
 
         {/* Modules List */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-900/80 dark:border-gray-800">
           <CardHeader>
-            <h2 className="text-lg font-semibold text-gray-900">📚 Innhold</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">📚 Innhold</h2>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-gray-200 dark:divide-gray-800">
               {sortedModules.map((module, index) => {
                 const status = getModuleStatus(module, index)
                 const progress = progressMap.get(module.id)
@@ -375,7 +379,7 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
                     key={module.id}
                     className={`p-6 transition-colors ${
                       isClickable 
-                        ? 'hover:bg-gray-50 cursor-pointer' 
+                        ? 'hover:bg-gray-50 dark:hover:bg-gray-800/70 cursor-pointer' 
                         : 'cursor-not-allowed opacity-60'
                     }`}
                     onClick={() => isClickable && handleModuleClick(index)}
@@ -387,26 +391,26 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-3 mb-1">
-                          <h3 className="text-base font-medium text-gray-900 truncate">
+                          <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 truncate">
                             {index + 1}. {module.title}
                           </h3>
                           
                           {status === 'completed' && (
-                            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full dark:bg-green-500/20 dark:text-green-200">
                               Fullført
                             </span>
                           )}
                           
                           {status === 'in_progress' && (
-                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full dark:bg-blue-500/20 dark:text-blue-200">
                               Påbegynt
                             </span>
                           )}
                         </div>
                         
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                        <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-300">
                           {/* Type label */}
-                          <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-gray-100 px-2 py-1 rounded-full dark:bg-gray-700 dark:text-gray-200">
                             {module.type === 'content_section' ? 'Opplæringsdel' :
                              module.type === 'question' ? 'Spørsmål' :
                              module.type === 'video_section' ? 'Video' :
@@ -421,14 +425,14 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
                           )}
                           
                           {module.is_final_quiz && (
-                            <span className="text-yellow-600 font-medium">
+                            <span className="text-yellow-600 font-medium dark:text-yellow-300">
                               {module.content?.passingScore || 80}% krav
                             </span>
                           )}
                         </div>
                         
                         {progress?.completed_at && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             Fullført: {new Date(progress.completed_at).toLocaleDateString('no-NO')}
                           </p>
                         )}
@@ -436,7 +440,7 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
 
                       <div className="flex-shrink-0">
                         {isClickable && (
-                          <ChevronRight className="w-5 h-5 text-gray-400" />
+                          <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                         )}
                       </div>
                     </div>
@@ -449,17 +453,17 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
 
         {/* Program Stats */}
         {completedModules === totalModules && (
-          <Card className="mt-6 bg-green-50 border-green-200">
+          <Card className="mt-6 bg-green-50 border-green-200 dark:bg-green-950/40 dark:border-green-800/60">
             <CardContent className="p-6 text-center">
               <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center dark:bg-green-500/20">
+                  <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-300" />
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-green-900 mb-2">
+              <h3 className="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">
                 🎉 Gratulerer!
               </h3>
-              <p className="text-green-800 mb-4">
+              <p className="text-green-800 dark:text-green-300 mb-4">
                 Du har fullført alle moduler i dette programmet.
               </p>
             </CardContent>
