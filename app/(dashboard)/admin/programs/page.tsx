@@ -178,6 +178,8 @@ export default function AdminProgramsPage() {
 
       // Create assignments
       if (formData.assignment.departmentIds.length > 0 || formData.assignment.userIds.length > 0) {
+        let assignedUserIds: string[] = []
+        
         if (formData.assignment.type === 'department') {
           // Department assignments
           for (const departmentId of formData.assignment.departmentIds) {
@@ -189,6 +191,16 @@ export default function AdminProgramsPage() {
             })
             
             if (funcError) throw funcError
+            
+            // Get users in this department
+            const { data: deptUsers } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('department_id', departmentId)
+            
+            if (deptUsers) {
+              assignedUserIds.push(...deptUsers.map(u => u.id))
+            }
           }
         } else {
           // Individual assignments
@@ -201,7 +213,26 @@ export default function AdminProgramsPage() {
             })
             
             if (funcError) throw funcError
+            assignedUserIds.push(userId)
           }
+        }
+        
+        // Send notifications to all assigned users
+        if (assignedUserIds.length > 0 && !editingProgram) {
+          const notifications = assignedUserIds.map(userId => ({
+            user_id: userId,
+            type: 'assignment_created',
+            title: '📚 Nytt kurs tildelt',
+            message: `Du har fått tildelt "${formData.title}". Frist: ${formData.deadlineDays} dager`,
+            link: `/programs/${programId}`,
+            read: false,
+            metadata: {
+              programId,
+              deadlineDays: formData.deadlineDays
+            }
+          }))
+          
+          await supabase.from('notifications').insert(notifications)
         }
       }
 

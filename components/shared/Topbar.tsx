@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, Search, LogOut, Sun, Moon } from 'lucide-react'
+import { Search, LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -10,15 +10,8 @@ import { generateInitials } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { cn } from '@/lib/utils'
-
-interface Notification {
-  id: string
-  title: string
-  message: string | null
-  read: boolean
-  created_at: string
-  link: string | null
-}
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
 
 interface User {
   id: string
@@ -34,69 +27,6 @@ interface TopbarProps {
 
 export function Topbar({ user, className }: TopbarProps) {
   const router = useRouter()
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
-  const { theme, toggleTheme } = useTheme()
-
-  useEffect(() => {
-    if (user) {
-      fetchNotifications()
-    }
-  }, [user])
-
-  const fetchNotifications = async () => {
-    if (!user) return
-
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      if (error) throw error
-
-      setNotifications(data || [])
-      setUnreadCount(data?.filter(n => !n.read).length || 0)
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
-    }
-  }
-
-  const markAsRead = async (notificationId: string) => {
-    try {
-      await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notificationId)
-
-      setNotifications(prev => 
-        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-      )
-      setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch (error) {
-      console.error('Error marking notification as read:', error)
-    }
-  }
-
-  const markAllAsRead = async () => {
-    try {
-      await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('user_id', user?.id)
-        .eq('read', false)
-
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, read: true }))
-      )
-      setUnreadCount(0)
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error)
-    }
-  }
 
   const handleSignOut = async () => {
     try {
@@ -139,79 +69,10 @@ export function Topbar({ user, className }: TopbarProps) {
 
         {/* Right side */}
         <div className="flex items-center space-x-3 md:space-x-4">
-          <Button variant="ghost" size="sm" onClick={toggleTheme} className="p-2">
-            {theme === 'dark' ? (
-              <Sun className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
-          </Button>
+          <ThemeToggle />
 
           {/* Notifications */}
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative"
-            >
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </Button>
-
-            {/* Notification dropdown */}
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg z-50">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Varsler</h3>
-                  {unreadCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={markAllAsRead}
-                      className="text-xs"
-                    >
-                      Merk alle som lest
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.length > 0 ? (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer ${
-                          !notification.read ? 'bg-primary-50 dark:bg-primary-900/40' : ''
-                        }`}
-                        onClick={() => !notification.read && markAsRead(notification.id)}
-                      >
-                        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {notification.title}
-                        </h4>
-                        {notification.message && (
-                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                            {notification.message}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                          {new Date(notification.created_at).toLocaleDateString('no-NO')}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                      Ingen varsler
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          {user && <NotificationDropdown userId={user.id} />}
 
           {/* User info & logout */}
           <div className="flex items-center space-x-3">

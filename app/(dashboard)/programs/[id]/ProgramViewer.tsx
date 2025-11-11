@@ -176,6 +176,29 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
         })
 
         if (allModulesCompleted) {
+          // Mark program as completed
+          await supabase
+            .from('user_programs')
+            .update({ 
+              completed: true,
+              completed_at: new Date().toISOString()
+            })
+            .eq('user_id', userId)
+            .eq('program_id', program.id)
+          
+          // Send completion notification
+          await supabase.from('notifications').insert({
+            user_id: userId,
+            type: 'course_completed',
+            title: '🎉 Gratulerer!',
+            message: `Du har fullført "${program.title}"`,
+            link: `/programs/${program.id}`,
+            read: false,
+            metadata: {
+              programId: program.id
+            }
+          })
+          
           // Go back to overview when program is complete
           setCurrentModuleIndex(null)
           toast.success('🎉 Alle deler fullført!')

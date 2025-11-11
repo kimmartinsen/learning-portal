@@ -17,12 +17,16 @@ Opprett en `.env.local` fil i rotmappen med følgende innhold:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# For notifikasjonssystem (cron-job sikkerhet)
+CRON_SECRET=your_random_secret_string
 ```
 
 **⚠️ VIKTIG SIKKERHET:**
 - Aldri commit `.env.local` til git
 - Roter nøkler umiddelbart hvis de eksponeres
 - Bruk environment-spesifikke nøkler for dev/staging/prod
+- Generer `CRON_SECRET` med: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
 ### 3. Sett opp database
 
@@ -325,12 +329,18 @@ npm run dev
 - ✅ Accessibility (ARIA-labels, keyboard navigation)
 - ✅ Optimaliserte database queries
 - ✅ Loading states og skeletons
+- ✅ **Notifikasjonssystem** (real-time, browser-varsler, automatiske påminnelser)
+  - 📚 Kurstildeling
+  - ⏰ Fristpåminnelser (7, 3, 1 dag)
+  - 🎉 Fullført kurs
+  - 📢 Systemkunngjøringer
+  - 🔔 Browser push-notifikasjoner
+  - ⚙️ Brukerinnstillinger
 
 ### 🚧 Under utvikling
 - 🚧 Badge-system
 - 🚧 Rapporter og eksport
-- 🚧 E-postvarsling
-- 🚧 Automatiske påminnelser
+- 🚧 E-postvarsling (notifikasjoner)
 
 ### 📋 Planlagt
 - 📋 Instructor-dashboard med statistikk
@@ -347,6 +357,12 @@ npm run dev
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY` (for server-side operasjoner)
+   - `CRON_SECRET` (for automatiske påminnelser)
+
+4. Sett opp notifikasjonssystemet:
+   - Se [Notifikasjoner - Hurtigstart](./docs/NOTIFICATIONS_SETUP.md) for detaljert guide
+   - Kjør database migration: `database/migrations/notifications.sql`
+   - Cron-jobben for påminnelser kjører automatisk i Vercel
 
 ## 🔧 Teknisk stack
 
@@ -354,9 +370,17 @@ npm run dev
 - **Styling**: Tailwind CSS
 - **Database**: Supabase (PostgreSQL)
 - **Autentisering**: Supabase Auth
+- **Real-time**: Supabase Realtime (for notifikasjoner)
 - **Icons**: Lucide React
-- **Notifications**: Sonner
+- **Notifications**: Sonner (toast), Web Notifications API (browser)
+- **Rich Text**: TinyMCE
 - **Forms**: React Hook Form + Zod
+- **Cron Jobs**: Vercel Cron
+
+## 📚 Dokumentasjon
+
+- [Notifikasjonssystem - Full dokumentasjon](./docs/NOTIFICATIONS.md)
+- [Notifikasjonssystem - Hurtigstart](./docs/NOTIFICATIONS_SETUP.md)
 
 ## 📄 Lisens
 
