@@ -376,7 +376,7 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
         <div className="max-w-3xl mx-auto px-6 py-16 text-center space-y-6">
           <h1 className="text-2xl font-semibold text-gray-900">Noe gikk galt</h1>
           <p className="text-gray-600">{error || 'Fant ikke temaet du ser etter.'}</p>
-          <Button onClick={() => router.push('/dashboard/admin/themes')}>
+          <Button onClick={() => router.push('/admin/themes')}>
             Tilbake til temaer
           </Button>
         </div>
@@ -391,7 +391,7 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
           <div className="flex items-center space-x-3">
             <Button
               variant="ghost"
-              onClick={() => router.push('/dashboard/admin/themes')}
+              onClick={() => router.push('/admin/themes')}
               className="text-gray-600"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -405,7 +405,7 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
             </div>
           </div>
           <div className="flex space-x-2">
-            <Link href="/dashboard/admin/reports">
+            <Link href="/admin/reports">
               <Button variant="secondary">Rapporter</Button>
             </Link>
           </div>
@@ -462,7 +462,7 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
             {programs.length === 0 ? (
               <div className="text-center text-gray-600">
                 <p>Ingen kurs er knyttet til dette temaet ennå.</p>
-                <Link href="/dashboard/admin/programs">
+                <Link href="/admin/programs">
                   <Button className="mt-4">
                     Opprett kurs i temaet
                   </Button>

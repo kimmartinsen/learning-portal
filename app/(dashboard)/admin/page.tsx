@@ -25,27 +25,27 @@ export default async function AdminOverviewPage() {
     {
       title: 'Programmer',
       description: 'Opprett og administrer opplæringsprogrammer og temaer.',
-      href: '/dashboard/admin/programs',
+      href: '/admin/programs',
     },
     {
       title: 'Temaoversikt',
       description: 'Følg progresjon og status for temaer i bedriften.',
-      href: '/dashboard/admin/themes',
+      href: '/admin/themes',
     },
     {
       title: 'Brukere',
       description: 'Administrer ansatte, instruktører og tilganger.',
-      href: '/dashboard/admin/users',
+      href: '/admin/users',
     },
     {
       title: 'Avdelinger',
       description: 'Organiser team og avdelinger for rask tildeling.',
-      href: '/dashboard/admin/departments',
+      href: '/admin/departments',
     },
     {
       title: 'Rapporter',
       description: 'Se nøkkeltall og hent ut dokumentasjon.',
-      href: '/dashboard/admin/reports',
+      href: '/admin/reports',
     },
   ]
 
