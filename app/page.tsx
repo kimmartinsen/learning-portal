@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, ShieldCheck, Users, Layers } from 'lucide-react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
 
 const features = [
   {
@@ -43,6 +44,7 @@ export default async function HomePage() {
               Opplæringsportal
             </Link>
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <Link
                 href="/login"
                 className="rounded-full border border-transparent bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
