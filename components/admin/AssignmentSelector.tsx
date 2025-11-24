@@ -64,9 +64,20 @@ export function AssignmentSelector({
 
   useEffect(() => {
     if (initialSelection) {
-      setAssignmentType(initialSelection.type)
-      setSelectedDepartments(initialSelection.departmentIds || [])
-      setSelectedUsers(initialSelection.userIds || [])
+      // Check if anything actually changed to prevent infinite loops
+      const typeChanged = initialSelection.type !== assignmentType
+      
+      const currentDepts = [...selectedDepartments].sort()
+      const newDepts = [...(initialSelection.departmentIds || [])].sort()
+      const deptsChanged = JSON.stringify(currentDepts) !== JSON.stringify(newDepts)
+
+      const currentUsers = [...selectedUsers].sort()
+      const newUsers = [...(initialSelection.userIds || [])].sort()
+      const usersChanged = JSON.stringify(currentUsers) !== JSON.stringify(newUsers)
+
+      if (typeChanged) setAssignmentType(initialSelection.type)
+      if (deptsChanged) setSelectedDepartments(initialSelection.departmentIds || [])
+      if (usersChanged) setSelectedUsers(initialSelection.userIds || [])
     }
   }, [initialSelection])
 
