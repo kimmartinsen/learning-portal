@@ -18,9 +18,12 @@ interface Profile {
   avatar_url: string | null
   created_at: string
   department_id: string | null
-  departments?: {
-    name: string
-  } | null
+  user_departments?: {
+    departments: {
+      id: string
+      name: string
+    }
+  }[]
 }
 
 interface Department {
@@ -74,20 +77,42 @@ export default function UsersPage() {
 
       setUser(profile)
 
-      // Fetch all profiles for the user's company
-      const { data: profilesData, error } = await supabase
+      // Fetch profiles first (without joining departments to avoid ambiguity error)
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          departments (
-            name
-          )
-        `)
+        .select('*')
         .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setProfiles(profilesData || [])
+      if (profilesError) throw profilesError
+
+      // Then fetch user_departments separately
+      const { data: userDepartmentsData, error: udError } = await supabase
+        .from('user_departments')
+        .select(`
+          user_id,
+          departments (
+            id,
+            name
+          )
+        `)
+        .in('user_id', profilesData.map(p => p.id))
+
+      if (udError) throw udError
+
+      // Combine the data
+      const combinedProfiles = profilesData.map(p => {
+        const userDepts = userDepartmentsData
+          .filter(ud => ud.user_id === p.id)
+          .map(ud => ({ departments: ud.departments }))
+        
+        return {
+          ...p,
+          user_departments: userDepts
+        }
+      })
+
+      setProfiles(combinedProfiles)
     } catch (error: any) {
       toast.error('Kunne ikke hente brukere: ' + error.message)
     } finally {
@@ -138,6 +163,26 @@ export default function UsersPage() {
           .eq('id', editingProfile.id)
 
         if (error) throw error
+
+        // Update user_departments relationship
+        // First, delete existing department associations
+        await supabase
+          .from('user_departments')
+          .delete()
+          .eq('user_id', editingProfile.id)
+
+        // Then add new department if one is selected
+        if (formData.departmentId) {
+          const { error: deptError } = await supabase
+            .from('user_departments')
+            .insert({
+              user_id: editingProfile.id,
+              department_id: formData.departmentId,
+            })
+          
+          if (deptError) throw deptError
+        }
+
         toast.success('Bruker oppdatert!')
       } else {
         // Create new user via auth
@@ -177,6 +222,18 @@ export default function UsersPage() {
             }])
 
           if (profileError) throw profileError
+
+          // Add to user_departments if department is selected
+          if (formData.departmentId) {
+            const { error: deptError } = await supabase
+              .from('user_departments')
+              .insert({
+                user_id: signupData.user.id,
+                department_id: formData.departmentId,
+              })
+            
+            if (deptError) throw deptError
+          }
         } else {
           // Create profile for admin-created user
           const { error: profileError } = await supabase
@@ -191,6 +248,18 @@ export default function UsersPage() {
             }])
 
           if (profileError) throw profileError
+
+          // Add to user_departments if department is selected
+          if (formData.departmentId) {
+            const { error: deptError } = await supabase
+              .from('user_departments')
+              .insert({
+                user_id: authData.user.id,
+                department_id: formData.departmentId,
+              })
+            
+            if (deptError) throw deptError
+          }
         }
 
         toast.success('Bruker opprettet!')
@@ -207,11 +276,13 @@ export default function UsersPage() {
 
   const handleEdit = (profile: Profile) => {
     setEditingProfile(profile)
+    // Get first department from user_departments (for simplicity, UI only supports one)
+    const firstDepartment = profile.user_departments?.[0]?.departments?.id || ''
     setFormData({
       email: profile.email,
       fullName: profile.full_name,
       role: profile.role as 'admin' | 'instructor' | 'user',
-      departmentId: profile.department_id || '',
+      departmentId: firstDepartment,
       password: '',
     })
     setShowForm(true)
@@ -392,14 +463,18 @@ export default function UsersPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs font-medium">
+                  <div className="flex items-center gap-2 text-xs font-medium flex-wrap">
                     <span className={`inline-flex items-center rounded-full px-2 py-1 ${getRoleColor(profile.role)}`}>
                       {getRoleText(profile.role)}
                     </span>
-                    {profile.departments && (
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                        {profile.departments.name}
-                      </span>
+                    {profile.user_departments && profile.user_departments.length > 0 && (
+                      <>
+                        {profile.user_departments.map((ud) => (
+                          <span key={ud.departments.id} className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                            {ud.departments.name}
+                          </span>
+                        ))}
+                      </>
                     )}
                   </div>
 

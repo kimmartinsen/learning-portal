@@ -71,6 +71,7 @@ export function AssignmentSelector({
 
   const fetchData = async () => {
     try {
+      // Fetch profiles without department join first
       const [departmentsResponse, usersResponse] = await Promise.all([
         supabase
           .from('departments')
@@ -79,15 +80,7 @@ export function AssignmentSelector({
           .order('name'),
         supabase
           .from('profiles')
-          .select(`
-            id, 
-            full_name, 
-            email,
-            user_departments(
-              department_id,
-              departments(name)
-            )
-          `)
+          .select('id, full_name, email')
           .eq('company_id', companyId)
           .order('full_name')
       ])
@@ -95,16 +88,43 @@ export function AssignmentSelector({
       if (departmentsResponse.error) throw departmentsResponse.error
       if (usersResponse.error) throw usersResponse.error
 
+      // Fetch user_departments separately
+      const { data: userDepartmentsData, error: udError } = await supabase
+        .from('user_departments')
+        .select(`
+          user_id,
+          department_id,
+          departments(name)
+        `)
+        .in('user_id', (usersResponse.data || []).map(u => u.id))
+      
+      if (udError) throw udError
+
+      // Merge data manually
+      const usersWithDepts = (usersResponse.data || []).map(user => {
+        const userDepts = (userDepartmentsData || [])
+          .filter(ud => ud.user_id === user.id)
+          .map(ud => ({
+            department_id: ud.department_id,
+            departments: ud.departments ? [ud.departments] : null
+          }))
+        
+        return {
+          ...user,
+          user_departments: userDepts
+        }
+      }) as User[]
+
       // Calculate user count for each department using user_departments
       const departmentsWithCount = (departmentsResponse.data || []).map(dept => ({
         ...dept,
-        user_count: (usersResponse.data || []).filter(user => 
+        user_count: usersWithDepts.filter(user => 
           user.user_departments?.some(ud => ud.department_id === dept.id)
         ).length
       }))
 
       setDepartments(departmentsWithCount)
-      setUsers(usersResponse.data || [])
+      setUsers(usersWithDepts)
     } catch (error: any) {
       console.error('Error fetching assignment data:', error)
     } finally {

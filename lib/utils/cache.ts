@@ -39,22 +39,37 @@ export const getDepartments = cache(async (companyId: string) => {
  */
 export const getUsersWithDepartments = cache(async (companyId: string) => {
   const supabase = createServerSupabaseClient()
-  const { data, error } = await supabase
+  
+  // Step 1: Fetch profiles
+  const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select(`
-      *,
-      user_departments(
-        departments(
-          id,
-          name
-        )
-      )
-    `)
+    .select('*')
     .eq('company_id', companyId)
     .order('full_name', { ascending: true })
 
-  if (error) throw error
-  return data
+  if (profilesError) throw profilesError
+
+  // Step 2: Fetch user_departments separately
+  const { data: userDepts, error: udError } = await supabase
+    .from('user_departments')
+    .select(`
+      user_id,
+      departments(
+        id,
+        name
+      )
+    `)
+    .in('user_id', profiles.map(p => p.id))
+
+  if (udError) throw udError
+
+  // Step 3: Merge
+  return profiles.map(profile => ({
+    ...profile,
+    user_departments: userDepts
+      .filter(ud => ud.user_id === profile.id)
+      .map(ud => ({ departments: ud.departments }))
+  }))
 })
 
 /**
