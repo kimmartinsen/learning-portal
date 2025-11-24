@@ -23,13 +23,13 @@ export default async function AdminOverviewPage() {
 
   const adminLinks = [
     {
-      title: 'Programmer',
+      title: 'Kurs',
       description: 'Opprett og administrer opplæringsprogrammer og temaer.',
       href: '/admin/programs',
     },
     {
-      title: 'Temaoversikt',
-      description: 'Følg progresjon og status for temaer i bedriften.',
+      title: 'Kursoversikt',
+      description: 'Følg progresjon og status for kurs i bedriften.',
       href: '/admin/themes',
     },
     {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Building2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, Building2, UserPlus, UserMinus } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -22,12 +22,21 @@ interface User {
   company_id: string
 }
 
+interface Profile {
+  id: string
+  full_name: string
+  email: string
+  department_id: string | null
+}
+
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([])
+  const [departmentUsers, setDepartmentUsers] = useState<Profile[]>([])
   
   const [formData, setFormData] = useState({
     name: '',
@@ -113,12 +122,28 @@ export default function DepartmentsPage() {
     }
   }
 
-  const handleEdit = (department: Department) => {
+  const handleEdit = async (department: Department) => {
     setEditingDepartment(department)
     setFormData({
       name: department.name,
       description: department.description || '',
     })
+    
+    // Fetch all profiles in the company
+    if (user) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, department_id')
+        .eq('company_id', user.company_id)
+        .order('full_name')
+      
+      setAllProfiles(profiles || [])
+      
+      // Filter users in this department
+      const usersInDept = (profiles || []).filter(p => p.department_id === department.id)
+      setDepartmentUsers(usersInDept)
+    }
+    
     setShowForm(true)
   }
 
@@ -139,10 +164,53 @@ export default function DepartmentsPage() {
     }
   }
 
+  const handleAddUserToDepartment = async (userId: string) => {
+    if (!editingDepartment) return
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ department_id: editingDepartment.id })
+        .eq('id', userId)
+      
+      if (error) throw error
+      
+      toast.success('Bruker lagt til avdeling!')
+      
+      // Refresh the user list
+      const updatedProfile = allProfiles.find(p => p.id === userId)
+      if (updatedProfile) {
+        setDepartmentUsers([...departmentUsers, { ...updatedProfile, department_id: editingDepartment.id }])
+      }
+    } catch (error: any) {
+      toast.error('Kunne ikke legge til bruker: ' + error.message)
+    }
+  }
+
+  const handleRemoveUserFromDepartment = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ department_id: null })
+        .eq('id', userId)
+      
+      if (error) throw error
+      
+      toast.success('Bruker fjernet fra avdeling!')
+      
+      // Refresh the user list
+      setDepartmentUsers(departmentUsers.filter(u => u.id !== userId))
+    } catch (error: any) {
+      toast.error('Kunne ikke fjerne bruker: ' + error.message)
+    }
+  }
+
   const resetForm = () => {
     setShowForm(false)
     setEditingDepartment(null)
     setFormData({ name: '', description: '' })
+    setDepartmentUsers([])
+    setAllProfiles([])
   }
 
   if (loading) {

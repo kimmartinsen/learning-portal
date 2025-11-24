@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Users, BookOpen, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { ArrowLeft, Users, BookOpen, AlertTriangle, CheckCircle, Clock, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -349,6 +349,27 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
     }
   }, [assignments, departmentMap, modulesByProgram])
 
+  const handleRemoveAssignment = async (userId: string, programId: string) => {
+    if (!confirm('Er du sikker på at du vil fjerne denne tildelingen?')) return
+
+    try {
+      const { error } = await supabase
+        .from('program_assignments')
+        .delete()
+        .eq('assigned_to_user_id', userId)
+        .eq('program_id', programId)
+        .eq('is_auto_assigned', false)
+
+      if (error) throw error
+      
+      toast.success('Tildeling fjernet')
+      fetchData()
+    } catch (error: any) {
+      console.error('Error removing assignment:', error)
+      toast.error('Kunne ikke fjerne tildeling: ' + error.message)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -514,12 +535,21 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
 
                             return (
                               <td key={`${row.userId}-${program.id}`} className="w-0 px-1 py-2 text-left align-middle">
-                                <span
-                                  className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${config.badgeClass} whitespace-nowrap`}
-                                >
-                                  {config.icon}
-                                  <span>{config.label}</span>
-                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span
+                                    className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${config.badgeClass} whitespace-nowrap`}
+                                  >
+                                    {config.icon}
+                                    <span>{config.label}</span>
+                                  </span>
+                                  <button
+                                    onClick={() => handleRemoveAssignment(row.userId, program.id)}
+                                    className="text-red-600 hover:text-red-700 p-1"
+                                    title="Fjern tildeling"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
                               </td>
                             )
                           })}

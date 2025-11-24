@@ -170,6 +170,19 @@ export default function ThemesPage() {
         )
 
         filteredThemes = filteredThemes.filter((theme) => themeIdsWithPrograms.has(theme.id))
+        
+        // Add "no-theme" as a virtual theme if there are programs without theme
+        const hasNoThemePrograms = programThemeRows.some(row => !row.theme_id)
+        if (hasNoThemePrograms) {
+          filteredThemes.push({
+            id: 'no-theme',
+            name: 'Uten tema',
+            description: 'Kurs som ikke er knyttet til et tema',
+            company_id: profile.company_id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as Theme)
+        }
       }
 
       setThemes(filteredThemes)
@@ -278,11 +291,20 @@ export default function ThemesPage() {
     }))
 
     try {
-      const { data: programsData, error: programsError } = await supabase
+      const isNoTheme = themeId === 'no-theme'
+      
+      let programsQuery = supabase
         .from('training_programs')
         .select('id, title, description')
-        .eq('theme_id', themeId)
         .order('created_at', { ascending: true })
+      
+      if (isNoTheme) {
+        programsQuery = programsQuery.is('theme_id', null)
+      } else {
+        programsQuery = programsQuery.eq('theme_id', themeId)
+      }
+
+      const { data: programsData, error: programsError } = await programsQuery
 
       if (programsError) {
         throw programsError
