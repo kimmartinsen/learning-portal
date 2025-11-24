@@ -32,7 +32,7 @@ interface AssignmentSelectorProps {
     departmentIds: string[]
     userIds: string[]
   }) => void
-  initialSelection?: {
+  selection?: {
     type: 'department' | 'individual'
     departmentIds: string[]
     userIds: string[]
@@ -42,53 +42,30 @@ interface AssignmentSelectorProps {
 export function AssignmentSelector({ 
   companyId, 
   onSelectionChange, 
-  initialSelection 
+  selection 
 }: AssignmentSelectorProps) {
   const [assignmentType, setAssignmentType] = useState<'department' | 'individual'>(
-    initialSelection?.type || 'department'
+    selection?.type || 'department'
   )
   const [departments, setDepartments] = useState<Department[]>([])
   const [users, setUsers] = useState<User[]>([])
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>(
-    initialSelection?.departmentIds || []
-  )
-  const [selectedUsers, setSelectedUsers] = useState<string[]>(
-    initialSelection?.userIds || []
-  )
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+
+  // Use selection from props, or default to empty
+  const selectedDepartments = selection?.departmentIds || []
+  const selectedUsers = selection?.userIds || []
 
   useEffect(() => {
     fetchData()
   }, [companyId])
 
+  // Update local assignment type when selection changes externally
   useEffect(() => {
-    if (initialSelection) {
-      // Check if anything actually changed to prevent infinite loops
-      const typeChanged = initialSelection.type !== assignmentType
-      
-      const currentDepts = [...selectedDepartments].sort()
-      const newDepts = [...(initialSelection.departmentIds || [])].sort()
-      const deptsChanged = JSON.stringify(currentDepts) !== JSON.stringify(newDepts)
-
-      const currentUsers = [...selectedUsers].sort()
-      const newUsers = [...(initialSelection.userIds || [])].sort()
-      const usersChanged = JSON.stringify(currentUsers) !== JSON.stringify(newUsers)
-
-      if (typeChanged) setAssignmentType(initialSelection.type)
-      if (deptsChanged) setSelectedDepartments(initialSelection.departmentIds || [])
-      if (usersChanged) setSelectedUsers(initialSelection.userIds || [])
+    if (selection?.type) {
+      setAssignmentType(selection.type)
     }
-  }, [initialSelection])
-
-  useEffect(() => {
-    // Notify parent of selection changes
-    onSelectionChange({
-      type: assignmentType,
-      departmentIds: selectedDepartments,
-      userIds: selectedUsers
-    })
-  }, [assignmentType, selectedDepartments, selectedUsers, onSelectionChange])
+  }, [selection?.type])
 
   const fetchData = async () => {
     try {
@@ -132,22 +109,35 @@ export function AssignmentSelector({
   const handleTypeChange = (type: 'department' | 'individual') => {
     setAssignmentType(type)
     setSearchTerm('')
+    onSelectionChange({
+      type,
+      departmentIds: selectedDepartments,
+      userIds: selectedUsers
+    })
   }
 
   const toggleDepartment = (departmentId: string) => {
-    setSelectedDepartments(prev => 
-      prev.includes(departmentId) 
-        ? prev.filter(id => id !== departmentId)
-        : [...prev, departmentId]
-    )
+    const newSelection = selectedDepartments.includes(departmentId) 
+      ? selectedDepartments.filter(id => id !== departmentId)
+      : [...selectedDepartments, departmentId]
+    
+    onSelectionChange({
+      type: assignmentType,
+      departmentIds: newSelection,
+      userIds: selectedUsers
+    })
   }
 
   const toggleUser = (userId: string) => {
-    setSelectedUsers(prev => 
-      prev.includes(userId) 
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId]
-    )
+    const newSelection = selectedUsers.includes(userId) 
+      ? selectedUsers.filter(id => id !== userId)
+      : [...selectedUsers, userId]
+      
+    onSelectionChange({
+      type: assignmentType,
+      departmentIds: selectedDepartments,
+      userIds: newSelection
+    })
   }
 
   const filteredUsers = users.filter(user => 
