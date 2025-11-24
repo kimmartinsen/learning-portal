@@ -63,6 +63,14 @@ export function AssignmentSelector({
   }, [companyId])
 
   useEffect(() => {
+    if (initialSelection) {
+      setAssignmentType(initialSelection.type)
+      setSelectedDepartments(initialSelection.departmentIds || [])
+      setSelectedUsers(initialSelection.userIds || [])
+    }
+  }, [initialSelection])
+
+  useEffect(() => {
     // Notify parent of selection changes
     onSelectionChange({
       type: assignmentType,
