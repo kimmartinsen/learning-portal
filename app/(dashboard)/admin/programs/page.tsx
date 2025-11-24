@@ -640,7 +640,7 @@ export default function AdminProgramsPage() {
                       assignment: selection
                     }))
                   }}
-                  initialSelection={formData.assignment}
+                  selection={formData.assignment}
                 />
               </div>
 

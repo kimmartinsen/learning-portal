@@ -148,7 +148,7 @@ export function ProgramForm({
         <AssignmentSelector
           companyId={companyId}
           onSelectionChange={(selection) => onChange({ assignment: selection })}
-          initialSelection={formData.assignment}
+          selection={formData.assignment}
         />
       </div>
 
