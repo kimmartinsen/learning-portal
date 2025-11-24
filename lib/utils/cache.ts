@@ -35,6 +35,7 @@ export const getDepartments = cache(async (companyId: string) => {
 
 /**
  * Cached function to get users with their departments (optimized with join)
+ * Uses the user_departments many-to-many relationship
  */
 export const getUsersWithDepartments = cache(async (companyId: string) => {
   const supabase = createServerSupabaseClient()
@@ -42,9 +43,11 @@ export const getUsersWithDepartments = cache(async (companyId: string) => {
     .from('profiles')
     .select(`
       *,
-      department:departments(
-        id,
-        name
+      user_departments(
+        departments(
+          id,
+          name
+        )
       )
     `)
     .eq('company_id', companyId)
