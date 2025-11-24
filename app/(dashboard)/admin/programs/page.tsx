@@ -190,20 +190,38 @@ export default function AdminProgramsPage() {
 
       // Create assignments
       if (formData.assignment.departmentIds.length > 0 || formData.assignment.userIds.length > 0) {
-        let assignedUserIds: string[] = []
+        let newlyAssignedUserIds: string[] = []
         
         // 1. Handle Department assignments
         if (formData.assignment.departmentIds.length > 0) {
           for (const departmentId of formData.assignment.departmentIds) {
-            // Check if already assigned
-            const { data: existing } = await supabase
+            // Check if department assignment already exists
+            const { data: existingDeptAssignment } = await supabase
               .from('program_assignments')
               .select('id')
               .eq('program_id', programId)
               .eq('assigned_to_department_id', departmentId)
               .single()
             
-            if (!existing) {
+            if (!existingDeptAssignment) {
+              // Get users in this department BEFORE assignment to know who was already assigned
+              const { data: deptUsers } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('department_id', departmentId)
+              
+              // Get existing user assignments for this program
+              const { data: existingUserAssignments } = await supabase
+                .from('program_assignments')
+                .select('assigned_to_user_id')
+                .eq('program_id', programId)
+                .in('assigned_to_user_id', (deptUsers || []).map(u => u.id))
+              
+              const alreadyAssignedUserIds = new Set(
+                (existingUserAssignments || []).map(a => a.assigned_to_user_id)
+              )
+              
+              // Call the database function (it will also check for duplicates)
               const { error: funcError } = await supabase.rpc('assign_program_to_department', {
                 p_program_id: programId,
                 p_department_id: departmentId,
@@ -213,14 +231,12 @@ export default function AdminProgramsPage() {
               
               if (funcError) throw funcError
               
-              // Get users in this department for notifications
-              const { data: deptUsers } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('department_id', departmentId)
-              
+              // Only add users who weren't already assigned (for notifications)
               if (deptUsers) {
-                assignedUserIds.push(...deptUsers.map(u => u.id))
+                const newUsers = deptUsers
+                  .filter(u => !alreadyAssignedUserIds.has(u.id))
+                  .map(u => u.id)
+                newlyAssignedUserIds.push(...newUsers)
               }
             }
           }
@@ -229,13 +245,12 @@ export default function AdminProgramsPage() {
         // 2. Handle Individual assignments
         if (formData.assignment.userIds.length > 0) {
           for (const userId of formData.assignment.userIds) {
-            // Check if already assigned manually
+            // Check if user already has this course (ANY assignment, manual or auto)
             const { data: existing } = await supabase
               .from('program_assignments')
               .select('id')
               .eq('program_id', programId)
               .eq('assigned_to_user_id', userId)
-              .eq('is_auto_assigned', false)
               .single()
 
             if (!existing) {
@@ -247,17 +262,17 @@ export default function AdminProgramsPage() {
               })
               
               if (funcError) throw funcError
-              assignedUserIds.push(userId)
+              newlyAssignedUserIds.push(userId)
             }
           }
         }
         
-        // Send notifications to newly assigned users
-        // Note: assignedUserIds now contains only NEW assignments because of the checks above
-        if (assignedUserIds.length > 0) {
-          console.log('Creating notifications for users:', assignedUserIds)
+        // Send notifications to newly assigned users ONLY
+        // newlyAssignedUserIds contains only users who were actually assigned (not duplicates)
+        if (newlyAssignedUserIds.length > 0) {
+          console.log('Creating notifications for newly assigned users:', newlyAssignedUserIds)
           
-          const notifications = assignedUserIds.map(userId => ({
+          const notifications = newlyAssignedUserIds.map(userId => ({
             user_id: userId,
             type: 'assignment_created',
             title: '📚 Nytt kurs tildelt',
@@ -282,21 +297,21 @@ export default function AdminProgramsPage() {
             toast.error('Kurset ble opprettet, men varsling feilet: ' + notifError.message)
           } else {
             console.log('Notifications created successfully:', notifData)
-            toast.success(`Varsling sendt til ${assignedUserIds.length} bruker(e)`)
+            toast.success(`Varsling sendt til ${newlyAssignedUserIds.length} bruker(e)`)
           }
           
           // Send notification to instructor if assigned
-          if (formData.instructorId) {
+          if (formData.instructorId && formData.instructorId !== user.id) {
             const instructorNotification = {
               user_id: formData.instructorId,
               type: 'course_updated',
               title: '👥 Brukere tildelt til ditt kurs',
-              message: `${assignedUserIds.length} bruker(e) har fått tildelt "${formData.title}"`,
+              message: `${newlyAssignedUserIds.length} bruker(e) har fått tildelt "${formData.title}"`,
               link: `/programs/${programId}`,
               read: false,
               metadata: {
                 programId,
-                assignedCount: assignedUserIds.length,
+                assignedCount: newlyAssignedUserIds.length,
                 deadlineDays: formData.deadlineDays
               }
             }
@@ -312,7 +327,7 @@ export default function AdminProgramsPage() {
             }
           }
         } else {
-          console.log('No notifications sent. assignedUserIds:', assignedUserIds.length, 'editingProgram:', editingProgram)
+          console.log('No new assignments created. All users were already assigned.')
         }
       }
 
