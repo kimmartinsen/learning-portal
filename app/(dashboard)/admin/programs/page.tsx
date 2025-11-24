@@ -10,7 +10,8 @@ import {
   Clock,
   Settings,
   Tag,
-  ChevronRight
+  ChevronRight,
+  UserMinus
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -32,6 +33,16 @@ interface Instructor {
   full_name: string
 }
 
+interface AssignedUser {
+  id: string
+  user_id: string
+  assignment_id: string
+  full_name: string
+  email: string
+  department_name: string | null
+  is_auto_assigned: boolean
+}
+
 export default function AdminProgramsPage() {
   const [programs, setPrograms] = useState<EnhancedTrainingProgram[]>([])
   const [themes, setThemes] = useState<Theme[]>([])
@@ -46,6 +57,7 @@ export default function AdminProgramsPage() {
     description: ''
   })
   const [creatingTheme, setCreatingTheme] = useState(false)
+  const [assignedUsers, setAssignedUsers] = useState<AssignedUser[]>([])
   
   const [formData, setFormData] = useState({
     title: '',
@@ -349,6 +361,38 @@ export default function AdminProgramsPage() {
         .not('assigned_to_user_id', 'is', null)
         .eq('is_auto_assigned', false)
 
+      // 3. Get ALL assigned users (both manual and auto-assigned from departments)
+      const { data: allAssignedUsers } = await supabase
+        .from('program_assignments')
+        .select(`
+          id,
+          assigned_to_user_id,
+          is_auto_assigned,
+          profiles:assigned_to_user_id (
+            id,
+            full_name,
+            email,
+            departments:department_id (
+              name
+            )
+          )
+        `)
+        .eq('program_id', program.id)
+        .not('assigned_to_user_id', 'is', null)
+
+      // Map to AssignedUser format
+      const users: AssignedUser[] = (allAssignedUsers || []).map((assignment: any) => ({
+        id: assignment.profiles.id,
+        user_id: assignment.profiles.id,
+        assignment_id: assignment.id,
+        full_name: assignment.profiles.full_name,
+        email: assignment.profiles.email,
+        department_name: assignment.profiles.departments?.name || null,
+        is_auto_assigned: assignment.is_auto_assigned
+      }))
+
+      setAssignedUsers(users)
+
       // Update form with fetched assignments
       setFormData(prev => ({
         ...prev,
@@ -386,9 +430,30 @@ export default function AdminProgramsPage() {
     window.location.href = `/admin/programs/${program.id}/modules`
   }
 
+  const handleRemoveUserFromProgram = async (assignmentId: string, userId: string) => {
+    if (!confirm('Er du sikker på at du vil fjerne denne brukeren fra kurset?')) return
+
+    try {
+      const { error } = await supabase
+        .from('program_assignments')
+        .delete()
+        .eq('id', assignmentId)
+
+      if (error) throw error
+
+      toast.success('Bruker fjernet fra kurs!')
+      
+      // Update local state
+      setAssignedUsers(assignedUsers.filter(u => u.assignment_id !== assignmentId))
+    } catch (error: any) {
+      toast.error('Kunne ikke fjerne bruker: ' + error.message)
+    }
+  }
+
   const resetForm = () => {
     setShowForm(false)
     setEditingProgram(null)
+    setAssignedUsers([])
     setFormData({
       title: '',
       description: '',
@@ -643,6 +708,39 @@ export default function AdminProgramsPage() {
                   selection={formData.assignment}
                 />
               </div>
+
+              {/* Show assigned users when editing */}
+              {editingProgram && assignedUsers.length > 0 && (
+                <div className="border-t pt-4 dark:border-gray-700">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                    Tildelte brukere ({assignedUsers.length})
+                  </h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {assignedUsers.map(user => (
+                      <div key={user.assignment_id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.full_name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {user.email}
+                            {user.department_name && ` • ${user.department_name}`}
+                            {user.is_auto_assigned && ' • Auto-tildelt'}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveUserFromProgram(user.assignment_id, user.user_id)}
+                          className="text-red-600 hover:text-red-700"
+                          title="Fjern bruker fra kurs"
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex space-x-3 pt-4">
                 <Button type="submit" className="flex-1">
