@@ -14,6 +14,7 @@ interface Department {
   name: string
   description: string | null
   created_at: string
+  userCount?: number
 }
 
 interface User {
@@ -74,7 +75,20 @@ export default function DepartmentsPage() {
         .order('created_at', { ascending: true })
 
       if (error) throw error
-      setDepartments(departmentsData || [])
+      
+      // Fetch user counts for each department
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('department_id')
+        .eq('company_id', profile.company_id)
+      
+      // Add user count to each department
+      const departmentsWithCounts = (departmentsData || []).map(dept => ({
+        ...dept,
+        userCount: (profiles || []).filter(p => p.department_id === dept.id).length
+      }))
+      
+      setDepartments(departmentsWithCounts)
     } catch (error: any) {
       toast.error('Kunne ikke hente avdelinger: ' + error.message)
     } finally {
@@ -233,14 +247,14 @@ export default function DepartmentsPage() {
 
       {/* Form Modal */}
       <Modal isOpen={showForm} onClose={resetForm}>
-        <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
+        <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 dark:border-gray-700">
           <CardHeader>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {editingDepartment ? 'Rediger avdeling' : 'Ny avdeling'}
             </h3>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 label="Avdelingsnavn"
                 value={formData.name}
@@ -261,6 +275,70 @@ export default function DepartmentsPage() {
                   placeholder="Valgfri beskrivelse av avdelingen"
                 />
               </div>
+
+              {/* User Management Section - Only when editing */}
+              {editingDepartment && (
+                <div className="border-t pt-4 dark:border-gray-700">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                    Brukere i avdelingen
+                  </h4>
+                  
+                  {/* Users in department */}
+                  {departmentUsers.length > 0 ? (
+                    <div className="space-y-2 mb-4">
+                      {departmentUsers.map(user => (
+                        <div key={user.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.full_name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveUserFromDepartment(user.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <UserMinus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Ingen brukere i denne avdelingen</p>
+                  )}
+                  
+                  {/* Available users to add */}
+                  {allProfiles.filter(p => !departmentUsers.find(du => du.id === p.id)).length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Legg til bruker
+                      </label>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {allProfiles
+                          .filter(p => !departmentUsers.find(du => du.id === p.id))
+                          .map(user => (
+                            <div key={user.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                              <div>
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.full_name}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleAddUserToDepartment(user.id)}
+                                className="text-primary-600 hover:text-primary-700"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex space-x-3 pt-4">
                 <Button type="submit" className="flex-1">
@@ -293,9 +371,15 @@ export default function DepartmentsPage() {
                           {department.description || 'Ingen beskrivelse'}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Opprettet: {new Date(department.created_at).toLocaleDateString('no-NO')}
-                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Opprettet: {new Date(department.created_at).toLocaleDateString('no-NO')}
+                        </p>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">•</span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {department.userCount || 0} bruker{department.userCount !== 1 ? 'e' : ''}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   
