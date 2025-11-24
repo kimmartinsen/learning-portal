@@ -12,12 +12,12 @@ interface User {
   id: string
   full_name: string
   email: string
-  user_departments?: {
+  user_departments?: Array<{
     department_id: string
-    departments: {
+    departments: Array<{
       name: string
-    } | null
-  }[]
+    }> | null
+  }>
 }
 
 interface Department {
@@ -150,7 +150,8 @@ export function AssignmentSelector({
     const nameMatch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase())
     const emailMatch = user.email.toLowerCase().includes(searchTerm.toLowerCase())
     const deptMatch = user.user_departments?.some(ud => 
-      ud.departments?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      ud.departments && ud.departments.length > 0 && 
+      ud.departments[0].name.toLowerCase().includes(searchTerm.toLowerCase())
     ) || false
     
     return nameMatch || emailMatch || deptMatch
@@ -283,7 +284,7 @@ export function AssignmentSelector({
                       {user.user_departments && user.user_departments.length > 0 && (
                         <p className="text-xs text-gray-400">
                           {user.user_departments
-                            .map(ud => ud.departments?.name || '')
+                            .map(ud => ud.departments && ud.departments.length > 0 ? ud.departments[0].name : '')
                             .filter(name => name !== '')
                             .join(', ')}
                         </p>
