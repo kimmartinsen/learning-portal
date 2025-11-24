@@ -151,6 +151,8 @@ export default function SignupPage() {
         errorMessage = 'Dette organisasjonsnummeret er allerede registrert. Kontakt din bedrifts administrator for å få tilgang.'
       } else if (error.message?.includes('User already registered')) {
         errorMessage = 'Denne e-postadressen er allerede i bruk'
+      } else if (error.message?.includes('Failed to fetch')) {
+        errorMessage = 'Får ikke kontakt med serveren. Sjekk internettilkoblingen din eller prøv igjen senere.'
       } else if (error.message) {
         errorMessage = error.message
       }
