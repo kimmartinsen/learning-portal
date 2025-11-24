@@ -180,45 +180,69 @@ export default function AdminProgramsPage() {
       if (formData.assignment.departmentIds.length > 0 || formData.assignment.userIds.length > 0) {
         let assignedUserIds: string[] = []
         
-        if (formData.assignment.type === 'department') {
-          // Department assignments
+        // 1. Handle Department assignments
+        if (formData.assignment.departmentIds.length > 0) {
           for (const departmentId of formData.assignment.departmentIds) {
-            const { error: funcError } = await supabase.rpc('assign_program_to_department', {
-              p_program_id: programId,
-              p_department_id: departmentId,
-              p_assigned_by: user.id,
-              p_notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs'
-            })
-            
-            if (funcError) throw funcError
-            
-            // Get users in this department
-            const { data: deptUsers } = await supabase
-              .from('profiles')
+            // Check if already assigned
+            const { data: existing } = await supabase
+              .from('program_assignments')
               .select('id')
-              .eq('department_id', departmentId)
+              .eq('program_id', programId)
+              .eq('assigned_to_department_id', departmentId)
+              .single()
             
-            if (deptUsers) {
-              assignedUserIds.push(...deptUsers.map(u => u.id))
+            if (!existing) {
+              const { error: funcError } = await supabase.rpc('assign_program_to_department', {
+                p_program_id: programId,
+                p_department_id: departmentId,
+                p_assigned_by: user.id,
+                p_notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs'
+              })
+              
+              if (funcError) throw funcError
+              
+              // Get users in this department for notifications
+              const { data: deptUsers } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('department_id', departmentId)
+              
+              if (deptUsers) {
+                assignedUserIds.push(...deptUsers.map(u => u.id))
+              }
             }
           }
-        } else {
-          // Individual assignments
+        }
+
+        // 2. Handle Individual assignments
+        if (formData.assignment.userIds.length > 0) {
           for (const userId of formData.assignment.userIds) {
-            const { error: funcError } = await supabase.rpc('assign_program_to_user', {
-              p_program_id: programId,
-              p_user_id: userId,
-              p_assigned_by: user.id,
-              p_notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs'
-            })
-            
-            if (funcError) throw funcError
-            assignedUserIds.push(userId)
+            // Check if already assigned manually
+            const { data: existing } = await supabase
+              .from('program_assignments')
+              .select('id')
+              .eq('program_id', programId)
+              .eq('assigned_to_user_id', userId)
+              .eq('is_auto_assigned', false)
+              .single()
+
+            if (!existing) {
+              const { error: funcError } = await supabase.rpc('assign_program_to_user', {
+                p_program_id: programId,
+                p_user_id: userId,
+                p_assigned_by: user.id,
+                p_notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs'
+              })
+              
+              if (funcError) throw funcError
+              assignedUserIds.push(userId)
+            }
           }
         }
         
-        // Send notifications to all assigned users
-        if (assignedUserIds.length > 0 && !editingProgram) {
+        // Send notifications to newly assigned users
+        // Note: assignedUserIds now contains only NEW assignments because of the checks above
+        if (assignedUserIds.length > 0) {
           console.log('Creating notifications for users:', assignedUserIds)
           
           const notifications = assignedUserIds.map(userId => ({

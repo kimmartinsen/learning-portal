@@ -112,9 +112,6 @@ export function AssignmentSelector({
 
   const handleTypeChange = (type: 'department' | 'individual') => {
     setAssignmentType(type)
-    // Clear selections when switching type
-    setSelectedDepartments([])
-    setSelectedUsers([])
     setSearchTerm('')
   }
 
