@@ -174,6 +174,46 @@ export default function AdminProgramsPage() {
 
         if (error) throw error
         programId = editingProgram.id
+        
+        // Handle removal of department assignments when editing
+        // Get existing department assignments
+        const { data: existingDeptAssignments } = await supabase
+          .from('program_assignments')
+          .select('id, assigned_to_department_id')
+          .eq('program_id', programId)
+          .not('assigned_to_department_id', 'is', null)
+        
+        // Find departments that were removed (existed before but not in form now)
+        const removedDepartmentIds = (existingDeptAssignments || [])
+          .map(a => a.assigned_to_department_id)
+          .filter(deptId => !formData.assignment.departmentIds.includes(deptId))
+        
+        // Delete department assignments and their auto-assigned user assignments
+        for (const deptId of removedDepartmentIds) {
+          // 1. Get users in this department
+          const { data: deptUsers } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('department_id', deptId)
+          
+          // 2. Delete the department assignment itself
+          await supabase
+            .from('program_assignments')
+            .delete()
+            .eq('program_id', programId)
+            .eq('assigned_to_department_id', deptId)
+          
+          // 3. Delete auto-assigned user assignments for this department's users
+          if (deptUsers && deptUsers.length > 0) {
+            await supabase
+              .from('program_assignments')
+              .delete()
+              .eq('program_id', programId)
+              .in('assigned_to_user_id', deptUsers.map(u => u.id))
+              .eq('is_auto_assigned', true)
+          }
+        }
+        
         toast.success('Kurs oppdatert!')
       } else {
         // Create new program
