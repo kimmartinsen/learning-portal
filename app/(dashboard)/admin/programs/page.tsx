@@ -163,8 +163,9 @@ export default function AdminProgramsPage() {
         if (error) throw error
         programId = editingProgram.id
         
-        // Handle removal of department assignments when editing
-        // Get existing department assignments
+        // Handle removal of assignments when editing
+        
+        // 1. Remove department assignments
         const { data: existingDeptAssignments } = await supabase
           .from('program_assignments')
           .select('id, assigned_to_department_id')
@@ -200,6 +201,29 @@ export default function AdminProgramsPage() {
               .in('assigned_to_user_id', deptUsers.map(u => u.id))
               .eq('is_auto_assigned', true)
           }
+        }
+        
+        // 2. Remove individual user assignments
+        const { data: existingUserAssignments } = await supabase
+          .from('program_assignments')
+          .select('id, assigned_to_user_id')
+          .eq('program_id', programId)
+          .not('assigned_to_user_id', 'is', null)
+          .eq('is_auto_assigned', false)
+        
+        // Find users that were removed (existed before but not in form now)
+        const removedUserIds = (existingUserAssignments || [])
+          .map(a => a.assigned_to_user_id)
+          .filter(userId => !formData.assignment.userIds.includes(userId))
+        
+        // Delete individual user assignments
+        if (removedUserIds.length > 0) {
+          await supabase
+            .from('program_assignments')
+            .delete()
+            .eq('program_id', programId)
+            .in('assigned_to_user_id', removedUserIds)
+            .eq('is_auto_assigned', false)
         }
         
         toast.success('Kurs oppdatert!')
