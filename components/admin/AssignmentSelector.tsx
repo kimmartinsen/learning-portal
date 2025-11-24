@@ -14,9 +14,9 @@ interface User {
   email: string
   user_departments?: {
     department_id: string
-    departments?: {
+    departments: {
       name: string
-    }
+    } | null
   }[]
 }
 
@@ -150,7 +150,7 @@ export function AssignmentSelector({
     const nameMatch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase())
     const emailMatch = user.email.toLowerCase().includes(searchTerm.toLowerCase())
     const deptMatch = user.user_departments?.some(ud => 
-      ud.departments?.name.toLowerCase().includes(searchTerm.toLowerCase())
+      ud.departments?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     ) || false
     
     return nameMatch || emailMatch || deptMatch
@@ -283,8 +283,8 @@ export function AssignmentSelector({
                       {user.user_departments && user.user_departments.length > 0 && (
                         <p className="text-xs text-gray-400">
                           {user.user_departments
-                            .map(ud => ud.departments?.name)
-                            .filter(Boolean)
+                            .map(ud => ud.departments?.name || '')
+                            .filter(name => name !== '')
                             .join(', ')}
                         </p>
                       )}
