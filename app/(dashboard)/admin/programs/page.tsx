@@ -287,8 +287,10 @@ export default function AdminProgramsPage() {
     }
   }
 
-  const handleEdit = (program: EnhancedTrainingProgram) => {
+  const handleEdit = async (program: EnhancedTrainingProgram) => {
     setEditingProgram(program)
+    
+    // Init form with basic data
     setFormData({
       title: program.title,
       description: program.description || '',
@@ -301,9 +303,41 @@ export default function AdminProgramsPage() {
         type: 'department',
         departmentIds: [],
         userIds: []
-      } // TODO: Fetch existing assignments when editing
+      }
     })
+    
     setShowForm(true)
+
+    // Fetch existing assignments
+    try {
+      // 1. Get department assignments
+      const { data: deptAssignments } = await supabase
+        .from('program_assignments')
+        .select('assigned_to_department_id')
+        .eq('program_id', program.id)
+        .not('assigned_to_department_id', 'is', null)
+
+      // 2. Get individual assignments (excluding auto-assigned ones)
+      const { data: userAssignments } = await supabase
+        .from('program_assignments')
+        .select('assigned_to_user_id')
+        .eq('program_id', program.id)
+        .not('assigned_to_user_id', 'is', null)
+        .eq('is_auto_assigned', false)
+
+      // Update form with fetched assignments
+      setFormData(prev => ({
+        ...prev,
+        assignment: {
+          type: (deptAssignments && deptAssignments.length > 0) ? 'department' : 'individual',
+          departmentIds: deptAssignments?.map(a => a.assigned_to_department_id) || [],
+          userIds: userAssignments?.map(a => a.assigned_to_user_id) || []
+        }
+      }))
+    } catch (error) {
+      console.error('Error fetching assignments:', error)
+      toast.error('Kunne ikke hente eksisterende tildelinger')
+    }
   }
 
   const handleDelete = async (programId: string) => {
