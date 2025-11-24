@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 /**
  * Optimized query to get users with their departments
  * Avoids N+1 problem by using a single join
+ * Uses the user_departments many-to-many relationship
  */
 export async function fetchUsersWithDepartments(
   supabase: SupabaseClient,
@@ -12,10 +13,12 @@ export async function fetchUsersWithDepartments(
     .from('profiles')
     .select(`
       *,
-      department:departments(
-        id,
-        name,
-        description
+      user_departments(
+        departments(
+          id,
+          name,
+          description
+        )
       )
     `)
     .eq('company_id', companyId)
