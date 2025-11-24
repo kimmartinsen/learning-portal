@@ -27,7 +27,7 @@ interface Profile {
   id: string
   full_name: string
   email: string
-  department_id: string | null
+  user_departments?: { department_id: string }[]
 }
 
 export default function DepartmentsPage() {
@@ -76,16 +76,15 @@ export default function DepartmentsPage() {
 
       if (error) throw error
       
-      // Fetch user counts for each department
-      const { data: profiles } = await supabase
-        .from('profiles')
+      // Fetch user counts for each department from user_departments
+      const { data: userDeptCounts } = await supabase
+        .from('user_departments')
         .select('department_id')
-        .eq('company_id', profile.company_id)
       
       // Add user count to each department
       const departmentsWithCounts = (departmentsData || []).map(dept => ({
         ...dept,
-        userCount: (profiles || []).filter(p => p.department_id === dept.id).length
+        userCount: (userDeptCounts || []).filter(ud => ud.department_id === dept.id).length
       }))
       
       setDepartments(departmentsWithCounts)
@@ -143,18 +142,25 @@ export default function DepartmentsPage() {
       description: department.description || '',
     })
     
-    // Fetch all profiles in the company
+    // Fetch all profiles in the company with their departments
     if (user) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, email, department_id')
+        .select(`
+          id, 
+          full_name, 
+          email,
+          user_departments!inner(department_id)
+        `)
         .eq('company_id', user.company_id)
         .order('full_name')
       
       setAllProfiles(profiles || [])
       
-      // Filter users in this department
-      const usersInDept = (profiles || []).filter(p => p.department_id === department.id)
+      // Filter users in this department using user_departments
+      const usersInDept = (profiles || []).filter(p => 
+        p.user_departments?.some(ud => ud.department_id === department.id)
+      )
       setDepartmentUsers(usersInDept)
     }
     
@@ -183,9 +189,11 @@ export default function DepartmentsPage() {
     
     try {
       const { error } = await supabase
-        .from('profiles')
-        .update({ department_id: editingDepartment.id })
-        .eq('id', userId)
+        .from('user_departments')
+        .insert({
+          user_id: userId,
+          department_id: editingDepartment.id
+        })
       
       if (error) throw error
       
@@ -194,7 +202,14 @@ export default function DepartmentsPage() {
       // Refresh the user list
       const updatedProfile = allProfiles.find(p => p.id === userId)
       if (updatedProfile) {
-        setDepartmentUsers([...departmentUsers, { ...updatedProfile, department_id: editingDepartment.id }])
+        const updatedUser = {
+          ...updatedProfile,
+          user_departments: [
+            ...(updatedProfile.user_departments || []),
+            { department_id: editingDepartment.id }
+          ]
+        }
+        setDepartmentUsers([...departmentUsers, updatedUser])
       }
     } catch (error: any) {
       toast.error('Kunne ikke legge til bruker: ' + error.message)
@@ -202,11 +217,14 @@ export default function DepartmentsPage() {
   }
 
   const handleRemoveUserFromDepartment = async (userId: string) => {
+    if (!editingDepartment) return
+    
     try {
       const { error } = await supabase
-        .from('profiles')
-        .update({ department_id: null })
-        .eq('id', userId)
+        .from('user_departments')
+        .delete()
+        .eq('user_id', userId)
+        .eq('department_id', editingDepartment.id)
       
       if (error) throw error
       

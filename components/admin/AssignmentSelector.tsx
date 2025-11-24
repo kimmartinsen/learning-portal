@@ -12,10 +12,12 @@ interface User {
   id: string
   full_name: string
   email: string
-  department_id?: string
-  department?: {
-    name: string
-  }[] | null
+  user_departments?: {
+    department_id: string
+    departments?: {
+      name: string
+    }
+  }[]
 }
 
 interface Department {
@@ -80,9 +82,11 @@ export function AssignmentSelector({
           .select(`
             id, 
             full_name, 
-            email, 
-            department_id,
-            department:departments(name)
+            email,
+            user_departments(
+              department_id,
+              departments(name)
+            )
           `)
           .eq('company_id', companyId)
           .order('full_name')
@@ -91,10 +95,12 @@ export function AssignmentSelector({
       if (departmentsResponse.error) throw departmentsResponse.error
       if (usersResponse.error) throw usersResponse.error
 
-      // Calculate user count for each department
+      // Calculate user count for each department using user_departments
       const departmentsWithCount = (departmentsResponse.data || []).map(dept => ({
         ...dept,
-        user_count: (usersResponse.data || []).filter(user => user.department_id === dept.id).length
+        user_count: (usersResponse.data || []).filter(user => 
+          user.user_departments?.some(ud => ud.department_id === dept.id)
+        ).length
       }))
 
       setDepartments(departmentsWithCount)
@@ -140,13 +146,15 @@ export function AssignmentSelector({
     })
   }
 
-  const filteredUsers = users.filter(user => 
-    user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (Array.isArray(user.department) && user.department.length > 0
-      ? user.department[0].name 
-      : '').toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredUsers = users.filter(user => {
+    const nameMatch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+    const emailMatch = user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const deptMatch = user.user_departments?.some(ud => 
+      ud.departments?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || false
+    
+    return nameMatch || emailMatch || deptMatch
+  })
 
   const filteredDepartments = departments.filter(dept =>
     dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -272,8 +280,13 @@ export function AssignmentSelector({
                     <div>
                       <p className="font-medium text-gray-900">{user.full_name}</p>
                       <p className="text-sm text-gray-500">{user.email}</p>
-                      {Array.isArray(user.department) && user.department.length > 0 && (
-                        <p className="text-xs text-gray-400">{user.department[0].name}</p>
+                      {user.user_departments && user.user_departments.length > 0 && (
+                        <p className="text-xs text-gray-400">
+                          {user.user_departments
+                            .map(ud => ud.departments?.name)
+                            .filter(Boolean)
+                            .join(', ')}
+                        </p>
                       )}
                     </div>
                   </div>

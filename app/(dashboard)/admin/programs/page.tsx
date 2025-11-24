@@ -179,10 +179,10 @@ export default function AdminProgramsPage() {
         
         // Delete department assignments and their auto-assigned user assignments
         for (const deptId of removedDepartmentIds) {
-          // 1. Get users in this department
+          // 1. Get users in this department from user_departments
           const { data: deptUsers } = await supabase
-            .from('profiles')
-            .select('id')
+            .from('user_departments')
+            .select('user_id')
             .eq('department_id', deptId)
           
           // 2. Delete the department assignment itself
@@ -198,7 +198,7 @@ export default function AdminProgramsPage() {
               .from('program_assignments')
               .delete()
               .eq('program_id', programId)
-              .in('assigned_to_user_id', deptUsers.map(u => u.id))
+              .in('assigned_to_user_id', deptUsers.map(u => u.user_id))
               .eq('is_auto_assigned', true)
           }
         }
@@ -258,8 +258,8 @@ export default function AdminProgramsPage() {
             if (!existingDeptAssignment) {
               // Get users in this department BEFORE assignment to know who was already assigned
               const { data: deptUsers } = await supabase
-                .from('profiles')
-                .select('id')
+                .from('user_departments')
+                .select('user_id')
                 .eq('department_id', departmentId)
               
               // Get existing user assignments for this program
@@ -267,7 +267,7 @@ export default function AdminProgramsPage() {
                 .from('program_assignments')
                 .select('assigned_to_user_id')
                 .eq('program_id', programId)
-                .in('assigned_to_user_id', (deptUsers || []).map(u => u.id))
+                .in('assigned_to_user_id', (deptUsers || []).map(u => u.user_id))
               
               const alreadyAssignedUserIds = new Set(
                 (existingUserAssignments || []).map(a => a.assigned_to_user_id)
@@ -286,8 +286,8 @@ export default function AdminProgramsPage() {
               // Only add users who weren't already assigned (for notifications)
               if (deptUsers) {
                 const newUsers = deptUsers
-                  .filter(u => !alreadyAssignedUserIds.has(u.id))
-                  .map(u => u.id)
+                  .filter(u => !alreadyAssignedUserIds.has(u.user_id))
+                  .map(u => u.user_id)
                 newlyAssignedUserIds.push(...newUsers)
               }
             }
