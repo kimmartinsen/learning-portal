@@ -530,28 +530,31 @@ export default function ThemesPage() {
         const hasInProgress = progressInfo?.hasInProgress ?? false
         const hasStarted = progressInfo?.hasStarted ?? false
 
-        // Bruk assignment status direkte hvis den er locked/pending/completed
-        let status: UserProgramStatus['status'] =
-          (assignment.status as UserProgramStatus['status']) || 'not_started'
-
-        // Hvis assignment sier assigned/started, sjekk fremdrift
-        if (status === 'assigned' || status === 'started' || status === 'not_started') {
-             if (assignment.completed_at) {
-                 status = 'completed'
-             } else if (hasStarted || status === 'started') {
-                 status = 'in_progress'
-             } else {
-                 status = 'not_started'
-             }
-             
-             // Sjekk forsinkelse
-             if (
-                status !== 'completed' &&
-                assignment.due_date &&
-                new Date(assignment.due_date) < new Date()
-              ) {
-                status = 'overdue'
-              }
+        // Håndter assignment status - kan være locked, pending, assigned, started, completed, etc.
+        const rawStatus = assignment.status || 'not_started'
+        let status: UserProgramStatus['status']
+        
+        // Hvis status er locked eller pending, bruk den direkte
+        if (rawStatus === 'locked' || rawStatus === 'pending') {
+          status = rawStatus as UserProgramStatus['status']
+        } else if (rawStatus === 'completed' || assignment.completed_at) {
+          status = 'completed'
+        } else {
+          // For assigned, started, not_started - beregn status basert på fremdrift
+          if (hasStarted) {
+            status = 'in_progress'
+          } else {
+            status = 'not_started'
+          }
+          
+          // Sjekk forsinkelse
+          if (
+            status !== 'completed' &&
+            assignment.due_date &&
+            new Date(assignment.due_date) < new Date()
+          ) {
+            status = 'overdue'
+          }
         }
 
         if (status === 'completed') {
