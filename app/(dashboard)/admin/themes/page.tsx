@@ -890,7 +890,7 @@ export default function ThemesPage() {
                     {!isNoTheme && (
                       <div className="flex items-center space-x-1">
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
                           onClick={() => handleOpenAssign(theme)}
                           className="mr-2 h-8 text-xs"
