@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Edit2, Trash2, AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Plus, Lock, PauseCircle, Unlock } from 'lucide-react'
+import { Edit2, Trash2, AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Plus, Lock, PauseCircle, Unlock, UserPlus } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Theme } from '@/types/enhanced-database.types'
 import { ThemeForm, type ThemeFormData } from '@/components/admin/programs/ThemeForm'
+import { AssignmentSelector } from '@/components/admin/AssignmentSelector'
 
 interface User {
   id: string
@@ -129,6 +130,20 @@ export default function ThemesPage() {
   const [user, setUser] = useState<User | null>(null)
   const [expandedThemeId, setExpandedThemeId] = useState<string | null>(null)
   const [progressState, setProgressState] = useState<Record<string, ThemeProgressState>>({})
+  
+  // State for assigning theme to users/departments
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [assigningTheme, setAssigningTheme] = useState<Theme | null>(null)
+  const [assignSelection, setAssignSelection] = useState<{
+    type: 'department' | 'individual'
+    departmentIds: string[]
+    userIds: string[]
+  }>({
+    type: 'department',
+    departmentIds: [],
+    userIds: []
+  })
+  const [assigning, setAssigning] = useState(false)
   
   const [formData, setFormData] = useState<ThemeFormData>({
     name: '',
@@ -301,6 +316,142 @@ export default function ThemesPage() {
     setEditingTheme(null)
     setFormData({ name: '', description: '', progression_type: 'flexible' })
   }
+
+  // --- New: Assignment Handling ---
+
+  const handleOpenAssign = (theme: Theme) => {
+    setAssigningTheme(theme)
+    setAssignSelection({
+      type: 'department',
+      departmentIds: [],
+      userIds: []
+    })
+    setShowAssignModal(true)
+  }
+
+  const handleAssignSubmit = async () => {
+    if (!assigningTheme || !user) return
+    
+    setAssigning(true)
+    try {
+      // 1. Get all programs in this theme
+      const { data: programs } = await supabase
+        .from('training_programs')
+        .select('id, sort_order')
+        .eq('theme_id', assigningTheme.id)
+        .order('sort_order', { ascending: true })
+      
+      if (!programs || programs.length === 0) {
+        toast.error('Ingen kurs i dette programmet å tildele')
+        return
+      }
+
+      let successCount = 0
+      let allAssignedUserIds: string[] = []
+
+      // 2. Loop through programs and assign them
+      // Important: If sequential, status will be handled by database triggers/logic or here?
+      // For now, we assign all, but for sequential programs, we might want to set status based on order?
+      // Actually, the simplest is to assign ALL, but the 'sort_order' logic in 'My Learning' page
+      // and 'handle_course_completion' trigger handles the locking.
+      // BUT: We need to set initial status correctly.
+      // Flexible: All 'assigned'
+      // Sequential: First 'assigned', rest 'locked'
+      
+      const isSequential = assigningTheme.progression_type === 'sequential_auto' || assigningTheme.progression_type === 'sequential_manual'
+      
+      // Group assignments by program to handle them
+      for (const [index, program] of programs.entries()) {
+        const isFirst = index === 0
+        // If sequential, only the first program is 'assigned', others are 'locked'
+        // BUT: Our 'assign_program_to_user' RPC doesn't support custom status yet.
+        // We might need to call it and then update status, or update the RPC.
+        // For simplicity/speed now: Assign normally, then update status if sequential and not first.
+        
+        // Actually, let's just call the existing RPCs. They create assignments with default 'assigned'.
+        // Then we bulk update them to 'locked' if needed.
+        
+        const programId = program.id
+        
+        // Assign to departments
+        if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
+          for (const deptId of assignSelection.departmentIds) {
+             // 1. Get users in dept
+             const { data: deptUsers } = await supabase
+                .from('user_departments')
+                .select('user_id')
+                .eq('department_id', deptId)
+             
+             if (deptUsers) {
+               allAssignedUserIds.push(...deptUsers.map(u => u.user_id))
+             }
+
+             // 2. Create dept assignment
+             const { error } = await supabase.rpc('assign_program_to_department', {
+                p_program_id: programId,
+                p_department_id: deptId,
+                p_assigned_by: user.id,
+                p_notes: 'Del av program-tildeling: ' + assigningTheme.name
+             })
+             if (!error) successCount++
+          }
+        }
+        
+        // Assign to individuals
+        if (assignSelection.type === 'individual' && assignSelection.userIds.length > 0) {
+          allAssignedUserIds.push(...assignSelection.userIds)
+          for (const userId of assignSelection.userIds) {
+             const { error } = await supabase.rpc('assign_program_to_user', {
+                p_program_id: programId,
+                p_user_id: userId,
+                p_assigned_by: user.id,
+                p_notes: 'Del av program-tildeling: ' + assigningTheme.name
+             })
+             if (!error) successCount++
+          }
+        }
+      }
+      
+      // 3. If sequential, lock non-first programs
+      if (isSequential && programs.length > 1) {
+        const programsToLock = programs.slice(1).map(p => p.id)
+        if (programsToLock.length > 0 && allAssignedUserIds.length > 0) {
+           // Update status to 'locked' for these programs and users
+           // Note: This is a bit rough, as it might lock already completed courses if re-assigned.
+           // Ideally we only lock NEW assignments.
+           // 'assign_program_to_user' does nothing if already exists.
+           // So we should only update if status is 'assigned' and progress is 0?
+           
+           await supabase
+             .from('program_assignments')
+             .update({ status: 'locked' })
+             .in('program_id', programsToLock)
+             .in('assigned_to_user_id', allAssignedUserIds)
+             .eq('status', 'assigned') // Only lock if currently just assigned (not started/completed)
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success('Program tildelt!')
+        // Refresh data
+        if (expandedThemeId === assigningTheme.id) {
+          fetchThemeProgress(assigningTheme.id)
+        }
+      } else {
+        toast.info('Ingen nye tildelinger ble opprettet (kanskje de allerede eksisterte?)')
+      }
+      
+      setShowAssignModal(false)
+      setAssigningTheme(null)
+    } catch (error: any) {
+      console.error('Error assigning program:', error)
+      toast.error('Feil under tildeling: ' + error.message)
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  // --- End Assignment Handling ---
 
   // Get program count for each theme
   const handleToggleTheme = (themeId: string) => {
@@ -656,6 +807,45 @@ export default function ThemesPage() {
         </Card>
       </Modal>
 
+      {/* Assign Modal */}
+      <Modal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)}>
+        <Card className="w-full max-w-lg bg-white dark:bg-gray-900 dark:border-gray-700">
+          <CardHeader>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Tildel program: {assigningTheme?.name}
+            </h3>
+            <p className="text-sm text-gray-500">
+              Dette vil tildele alle kursene i programmet til de valgte mottakerne.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <AssignmentSelector
+              companyId={user?.company_id || ''}
+              onSelectionChange={setAssignSelection}
+              selection={assignSelection}
+            />
+            
+            <div className="flex space-x-3 pt-4">
+              <Button 
+                className="flex-1" 
+                onClick={handleAssignSubmit} 
+                loading={assigning}
+                disabled={assignSelection.departmentIds.length === 0 && assignSelection.userIds.length === 0}
+              >
+                Tildel program
+              </Button>
+              <Button 
+                variant="secondary" 
+                onClick={() => setShowAssignModal(false)} 
+                disabled={assigning}
+              >
+                Avbryt
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </Modal>
+
       {/* Themes List */}
       <div className="grid gap-4">
         {themes.length > 0 ? (
@@ -698,6 +888,15 @@ export default function ThemesPage() {
                     
                     {!isNoTheme && (
                       <div className="flex items-center space-x-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenAssign(theme)}
+                          className="mr-2 h-8 text-xs"
+                        >
+                          <UserPlus className="h-3 w-3 mr-1" />
+                          Tildel
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
