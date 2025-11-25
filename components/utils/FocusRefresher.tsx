@@ -7,14 +7,23 @@ export function FocusRefresher() {
   const router = useRouter()
 
   useEffect(() => {
-    const onFocus = () => {
+    const onRefresh = () => {
       router.refresh()
     }
 
-    window.addEventListener('focus', onFocus)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        router.refresh()
+      }
+    }
+
+    // Lytt på både fokus (vindu aktivt) og visibility (fanebytte)
+    window.addEventListener('focus', onRefresh)
+    document.addEventListener('visibilitychange', onVisibilityChange)
     
     return () => {
-      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('focus', onRefresh)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [router])
 

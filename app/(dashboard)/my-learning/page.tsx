@@ -1,5 +1,9 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import { Button } from '@/components/ui/Button'
 import {
   BookOpen,
