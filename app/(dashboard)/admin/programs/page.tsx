@@ -545,14 +545,60 @@ export default function AdminProgramsPage() {
 
   // --- New: Assignment Handling for Themes ---
 
-  const handleOpenAssign = (theme: Theme) => {
+  const handleOpenAssign = async (theme: Theme) => {
     setAssigningTheme(theme)
+    // Reset selection first
     setAssignSelection({
       type: 'department',
       departmentIds: [],
       userIds: []
     })
     setShowAssignModal(true)
+
+    // Fetch existing assignments for this theme to pre-fill the modal
+    // Strategy: Find ALL assignments for ANY program in this theme. 
+    // If a department/user has ANY assignment, we consider them 'partially assigned' and check them.
+    // OR strictly: Only check if they have ALL assignments.
+    // Let's go with: If they have assignment for the FIRST program (entry point), check them.
+    
+    try {
+      // 1. Find the first program in the theme
+      const { data: firstProgram } = await supabase
+        .from('training_programs')
+        .select('id')
+        .eq('theme_id', theme.id)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single()
+      
+      if (firstProgram) {
+        // 2. Get assignments for this program
+        const [deptResponse, userResponse] = await Promise.all([
+          supabase
+            .from('program_assignments')
+            .select('assigned_to_department_id')
+            .eq('program_id', firstProgram.id)
+            .not('assigned_to_department_id', 'is', null),
+          supabase
+            .from('program_assignments')
+            .select('assigned_to_user_id')
+            .eq('program_id', firstProgram.id)
+            .not('assigned_to_user_id', 'is', null)
+            .eq('is_auto_assigned', false) // Only manual user assignments
+        ])
+
+        if (deptResponse.data || userResponse.data) {
+          setAssignSelection(prev => ({
+            ...prev,
+            departmentIds: (deptResponse.data || []).map(a => a.assigned_to_department_id).filter(Boolean) as string[],
+            userIds: (userResponse.data || []).map(a => a.assigned_to_user_id).filter(Boolean) as string[]
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching existing theme assignments:', error)
+    }
   }
 
   const handleAssignSubmit = async () => {
@@ -638,7 +684,9 @@ export default function AdminProgramsPage() {
       if (successCount > 0) {
         toast.success('Program tildelt!')
       } else {
-        toast.info('Ingen nye tildelinger ble opprettet (kanskje de allerede eksisterte?)')
+        // This is not necessarily an error, it means assignments already existed
+        // toast.info('Tildelinger oppdatert') 
+        toast.success('Program tildelt!')
       }
       
       setShowAssignModal(false)

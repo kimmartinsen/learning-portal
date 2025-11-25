@@ -778,8 +778,8 @@ export default function ThemesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Programoversikt</h1>
-          <p className="text-gray-600 dark:text-gray-300">Administrer programmer og se deltakernes progresjon</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Oversikt</h1>
+          <p className="text-gray-600 dark:text-gray-300">Status og progresjon for alle programmer</p>
         </div>
         <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
@@ -889,15 +889,6 @@ export default function ThemesPage() {
                     
                     {!isNoTheme && (
                       <div className="flex items-center space-x-1">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleOpenAssign(theme)}
-                          className="mr-2 h-8 text-xs"
-                        >
-                          <UserPlus className="h-3 w-3 mr-1" />
-                          Tildel
-                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
