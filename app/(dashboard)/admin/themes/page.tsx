@@ -1,15 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Edit2, Trash2, AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Plus, Lock, PauseCircle, Unlock, UserPlus } from 'lucide-react'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
+import { AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Lock, PauseCircle, Unlock } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Theme } from '@/types/enhanced-database.types'
-import { ThemeForm, type ThemeFormData } from '@/components/admin/programs/ThemeForm'
-import { AssignmentSelector } from '@/components/admin/AssignmentSelector'
 
 interface User {
   id: string
@@ -125,32 +122,10 @@ const statusConfig: Record<
 export default function ThemesPage() {
   const [themes, setThemes] = useState<Theme[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [editingTheme, setEditingTheme] = useState<Theme | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [expandedThemeId, setExpandedThemeId] = useState<string | null>(null)
   const [progressState, setProgressState] = useState<Record<string, ThemeProgressState>>({})
   
-  // State for assigning theme to users/departments
-  const [showAssignModal, setShowAssignModal] = useState(false)
-  const [assigningTheme, setAssigningTheme] = useState<Theme | null>(null)
-  const [assignSelection, setAssignSelection] = useState<{
-    type: 'department' | 'individual'
-    departmentIds: string[]
-    userIds: string[]
-  }>({
-    type: 'department',
-    departmentIds: [],
-    userIds: []
-  })
-  const [assigning, setAssigning] = useState(false)
-  
-  const [formData, setFormData] = useState<ThemeFormData>({
-    name: '',
-    description: '',
-    progression_type: 'flexible'
-  })
-
   useEffect(() => {
     fetchUserAndThemes()
   }, [])
@@ -214,85 +189,6 @@ export default function ThemesPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!user) return
-
-    try {
-      if (editingTheme) {
-        // Update existing theme
-        const { error } = await supabase
-          .from('themes')
-          .update({
-            name: formData.name,
-            description: formData.description || null,
-            progression_type: formData.progression_type
-          })
-          .eq('id', editingTheme.id)
-
-        if (error) throw error
-        toast.success('Program oppdatert!')
-      } else {
-        // Create new theme
-        const { error } = await supabase
-          .from('themes')
-          .insert([{
-            name: formData.name,
-            description: formData.description || null,
-            company_id: user.company_id,
-            progression_type: formData.progression_type
-          }])
-
-        if (error) throw error
-        toast.success('Program opprettet!')
-      }
-
-      setShowForm(false)
-      setEditingTheme(null)
-      setFormData({ name: '', description: '', progression_type: 'flexible' })
-      fetchUserAndThemes()
-    } catch (error: any) {
-      toast.error(error.message)
-    }
-  }
-
-  const handleCreate = () => {
-    setEditingTheme(null)
-    setFormData({
-      name: '',
-      description: '',
-      progression_type: 'flexible'
-    })
-    setShowForm(true)
-  }
-
-  const handleEdit = (theme: Theme) => {
-    setEditingTheme(theme)
-    setFormData({
-      name: theme.name,
-      description: theme.description || '',
-      progression_type: theme.progression_type || 'flexible'
-    })
-    setShowForm(true)
-  }
-
-  const handleDelete = async (themeId: string) => {
-    if (!confirm('Er du sikker på at du vil slette dette programmet? Alle tilhørende kurs vil miste program-tilknytningen.')) return
-
-    try {
-      const { error } = await supabase
-        .from('themes')
-        .delete()
-        .eq('id', themeId)
-
-      if (error) throw error
-      toast.success('Program slettet!')
-      fetchUserAndThemes()
-    } catch (error: any) {
-      toast.error('Kunne ikke slette program: ' + error.message)
-    }
-  }
-  
   const handleUnlock = async (assignmentId: string, themeId: string) => {
     try {
       const { error } = await supabase
@@ -310,149 +206,6 @@ export default function ThemesPage() {
       toast.error('Kunne ikke låse opp kurs: ' + error.message)
     }
   }
-
-  const resetForm = () => {
-    setShowForm(false)
-    setEditingTheme(null)
-    setFormData({ name: '', description: '', progression_type: 'flexible' })
-  }
-
-  // --- New: Assignment Handling ---
-
-  const handleOpenAssign = (theme: Theme) => {
-    setAssigningTheme(theme)
-    setAssignSelection({
-      type: 'department',
-      departmentIds: [],
-      userIds: []
-    })
-    setShowAssignModal(true)
-  }
-
-  const handleAssignSubmit = async () => {
-    if (!assigningTheme || !user) return
-    
-    setAssigning(true)
-    try {
-      // 1. Get all programs in this theme
-      const { data: programs } = await supabase
-        .from('training_programs')
-        .select('id, sort_order')
-        .eq('theme_id', assigningTheme.id)
-        .order('sort_order', { ascending: true })
-      
-      if (!programs || programs.length === 0) {
-        toast.error('Ingen kurs i dette programmet å tildele')
-        return
-      }
-
-      let successCount = 0
-      let allAssignedUserIds: string[] = []
-
-      // 2. Loop through programs and assign them
-      // Important: If sequential, status will be handled by database triggers/logic or here?
-      // For now, we assign all, but for sequential programs, we might want to set status based on order?
-      // Actually, the simplest is to assign ALL, but the 'sort_order' logic in 'My Learning' page
-      // and 'handle_course_completion' trigger handles the locking.
-      // BUT: We need to set initial status correctly.
-      // Flexible: All 'assigned'
-      // Sequential: First 'assigned', rest 'locked'
-      
-      const isSequential = assigningTheme.progression_type === 'sequential_auto' || assigningTheme.progression_type === 'sequential_manual'
-      
-      // Group assignments by program to handle them
-      for (let index = 0; index < programs.length; index++) {
-        const program = programs[index]
-        const isFirst = index === 0
-        // If sequential, only the first program is 'assigned', others are 'locked'
-        // BUT: Our 'assign_program_to_user' RPC doesn't support custom status yet.
-        // We might need to call it and then update status, or update the RPC.
-        // For simplicity/speed now: Assign normally, then update status if sequential and not first.
-        
-        // Actually, let's just call the existing RPCs. They create assignments with default 'assigned'.
-        // Then we bulk update them to 'locked' if needed.
-        
-        const programId = program.id
-        
-        // Assign to departments
-        if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
-          for (const deptId of assignSelection.departmentIds) {
-             // 1. Get users in dept
-             const { data: deptUsers } = await supabase
-                .from('user_departments')
-                .select('user_id')
-                .eq('department_id', deptId)
-             
-             if (deptUsers) {
-               allAssignedUserIds.push(...deptUsers.map(u => u.user_id))
-             }
-
-             // 2. Create dept assignment
-             const { error } = await supabase.rpc('assign_program_to_department', {
-                p_program_id: programId,
-                p_department_id: deptId,
-                p_assigned_by: user.id,
-                p_notes: 'Del av program-tildeling: ' + assigningTheme.name
-             })
-             if (!error) successCount++
-          }
-        }
-        
-        // Assign to individuals
-        if (assignSelection.type === 'individual' && assignSelection.userIds.length > 0) {
-          allAssignedUserIds.push(...assignSelection.userIds)
-          for (const userId of assignSelection.userIds) {
-             const { error } = await supabase.rpc('assign_program_to_user', {
-                p_program_id: programId,
-                p_user_id: userId,
-                p_assigned_by: user.id,
-                p_notes: 'Del av program-tildeling: ' + assigningTheme.name
-             })
-             if (!error) successCount++
-          }
-        }
-      }
-      
-      // 3. If sequential, lock non-first programs
-      if (isSequential && programs.length > 1) {
-        const programsToLock = programs.slice(1).map(p => p.id)
-        if (programsToLock.length > 0 && allAssignedUserIds.length > 0) {
-           // Update status to 'locked' for these programs and users
-           // Note: This is a bit rough, as it might lock already completed courses if re-assigned.
-           // Ideally we only lock NEW assignments.
-           // 'assign_program_to_user' does nothing if already exists.
-           // So we should only update if status is 'assigned' and progress is 0?
-           
-           await supabase
-             .from('program_assignments')
-             .update({ status: 'locked' })
-             .in('program_id', programsToLock)
-             .in('assigned_to_user_id', allAssignedUserIds)
-             .eq('status', 'assigned') // Only lock if currently just assigned (not started/completed)
-        }
-      }
-
-      if (successCount > 0) {
-        toast.success('Program tildelt!')
-        // Refresh data
-        if (expandedThemeId === assigningTheme.id) {
-          fetchThemeProgress(assigningTheme.id)
-        }
-      } else {
-        toast.info('Ingen nye tildelinger ble opprettet (kanskje de allerede eksisterte?)')
-      }
-      
-      setShowAssignModal(false)
-      setAssigningTheme(null)
-    } catch (error: any) {
-      console.error('Error assigning program:', error)
-      toast.error('Feil under tildeling: ' + error.message)
-    } finally {
-      setAssigning(false)
-    }
-  }
-
-  // --- End Assignment Handling ---
 
   // Get program count for each theme
   const handleToggleTheme = (themeId: string) => {
@@ -781,71 +534,7 @@ export default function ThemesPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Oversikt</h1>
           <p className="text-gray-600 dark:text-gray-300">Status og progresjon for alle programmer</p>
         </div>
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nytt program
-        </Button>
       </div>
-
-      {/* Form Modal */}
-      <Modal isOpen={showForm} onClose={resetForm}>
-        <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
-          <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {editingTheme ? 'Rediger program' : 'Nytt program'}
-            </h3>
-          </CardHeader>
-          <CardContent>
-            <ThemeForm
-              formData={formData}
-              isCreating={!editingTheme}
-              onSubmit={handleSubmit}
-              onChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
-              onCancel={resetForm}
-              buttonText={editingTheme ? 'Oppdater program' : 'Opprett program'}
-            />
-          </CardContent>
-        </Card>
-      </Modal>
-
-      {/* Assign Modal */}
-      <Modal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)}>
-        <Card className="w-full max-w-lg bg-white dark:bg-gray-900 dark:border-gray-700">
-          <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Tildel program: {assigningTheme?.name}
-            </h3>
-            <p className="text-sm text-gray-500">
-              Dette vil tildele alle kursene i programmet til de valgte mottakerne.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <AssignmentSelector
-              companyId={user?.company_id || ''}
-              onSelectionChange={setAssignSelection}
-              selection={assignSelection}
-            />
-            
-            <div className="flex space-x-3 pt-4">
-              <Button 
-                className="flex-1" 
-                onClick={handleAssignSubmit} 
-                loading={assigning}
-                disabled={assignSelection.departmentIds.length === 0 && assignSelection.userIds.length === 0}
-              >
-                Tildel program
-              </Button>
-              <Button 
-                variant="secondary" 
-                onClick={() => setShowAssignModal(false)} 
-                disabled={assigning}
-              >
-                Avbryt
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </Modal>
 
       {/* Themes List */}
       <div className="grid gap-4">
@@ -853,7 +542,6 @@ export default function ThemesPage() {
           themes.map((theme) => {
             const isExpanded = expandedThemeId === theme.id
             const progress = progressState[theme.id]
-            const isNoTheme = theme.id === 'no-theme'
 
             return (
               <Card key={theme.id}>
@@ -886,27 +574,6 @@ export default function ThemesPage() {
                         <span className="text-xs text-gray-500 font-normal">{theme.description}</span>
                       </div>
                     </button>
-                    
-                    {!isNoTheme && (
-                      <div className="flex items-center space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(theme)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(theme.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 dark:hover:text-red-400"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
                   </div>
 
                   {isExpanded && (
@@ -1026,12 +693,8 @@ export default function ThemesPage() {
                 Ingen programmer ennå
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Opprett et program for å komme i gang.
+                Gå til "Kurs" for å opprette ditt første program.
               </p>
-              <Button onClick={handleCreate}>
-                <Plus className="mr-2 h-4 w-4" />
-                Opprett program
-              </Button>
             </CardContent>
           </Card>
         )}
