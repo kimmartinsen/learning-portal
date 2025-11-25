@@ -11,7 +11,8 @@ import {
   Settings,
   Tag,
   ChevronRight,
-  ArrowUpDown
+  ArrowUpDown,
+  UserPlus
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -49,6 +50,20 @@ export default function AdminProgramsPage() {
     progression_type: 'flexible'
   })
   const [creatingTheme, setCreatingTheme] = useState(false)
+  
+  // State for assigning theme to users/departments
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [assigningTheme, setAssigningTheme] = useState<Theme | null>(null)
+  const [assignSelection, setAssignSelection] = useState<{
+    type: 'department' | 'individual'
+    departmentIds: string[]
+    userIds: string[]
+  }>({
+    type: 'department',
+    departmentIds: [],
+    userIds: []
+  })
+  const [assigning, setAssigning] = useState(false)
   
   const [formData, setFormData] = useState({
     title: '',
@@ -528,6 +543,116 @@ export default function AdminProgramsPage() {
     }
   }
 
+  // --- New: Assignment Handling for Themes ---
+
+  const handleOpenAssign = (theme: Theme) => {
+    setAssigningTheme(theme)
+    setAssignSelection({
+      type: 'department',
+      departmentIds: [],
+      userIds: []
+    })
+    setShowAssignModal(true)
+  }
+
+  const handleAssignSubmit = async () => {
+    if (!assigningTheme || !user) return
+    
+    setAssigning(true)
+    try {
+      // 1. Get all programs in this theme
+      const { data: programs } = await supabase
+        .from('training_programs')
+        .select('id, sort_order')
+        .eq('theme_id', assigningTheme.id)
+        .order('sort_order', { ascending: true })
+      
+      if (!programs || programs.length === 0) {
+        toast.error('Ingen kurs i dette programmet å tildele')
+        return
+      }
+
+      let successCount = 0
+      let allAssignedUserIds: string[] = []
+
+      // 2. Loop through programs and assign them
+      const isSequential = assigningTheme.progression_type === 'sequential_auto' || assigningTheme.progression_type === 'sequential_manual'
+      
+      // Use standard for loop
+      for (let i = 0; i < programs.length; i++) {
+        const program = programs[i]
+        const programId = program.id
+        
+        // Assign to departments
+        if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
+          for (const deptId of assignSelection.departmentIds) {
+             // 1. Get users in dept
+             const { data: deptUsers } = await supabase
+                .from('user_departments')
+                .select('user_id')
+                .eq('department_id', deptId)
+             
+             if (deptUsers) {
+               allAssignedUserIds.push(...deptUsers.map(u => u.user_id))
+             }
+
+             // 2. Create dept assignment
+             const { error } = await supabase.rpc('assign_program_to_department', {
+                p_program_id: programId,
+                p_department_id: deptId,
+                p_assigned_by: user.id,
+                p_notes: 'Del av program-tildeling: ' + assigningTheme.name
+             })
+             if (!error) successCount++
+          }
+        }
+        
+        // Assign to individuals
+        if (assignSelection.type === 'individual' && assignSelection.userIds.length > 0) {
+          allAssignedUserIds.push(...assignSelection.userIds)
+          for (const userId of assignSelection.userIds) {
+             const { error } = await supabase.rpc('assign_program_to_user', {
+                p_program_id: programId,
+                p_user_id: userId,
+                p_assigned_by: user.id,
+                p_notes: 'Del av program-tildeling: ' + assigningTheme.name
+             })
+             if (!error) successCount++
+          }
+        }
+      }
+      
+      // 3. If sequential, lock non-first programs
+      if (isSequential && programs.length > 1) {
+        const programsToLock = programs.slice(1).map(p => p.id)
+        if (programsToLock.length > 0 && allAssignedUserIds.length > 0) {
+           await supabase
+             .from('program_assignments')
+             .update({ status: 'locked' })
+             .in('program_id', programsToLock)
+             .in('assigned_to_user_id', allAssignedUserIds)
+             .eq('status', 'assigned') // Only lock if currently just assigned (not started/completed)
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success('Program tildelt!')
+      } else {
+        toast.info('Ingen nye tildelinger ble opprettet (kanskje de allerede eksisterte?)')
+      }
+      
+      setShowAssignModal(false)
+      setAssigningTheme(null)
+    } catch (error: any) {
+      console.error('Error assigning program:', error)
+      toast.error('Feil under tildeling: ' + error.message)
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  // --- End Assignment Handling ---
+
   // Group programs by theme, sorter dem basert på sort_order hvis mulig
   const programsByTheme = programs.reduce((acc, program) => {
     const themeId = program.theme_id || 'no-theme'
@@ -587,6 +712,45 @@ export default function AdminProgramsPage() {
               onCancel={resetThemeForm}
               buttonText="Opprett program"
             />
+          </CardContent>
+        </Card>
+      </Modal>
+
+      {/* Assign Modal */}
+      <Modal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)}>
+        <Card className="w-full max-w-lg bg-white dark:bg-gray-900 dark:border-gray-700">
+          <CardHeader>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Tildel program: {assigningTheme?.name}
+            </h3>
+            <p className="text-sm text-gray-500">
+              Dette vil tildele alle kursene i programmet til de valgte mottakerne.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <AssignmentSelector
+              companyId={user?.company_id || ''}
+              onSelectionChange={setAssignSelection}
+              selection={assignSelection}
+            />
+            
+            <div className="flex space-x-3 pt-4">
+              <Button 
+                className="flex-1" 
+                onClick={handleAssignSubmit} 
+                loading={assigning}
+                disabled={assignSelection.departmentIds.length === 0 && assignSelection.userIds.length === 0}
+              >
+                Tildel program
+              </Button>
+              <Button 
+                variant="secondary" 
+                onClick={() => setShowAssignModal(false)} 
+                disabled={assigning}
+              >
+                Avbryt
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </Modal>
@@ -766,6 +930,19 @@ export default function AdminProgramsPage() {
                     {theme.progression_type === 'sequential_auto' ? '(Sekvensiell Auto)' : 
                      theme.progression_type === 'sequential_manual' ? '(Sekvensiell Manuell)' : ''}
                   </span>
+                </div>
+                
+                {/* Add Assign button here for the Theme/Program */}
+                <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleOpenAssign(theme)}
+                    className="h-7 text-xs"
+                  >
+                    <UserPlus className="h-3 w-3 mr-1" />
+                    Tildel program
+                  </Button>
                 </div>
               </summary>
 
