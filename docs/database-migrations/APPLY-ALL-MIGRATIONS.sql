@@ -5,8 +5,9 @@
 -- Kjør denne filen i Supabase SQL Editor
 -- ============================================================================
 
+-- ============================================================================
 -- STEP 1: Legg til nye kolonner og constraints
-\echo 'STEP 1: Adding prerequisite columns to training_programs...'
+-- ============================================================================
 
 ALTER TABLE training_programs
 ADD COLUMN IF NOT EXISTS prerequisite_type VARCHAR(50) DEFAULT 'none' 
@@ -34,10 +35,9 @@ UPDATE training_programs
 SET prerequisite_type = 'none'
 WHERE prerequisite_type IS NULL;
 
-\echo 'STEP 1: Complete ✓'
-
+-- ============================================================================
 -- STEP 2: Opprett hjelpefunksjoner
-\echo 'STEP 2: Creating helper functions...'
+-- ============================================================================
 
 -- Funksjon: Sjekk om forutsetninger er oppfylt
 CREATE OR REPLACE FUNCTION check_course_prerequisites_met(
@@ -149,10 +149,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-\echo 'STEP 2: Complete ✓'
-
+-- ============================================================================
 -- STEP 3: Oppdater trigger for course completion
-\echo 'STEP 3: Updating course completion trigger...'
+-- ============================================================================
 
 DROP TRIGGER IF EXISTS trigger_course_completion_sequence ON program_assignments;
 DROP FUNCTION IF EXISTS handle_course_completion() CASCADE;
@@ -246,10 +245,9 @@ CREATE TRIGGER trigger_course_completion_sequence
   FOR EACH ROW
   EXECUTE FUNCTION handle_course_completion();
 
-\echo 'STEP 3: Complete ✓'
-
+-- ============================================================================
 -- STEP 4: Oppdater user_assignments view
-\echo 'STEP 4: Updating user_assignments view...'
+-- ============================================================================
 
 CREATE OR REPLACE VIEW user_assignments AS
 SELECT 
@@ -306,10 +304,9 @@ WHERE pa.assigned_to_user_id IS NOT NULL;
 
 GRANT SELECT ON user_assignments TO authenticated;
 
-\echo 'STEP 4: Complete ✓'
-
+-- ============================================================================
 -- STEP 5: Opprett indekser for ytelse
-\echo 'STEP 5: Creating indexes...'
+-- ============================================================================
 
 CREATE INDEX IF NOT EXISTS idx_training_programs_theme_sort 
   ON training_programs(theme_id, sort_order);
@@ -317,10 +314,10 @@ CREATE INDEX IF NOT EXISTS idx_training_programs_theme_sort
 CREATE INDEX IF NOT EXISTS idx_training_programs_prerequisites 
   ON training_programs USING GIN(prerequisite_course_ids);
 
-\echo 'STEP 5: Complete ✓'
-
 -- ============================================================================
--- FERDIG! Nå har du:
+-- FERDIG! ✅ Migrasjonen er fullført!
+-- ============================================================================
+-- Nå har du:
 -- 1. Fleksible prerequisites per kurs (none, previous_auto, previous_manual, specific_courses)
 -- 2. Automatisk håndtering av locked/pending statuser via trigger
 -- 3. Oppdatert user_assignments view som respekterer nye statuser
