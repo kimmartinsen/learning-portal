@@ -547,9 +547,8 @@ export default function ThemesPage() {
             status = 'not_started'
           }
           
-          // Sjekk forsinkelse
+          // Sjekk forsinkelse (bare for in_progress eller not_started)
           if (
-            status !== 'completed' &&
             assignment.due_date &&
             new Date(assignment.due_date) < new Date()
           ) {
