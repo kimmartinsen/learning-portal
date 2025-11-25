@@ -361,7 +361,8 @@ export default function ThemesPage() {
       const isSequential = assigningTheme.progression_type === 'sequential_auto' || assigningTheme.progression_type === 'sequential_manual'
       
       // Group assignments by program to handle them
-      for (const [index, program] of programs.entries()) {
+      for (let index = 0; index < programs.length; index++) {
+        const program = programs[index]
         const isFirst = index === 0
         // If sequential, only the first program is 'assigned', others are 'locked'
         // BUT: Our 'assign_program_to_user' RPC doesn't support custom status yet.
