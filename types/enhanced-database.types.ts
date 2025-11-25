@@ -33,6 +33,11 @@ export interface EnhancedTrainingProgram {
   repetition_enabled: boolean
   repetition_interval_months: number | null
   sort_order?: number
+  
+  // New: Prerequisites and dependencies
+  prerequisite_type?: 'none' | 'previous_auto' | 'previous_manual' | 'specific_courses'
+  prerequisite_course_ids?: string[]
+  
   created_at: string
   
   // Relations

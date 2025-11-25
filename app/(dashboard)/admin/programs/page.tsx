@@ -13,7 +13,8 @@ import {
   Tag,
   ChevronRight,
   ArrowUpDown,
-  UserPlus
+  UserPlus,
+  Network
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -1048,8 +1049,18 @@ export default function AdminProgramsPage() {
                   </span>
                 </div>
                 
-                {/* Add Assign button here for the Theme/Program */}
-                <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                {/* Add buttons for Theme/Program management */}
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.push(`/admin/programs/${theme.id}/structure`)}
+                    className="h-7 text-xs"
+                    title="Rediger programstruktur"
+                  >
+                    <Network className="h-3 w-3 mr-1" />
+                    Struktur
+                  </Button>
                   <Button
                     variant="secondary"
                     size="sm"
