@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Plus,
   Edit2,
@@ -36,6 +37,7 @@ interface Instructor {
 }
 
 export default function AdminProgramsPage() {
+  const router = useRouter()
   const [programs, setPrograms] = useState<EnhancedTrainingProgram[]>([])
   const [themes, setThemes] = useState<Theme[]>([]) // Themes = Programmer
   const [instructors, setInstructors] = useState<Instructor[]>([])
@@ -408,6 +410,9 @@ export default function AdminProgramsPage() {
 
       resetForm()
       fetchPrograms(user.company_id)
+      
+      // Trigger refresh for all pages (including My Learning)
+      router.refresh()
     } catch (error: any) {
       toast.error(error.message)
     }
@@ -746,6 +751,9 @@ export default function AdminProgramsPage() {
         let msg = 'Program oppdatert.'
         if (removedCount > 0) msg += ` Fjernet tilgang for ${removedCount} mottakere.`
         toast.success(msg)
+        
+        // Trigger refresh for all pages (including My Learning)
+        router.refresh()
       } else {
         toast.info('Ingen endringer i tildelinger')
       }
