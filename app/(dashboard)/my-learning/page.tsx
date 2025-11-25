@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { FocusRefresher } from '@/components/utils/FocusRefresher'
 
 interface UserAssignment {
   id: string
@@ -182,6 +183,7 @@ export default async function MyLearningPage() {
 
   return (
     <div className="space-y-6">
+      <FocusRefresher />
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Min opplæring</h1>
