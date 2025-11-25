@@ -65,6 +65,12 @@ export default function AdminProgramsPage() {
   })
   const [assigning, setAssigning] = useState(false)
   
+  // Store initial assignments to calculate removals
+  const [initialAssignSelection, setInitialAssignSelection] = useState<{
+    departmentIds: string[]
+    userIds: string[]
+  }>({ departmentIds: [], userIds: [] })
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -553,14 +559,11 @@ export default function AdminProgramsPage() {
       departmentIds: [],
       userIds: []
     })
+    setInitialAssignSelection({ departmentIds: [], userIds: [] })
     setShowAssignModal(true)
 
     // Fetch existing assignments for this theme to pre-fill the modal
     // Strategy: Find ALL assignments for ANY program in this theme. 
-    // If a department/user has ANY assignment, we consider them 'partially assigned' and check them.
-    // OR strictly: Only check if they have ALL assignments.
-    // Let's go with: If they have assignment for the FIRST program (entry point), check them.
-    
     try {
       // 1. Find the first program in the theme
       const { data: firstProgram } = await supabase
@@ -589,11 +592,20 @@ export default function AdminProgramsPage() {
         ])
 
         if (deptResponse.data || userResponse.data) {
+          const currentDeptIds = (deptResponse.data || []).map(a => a.assigned_to_department_id).filter(Boolean) as string[]
+          const currentUserIds = (userResponse.data || []).map(a => a.assigned_to_user_id).filter(Boolean) as string[]
+          
           setAssignSelection(prev => ({
             ...prev,
-            departmentIds: (deptResponse.data || []).map(a => a.assigned_to_department_id).filter(Boolean) as string[],
-            userIds: (userResponse.data || []).map(a => a.assigned_to_user_id).filter(Boolean) as string[]
+            departmentIds: currentDeptIds,
+            userIds: currentUserIds
           }))
+          
+          // Store initial selection to detect removals later
+          setInitialAssignSelection({
+            departmentIds: currentDeptIds,
+            userIds: currentUserIds
+          })
         }
       }
     } catch (error) {
@@ -619,18 +631,67 @@ export default function AdminProgramsPage() {
       }
 
       let successCount = 0
+      let removedCount = 0
       let allAssignedUserIds: string[] = []
 
-      // 2. Loop through programs and assign them
+      // Calculate removals
+      const removedDepartmentIds = initialAssignSelection.departmentIds.filter(id => !assignSelection.departmentIds.includes(id))
+      const removedUserIds = initialAssignSelection.userIds.filter(id => !assignSelection.userIds.includes(id))
+
+      // 2. Loop through programs and assign/remove
       const isSequential = assigningTheme.progression_type === 'sequential_auto' || assigningTheme.progression_type === 'sequential_manual'
       
-      // Use standard for loop
       for (let i = 0; i < programs.length; i++) {
         const program = programs[i]
         const programId = program.id
         
+        // --- REMOVALS ---
+        
+        // Remove department assignments
+        for (const deptId of removedDepartmentIds) {
+          // 1. Get users in this department
+          const { data: deptUsers } = await supabase
+            .from('user_departments')
+            .select('user_id')
+            .eq('department_id', deptId)
+          
+          // 2. Delete the department assignment itself
+          const { error: deptDelError } = await supabase
+            .from('program_assignments')
+            .delete()
+            .eq('program_id', programId)
+            .eq('assigned_to_department_id', deptId)
+          
+          if (!deptDelError) removedCount++
+
+          // 3. Delete auto-assigned user assignments
+          if (deptUsers && deptUsers.length > 0) {
+            await supabase
+              .from('program_assignments')
+              .delete()
+              .eq('program_id', programId)
+              .in('assigned_to_user_id', deptUsers.map(u => u.user_id))
+              .eq('is_auto_assigned', true)
+          }
+        }
+        
+        // Remove individual assignments
+        if (removedUserIds.length > 0) {
+           const { error: userDelError } = await supabase
+             .from('program_assignments')
+             .delete()
+             .eq('program_id', programId)
+             .in('assigned_to_user_id', removedUserIds)
+             .eq('is_auto_assigned', false)
+           
+           if (!userDelError) removedCount++
+        }
+
+        // --- ADDITIONS ---
+
         // Assign to departments
         if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
+          // Only assign if new or kept (RPC handles duplicates gracefully)
           for (const deptId of assignSelection.departmentIds) {
              // 1. Get users in dept
              const { data: deptUsers } = await supabase
@@ -668,7 +729,7 @@ export default function AdminProgramsPage() {
         }
       }
       
-      // 3. If sequential, lock non-first programs
+      // 3. If sequential, lock non-first programs (only for active assignments)
       if (isSequential && programs.length > 1) {
         const programsToLock = programs.slice(1).map(p => p.id)
         if (programsToLock.length > 0 && allAssignedUserIds.length > 0) {
@@ -681,12 +742,12 @@ export default function AdminProgramsPage() {
         }
       }
 
-      if (successCount > 0) {
-        toast.success('Program tildelt!')
+      if (successCount > 0 || removedCount > 0) {
+        let msg = 'Program oppdatert.'
+        if (removedCount > 0) msg += ` Fjernet tilgang for ${removedCount} mottakere.`
+        toast.success(msg)
       } else {
-        // This is not necessarily an error, it means assignments already existed
-        // toast.info('Tildelinger oppdatert') 
-        toast.success('Program tildelt!')
+        toast.info('Ingen endringer i tildelinger')
       }
       
       setShowAssignModal(false)
@@ -787,9 +848,8 @@ export default function AdminProgramsPage() {
                 className="flex-1" 
                 onClick={handleAssignSubmit} 
                 loading={assigning}
-                disabled={assignSelection.departmentIds.length === 0 && assignSelection.userIds.length === 0}
               >
-                Tildel program
+                Lagre tildelinger
               </Button>
               <Button 
                 variant="secondary" 
