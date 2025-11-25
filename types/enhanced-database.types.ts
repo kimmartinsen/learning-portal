@@ -17,6 +17,7 @@ export interface Theme {
   name: string
   description: string | null
   order_index: number
+  progression_type?: 'flexible' | 'sequential_auto' | 'sequential_manual'
   created_at: string
   updated_at: string
 }
@@ -31,6 +32,7 @@ export interface EnhancedTrainingProgram {
   deadline_days: number // Number of days to complete (default: 14)
   repetition_enabled: boolean
   repetition_interval_months: number | null
+  sort_order?: number
   created_at: string
   
   // Relations
@@ -57,7 +59,7 @@ export interface ProgramAssignment {
   max_attempts: number
   
   // Status tracking
-  status: 'assigned' | 'started' | 'completed' | 'overdue' | 'cancelled'
+  status: 'assigned' | 'started' | 'completed' | 'overdue' | 'cancelled' | 'locked' | 'pending'
   completed_at: string | null
   
   // Additional info
@@ -84,7 +86,7 @@ export interface UserAssignment {
   due_date: string
   is_mandatory: boolean
   status: string
-  calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue'
+  calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'locked' | 'pending'
   days_remaining: number
   notes: string | null
   
@@ -151,6 +153,7 @@ export interface UserDashboardData {
 export interface CreateThemeFormData {
   name: string
   description: string
+  progression_type: 'flexible' | 'sequential_auto' | 'sequential_manual'
 }
 
 export interface AssignProgramFormData {

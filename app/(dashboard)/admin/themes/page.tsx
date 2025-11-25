@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Edit2, Trash2, AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight } from 'lucide-react'
+import { Edit2, Trash2, AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Plus, Lock, PauseCircle, Unlock } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import type { Theme, CreateThemeFormData } from '@/types/enhanced-database.types'
+import type { Theme } from '@/types/enhanced-database.types'
+import { ThemeForm, type ThemeFormData } from '@/components/admin/programs/ThemeForm'
 
 interface User {
   id: string
@@ -20,6 +20,7 @@ type ThemeProgram = {
   id: string
   title: string
   description: string | null
+  sort_order?: number
 }
 
 type ProfileRecord = {
@@ -38,7 +39,7 @@ type UserAssignmentView = {
   completed_at: string | null
   assigned_at: string | null
   notes: string | null
-  calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | null
+  calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'locked' | 'pending' | null
   progress_percentage: number | null
 }
 
@@ -50,7 +51,8 @@ type UserProgressRow = {
 }
 
 type UserProgramStatus = {
-  status: 'not_started' | 'in_progress' | 'completed' | 'overdue'
+  status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'locked' | 'pending'
+  assignmentId: string
   completedModules: number
   totalModules: number
   progressPercent: number
@@ -106,6 +108,16 @@ const statusConfig: Record<
     label: 'Ikke startet',
     badgeClass: 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
     icon: <Clock className="w-4 h-4" />
+  },
+  locked: {
+    label: 'Låst',
+    badgeClass: 'bg-gray-100 text-gray-500 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
+    icon: <Lock className="w-4 h-4" />
+  },
+  pending: {
+    label: 'Venter',
+    badgeClass: 'bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-200 dark:border-yellow-500/40',
+    icon: <PauseCircle className="w-4 h-4" />
   }
 }
 
@@ -118,9 +130,10 @@ export default function ThemesPage() {
   const [expandedThemeId, setExpandedThemeId] = useState<string | null>(null)
   const [progressState, setProgressState] = useState<Record<string, ThemeProgressState>>({})
   
-  const [formData, setFormData] = useState<CreateThemeFormData>({
+  const [formData, setFormData] = useState<ThemeFormData>({
     name: '',
     description: '',
+    progression_type: 'flexible'
   })
 
   useEffect(() => {
@@ -163,31 +176,24 @@ export default function ThemesPage() {
         .eq('company_id', profile.company_id)
 
       if (programThemeRows) {
-        const themeIdsWithPrograms = new Set(
-          programThemeRows
-            .map((row) => row.theme_id)
-            .filter((id): id is string => Boolean(id))
-        )
-
-        filteredThemes = filteredThemes.filter((theme) => themeIdsWithPrograms.has(theme.id))
-        
-        // Add "no-theme" as a virtual theme if there are programs without theme
         const hasNoThemePrograms = programThemeRows.some(row => !row.theme_id)
         if (hasNoThemePrograms) {
           filteredThemes.push({
             id: 'no-theme',
-            name: 'Uten tema',
-            description: 'Kurs som ikke er knyttet til et tema',
+            name: 'Uten program',
+            description: 'Kurs som ikke er knyttet til et program',
             company_id: profile.company_id,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            order_index: 9999,
+            progression_type: 'flexible'
           } as Theme)
         }
       }
 
       setThemes(filteredThemes)
     } catch (error: any) {
-      toast.error('Kunne ikke hente temaer: ' + error.message)
+      toast.error('Kunne ikke hente programmer: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -205,11 +211,12 @@ export default function ThemesPage() {
           .update({
             name: formData.name,
             description: formData.description || null,
+            progression_type: formData.progression_type
           })
           .eq('id', editingTheme.id)
 
         if (error) throw error
-        toast.success('Tema oppdatert!')
+        toast.success('Program oppdatert!')
       } else {
         // Create new theme
         const { error } = await supabase
@@ -218,19 +225,30 @@ export default function ThemesPage() {
             name: formData.name,
             description: formData.description || null,
             company_id: user.company_id,
+            progression_type: formData.progression_type
           }])
 
         if (error) throw error
-        toast.success('Tema opprettet!')
+        toast.success('Program opprettet!')
       }
 
       setShowForm(false)
       setEditingTheme(null)
-      setFormData({ name: '', description: '' })
+      setFormData({ name: '', description: '', progression_type: 'flexible' })
       fetchUserAndThemes()
     } catch (error: any) {
       toast.error(error.message)
     }
+  }
+
+  const handleCreate = () => {
+    setEditingTheme(null)
+    setFormData({
+      name: '',
+      description: '',
+      progression_type: 'flexible'
+    })
+    setShowForm(true)
   }
 
   const handleEdit = (theme: Theme) => {
@@ -238,12 +256,13 @@ export default function ThemesPage() {
     setFormData({
       name: theme.name,
       description: theme.description || '',
+      progression_type: theme.progression_type || 'flexible'
     })
     setShowForm(true)
   }
 
   const handleDelete = async (themeId: string) => {
-    if (!confirm('Er du sikker på at du vil slette dette temaet? Alle tilhørende kurs vil miste tema-tilknytningen.')) return
+    if (!confirm('Er du sikker på at du vil slette dette programmet? Alle tilhørende kurs vil miste program-tilknytningen.')) return
 
     try {
       const { error } = await supabase
@@ -252,17 +271,35 @@ export default function ThemesPage() {
         .eq('id', themeId)
 
       if (error) throw error
-      toast.success('Tema slettet!')
+      toast.success('Program slettet!')
       fetchUserAndThemes()
     } catch (error: any) {
-      toast.error('Kunne ikke slette tema: ' + error.message)
+      toast.error('Kunne ikke slette program: ' + error.message)
+    }
+  }
+  
+  const handleUnlock = async (assignmentId: string, themeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('program_assignments')
+        .update({ status: 'assigned', assigned_at: new Date().toISOString() }) // Set to assigned to unlock
+        .eq('id', assignmentId)
+      
+      if (error) throw error
+      
+      toast.success('Kurs låst opp')
+      
+      // Refresh progress data
+      fetchThemeProgress(themeId)
+    } catch (error: any) {
+      toast.error('Kunne ikke låse opp kurs: ' + error.message)
     }
   }
 
   const resetForm = () => {
     setShowForm(false)
     setEditingTheme(null)
-    setFormData({ name: '', description: '' })
+    setFormData({ name: '', description: '', progression_type: 'flexible' })
   }
 
   // Get program count for each theme
@@ -295,7 +332,9 @@ export default function ThemesPage() {
       
       let programsQuery = supabase
         .from('training_programs')
-        .select('id, title, description')
+        .select('id, title, description, sort_order')
+        // Hvis vi har sort_order, bruk den. Ellers created_at.
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true })
       
       if (isNoTheme) {
@@ -354,18 +393,23 @@ export default function ThemesPage() {
       }, {})
 
       const { data: assignmentRows, error: assignmentError } = await supabase
-        .from('user_assignments')
+        .from('program_assignments')
         .select(
-          'id, program_id, user_id, due_date, status, completed_at, assigned_at, notes, calculated_status, progress_percentage'
+          'id, program_id, assigned_to_user_id, due_date, status, completed_at, assigned_at, notes'
         )
         .in('program_id', programIds)
-        .not('user_id', 'is', null)
+        .not('assigned_to_user_id', 'is', null)
 
       if (assignmentError) {
-        throw assignmentError
+         throw assignmentError
       }
-
-      const assignments = (assignmentRows as UserAssignmentView[] | null) || []
+      
+      // Vi må mappe resultatet til UserAssignmentView strukturen
+      const assignments: UserAssignmentView[] = (assignmentRows as any[]).map(row => ({
+          ...row,
+          user_id: row.assigned_to_user_id,
+          calculated_status: row.status as any
+      }))
 
       const userIds = Array.from(
         new Set(
@@ -486,22 +530,28 @@ export default function ThemesPage() {
         const hasInProgress = progressInfo?.hasInProgress ?? false
         const hasStarted = progressInfo?.hasStarted ?? false
 
+        // Bruk assignment status direkte hvis den er locked/pending/completed
         let status: UserProgramStatus['status'] =
-          (assignment.calculated_status as UserProgramStatus['status']) ||
-          (assignment.completed_at
-            ? 'completed'
-            : assignment.status === 'started' || hasStarted
-            ? 'in_progress'
-            : 'not_started')
+          (assignment.status as UserProgramStatus['status']) || 'not_started'
 
-        if (
-          status !== 'completed' &&
-          assignment.due_date &&
-          new Date(assignment.due_date) < new Date()
-        ) {
-          status = 'overdue'
-        } else if (status === 'not_started' && hasInProgress) {
-          status = 'in_progress'
+        // Hvis assignment sier assigned/started, sjekk fremdrift
+        if (status === 'assigned' || status === 'started' || status === 'not_started') {
+             if (assignment.completed_at) {
+                 status = 'completed'
+             } else if (hasStarted || status === 'started') {
+                 status = 'in_progress'
+             } else {
+                 status = 'not_started'
+             }
+             
+             // Sjekk forsinkelse
+             if (
+                status !== 'completed' &&
+                assignment.due_date &&
+                new Date(assignment.due_date) < new Date()
+              ) {
+                status = 'overdue'
+              }
         }
 
         if (status === 'completed') {
@@ -526,6 +576,7 @@ export default function ThemesPage() {
 
         row.programs[assignment.program_id] = {
           status,
+          assignmentId: assignment.id, // Viktig for unlock
           completedModules,
           totalModules,
           progressPercent,
@@ -552,7 +603,7 @@ export default function ThemesPage() {
       }))
     } catch (error: any) {
       console.error('Error fetching theme progress:', error)
-      toast.error('Kunne ikke hente progresjon for temaet')
+      toast.error('Kunne ikke hente progresjon for programmet')
 
       setProgressState(prev => ({
         ...prev,
@@ -573,9 +624,13 @@ export default function ThemesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Oversikt</h1>
-          <p className="text-gray-600 dark:text-gray-300">Status og progresjon for alle temaer</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Programoversikt</h1>
+          <p className="text-gray-600 dark:text-gray-300">Administrer programmer og se deltakernes progresjon</p>
         </div>
+        <Button onClick={handleCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nytt program
+        </Button>
       </div>
 
       {/* Form Modal */}
@@ -583,41 +638,18 @@ export default function ThemesPage() {
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
           <CardHeader>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {editingTheme ? 'Rediger tema' : 'Nytt tema'}
+              {editingTheme ? 'Rediger program' : 'Nytt program'}
             </h3>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <Input
-                label="Temanavn"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                required
-                placeholder="F.eks. HMS og Sikkerhet"
-              />
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Beskrivelse
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
-                  rows={3}
-                  placeholder="Valgfri beskrivelse av temaet"
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <Button type="submit" className="flex-1">
-                  {editingTheme ? 'Oppdater' : 'Opprett'}
-                </Button>
-                <Button type="button" variant="secondary" onClick={resetForm}>
-                  Avbryt
-                </Button>
-              </div>
-            </form>
+            <ThemeForm
+              formData={formData}
+              isCreating={!editingTheme}
+              onSubmit={handleSubmit}
+              onChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
+              onCancel={resetForm}
+              buttonText={editingTheme ? 'Oppdater program' : 'Opprett program'}
+            />
           </CardContent>
         </Card>
       </Modal>
@@ -628,6 +660,7 @@ export default function ThemesPage() {
           themes.map((theme) => {
             const isExpanded = expandedThemeId === theme.id
             const progress = progressState[theme.id]
+            const isNoTheme = theme.id === 'no-theme'
 
             return (
               <Card key={theme.id}>
@@ -636,33 +669,51 @@ export default function ThemesPage() {
                     <button
                       type="button"
                       onClick={() => handleToggleTheme(theme.id)}
-                      className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none"
+                      className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none flex-grow"
                     >
                       {isExpanded ? (
                         <ChevronDown className="h-4 w-4 text-gray-500" />
                       ) : (
                         <ChevronRight className="h-4 w-4 text-gray-500" />
                       )}
-                      <span>{theme.name}</span>
+                      <div className="flex flex-col">
+                        <span className="flex items-center gap-2">
+                          {theme.name}
+                          {theme.progression_type === 'sequential_auto' && (
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                              Sekvensiell (Auto)
+                            </span>
+                          )}
+                          {theme.progression_type === 'sequential_manual' && (
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
+                              Sekvensiell (Manuell)
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs text-gray-500 font-normal">{theme.description}</span>
+                      </div>
                     </button>
-                    <div className="flex items-center space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(theme)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(theme.id)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 dark:hover:text-red-400"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    
+                    {!isNoTheme && (
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(theme)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(theme.id)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 dark:hover:text-red-400"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   {isExpanded && (
@@ -679,11 +730,11 @@ export default function ThemesPage() {
                         const data = progress.data
                         return data.programs.length === 0 ? (
                           <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                            Ingen kurs er knyttet til dette temaet.
+                            Ingen kurs er knyttet til dette programmet.
                           </div>
                         ) : data.userRows.length === 0 ? (
                           <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                            Ingen brukere er tildelt kurs i dette temaet ennå.
+                            Ingen brukere er tildelt kurs i dette programmet ennå.
                           </div>
                         ) : (
                           <div className="space-y-6">
@@ -691,15 +742,18 @@ export default function ThemesPage() {
                               <table className="inline-table w-auto divide-y divide-gray-200">
                                 <thead className="bg-gray-50 dark:bg-gray-900/50">
                                   <tr>
-                                    <th className="w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+                                    <th className="w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-900 z-10">
                                       Bruker
                                     </th>
-                                    {data.programs.map((program) => (
+                                    {data.programs.map((program, index) => (
                                       <th
                                         key={program.id}
                                         className="w-0 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[130px]"
                                       >
-                                        {program.title}
+                                        <div className="flex flex-col items-center gap-1">
+                                          <span>{index + 1}. {program.title}</span>
+                                          {/* Kan vise sorting index her hvis aktuelt */}
+                                        </div>
                                       </th>
                                     ))}
                                   </tr>
@@ -707,8 +761,11 @@ export default function ThemesPage() {
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
                                   {data.userRows.map((row) => (
                                     <tr key={row.userId}>
-                                      <td className="w-40 px-2 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                                        {row.name}
+                                      <td className="w-40 px-2 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-900 z-10">
+                                        <div className="flex flex-col">
+                                          <span>{row.name}</span>
+                                          <span className="text-xs text-gray-500 font-normal">{row.departmentName}</span>
+                                        </div>
                                       </td>
                                       {data.programs.map((program) => {
                                         const status = row.programs[program.id]
@@ -724,15 +781,30 @@ export default function ThemesPage() {
                                         }
 
                                         const config = statusConfig[status.status]
+                                        const isLockedOrPending = status.status === 'locked' || status.status === 'pending'
 
                                         return (
                                           <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
-                                            <span
-                                              className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}
-                                            >
-                                              {config.icon}
-                                              <span>{config.label}</span>
-                                            </span>
+                                            <div className="flex items-center gap-2 justify-center">
+                                              <span
+                                                className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}
+                                              >
+                                                {config.icon}
+                                                <span>{config.label}</span>
+                                              </span>
+                                              
+                                              {isLockedOrPending && (
+                                                <Button 
+                                                  size="sm" 
+                                                  variant="ghost"
+                                                  className="h-6 w-6 p-0 text-gray-500 hover:text-blue-600"
+                                                  title="Lås opp kurs"
+                                                  onClick={() => handleUnlock(status.assignmentId, theme.id)}
+                                                >
+                                                  <Unlock className="h-3 w-3" />
+                                                </Button>
+                                              )}
+                                            </div>
                                           </td>
                                         )
                                       })}
@@ -758,11 +830,15 @@ export default function ThemesPage() {
           <Card>
             <CardContent className="p-12 text-center space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Ingen temaer ennå
+                Ingen programmer ennå
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Opprett tema fra kurs-siden for å komme i gang.
+                Opprett et program for å komme i gang.
               </p>
+              <Button onClick={handleCreate}>
+                <Plus className="mr-2 h-4 w-4" />
+                Opprett program
+              </Button>
             </CardContent>
           </Card>
         )}

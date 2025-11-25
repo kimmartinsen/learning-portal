@@ -10,7 +10,8 @@ import {
   Clock,
   Settings,
   Tag,
-  ChevronRight
+  ChevronRight,
+  ArrowUpDown
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -18,7 +19,8 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import type { EnhancedTrainingProgram, Theme, CreateThemeFormData } from '@/types/enhanced-database.types'
+import type { EnhancedTrainingProgram, Theme } from '@/types/enhanced-database.types'
+import { ThemeForm, type ThemeFormData } from '@/components/admin/programs/ThemeForm'
 import { AssignmentSelector } from '@/components/admin/AssignmentSelector'
 
 interface User {
@@ -34,16 +36,17 @@ interface Instructor {
 
 export default function AdminProgramsPage() {
   const [programs, setPrograms] = useState<EnhancedTrainingProgram[]>([])
-  const [themes, setThemes] = useState<Theme[]>([])
+  const [themes, setThemes] = useState<Theme[]>([]) // Themes = Programmer
   const [instructors, setInstructors] = useState<Instructor[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingProgram, setEditingProgram] = useState<EnhancedTrainingProgram | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [showThemeForm, setShowThemeForm] = useState(false)
-  const [themeFormData, setThemeFormData] = useState<CreateThemeFormData>({
+  const [themeFormData, setThemeFormData] = useState<ThemeFormData>({
     name: '',
-    description: ''
+    description: '',
+    progression_type: 'flexible'
   })
   const [creatingTheme, setCreatingTheme] = useState(false)
   
@@ -55,6 +58,7 @@ export default function AdminProgramsPage() {
     deadlineDays: 14,
     repetitionEnabled: false,
     repetitionInterval: 12,
+    sortOrder: 0, // Nytt felt for rekkefølge
     assignment: {
       type: 'department' as 'department' | 'individual',
       departmentIds: [] as string[],
@@ -148,6 +152,7 @@ export default function AdminProgramsPage() {
         deadline_days: formData.deadlineDays,
         repetition_enabled: formData.repetitionEnabled,
         repetition_interval_months: formData.repetitionEnabled ? formData.repetitionInterval : null,
+        sort_order: formData.sortOrder,
         company_id: user.company_id
       }
 
@@ -175,10 +180,11 @@ export default function AdminProgramsPage() {
         // Find departments that were removed (existed before but not in form now)
         const removedDepartmentIds = (existingDeptAssignments || [])
           .map(a => a.assigned_to_department_id)
-          .filter(deptId => !formData.assignment.departmentIds.includes(deptId))
+          .filter(deptId => deptId && !formData.assignment.departmentIds.includes(deptId))
         
         // Delete department assignments and their auto-assigned user assignments
         for (const deptId of removedDepartmentIds) {
+          if (!deptId) continue;
           // 1. Get users in this department from user_departments
           const { data: deptUsers } = await supabase
             .from('user_departments')
@@ -214,16 +220,19 @@ export default function AdminProgramsPage() {
         // Find users that were removed (existed before but not in form now)
         const removedUserIds = (existingUserAssignments || [])
           .map(a => a.assigned_to_user_id)
-          .filter(userId => !formData.assignment.userIds.includes(userId))
+          .filter(userId => userId && !formData.assignment.userIds.includes(userId))
         
         // Delete individual user assignments
         if (removedUserIds.length > 0) {
-          await supabase
-            .from('program_assignments')
-            .delete()
-            .eq('program_id', programId)
-            .in('assigned_to_user_id', removedUserIds)
-            .eq('is_auto_assigned', false)
+          const validRemovedUserIds = removedUserIds.filter((id): id is string => id !== null);
+          if (validRemovedUserIds.length > 0) {
+            await supabase
+              .from('program_assignments')
+              .delete()
+              .eq('program_id', programId)
+              .in('assigned_to_user_id', validRemovedUserIds)
+              .eq('is_auto_assigned', false)
+          }
         }
         
         toast.success('Kurs oppdatert!')
@@ -337,9 +346,7 @@ export default function AdminProgramsPage() {
             }
           }))
           
-          console.log('Notification data:', notifications)
-          
-          const { data: notifData, error: notifError } = await supabase
+          const { error: notifError } = await supabase
             .from('notifications')
             .insert(notifications)
             .select()
@@ -348,7 +355,6 @@ export default function AdminProgramsPage() {
             console.error('Error creating notifications:', notifError)
             toast.error('Kurset ble opprettet, men varsling feilet: ' + notifError.message)
           } else {
-            console.log('Notifications created successfully:', notifData)
             toast.success(`Varsling sendt til ${newlyAssignedUserIds.length} bruker(e)`)
           }
           
@@ -374,12 +380,8 @@ export default function AdminProgramsPage() {
             
             if (instructorNotifError) {
               console.error('Error creating instructor notification:', instructorNotifError)
-            } else {
-              console.log('Instructor notification sent successfully')
             }
           }
-        } else {
-          console.log('No new assignments created. All users were already assigned.')
         }
       }
 
@@ -402,6 +404,7 @@ export default function AdminProgramsPage() {
       deadlineDays: program.deadline_days || 14,
       repetitionEnabled: program.repetition_enabled || false,
       repetitionInterval: program.repetition_interval_months || 12,
+      sortOrder: program.sort_order || 0,
       assignment: {
         type: 'department',
         departmentIds: [],
@@ -433,8 +436,8 @@ export default function AdminProgramsPage() {
         ...prev,
         assignment: {
           type: (deptAssignments && deptAssignments.length > 0) ? 'department' : 'individual',
-          departmentIds: deptAssignments?.map(a => a.assigned_to_department_id) || [],
-          userIds: userAssignments?.map(a => a.assigned_to_user_id) || []
+          departmentIds: deptAssignments?.map(a => a.assigned_to_department_id).filter(id => id !== null) as string[] || [],
+          userIds: userAssignments?.map(a => a.assigned_to_user_id).filter(id => id !== null) as string[] || []
         }
       }))
     } catch (error) {
@@ -476,6 +479,7 @@ export default function AdminProgramsPage() {
       deadlineDays: 14,
       repetitionEnabled: false,
       repetitionInterval: 12,
+      sortOrder: 0,
       assignment: {
         type: 'department',
         departmentIds: [],
@@ -486,7 +490,7 @@ export default function AdminProgramsPage() {
 
   const resetThemeForm = () => {
     setShowThemeForm(false)
-    setThemeFormData({ name: '', description: '' })
+    setThemeFormData({ name: '', description: '', progression_type: 'flexible' })
     setCreatingTheme(false)
   }
 
@@ -502,7 +506,8 @@ export default function AdminProgramsPage() {
           {
             name: themeFormData.name,
             description: themeFormData.description || null,
-            company_id: user.company_id
+            company_id: user.company_id,
+            progression_type: themeFormData.progression_type
           }
         ])
         .select()
@@ -510,7 +515,7 @@ export default function AdminProgramsPage() {
 
       if (error) throw error
 
-      toast.success('Tema opprettet!')
+      toast.success('Program opprettet!')
       await fetchThemes(user.company_id)
       setFormData((prev) => ({
         ...prev,
@@ -523,7 +528,7 @@ export default function AdminProgramsPage() {
     }
   }
 
-  // Group programs by theme
+  // Group programs by theme, sorter dem basert på sort_order hvis mulig
   const programsByTheme = programs.reduce((acc, program) => {
     const themeId = program.theme_id || 'no-theme'
     if (!acc[themeId]) {
@@ -532,6 +537,16 @@ export default function AdminProgramsPage() {
     acc[themeId].push(program)
     return acc
   }, {} as Record<string, EnhancedTrainingProgram[]>)
+
+  // Sorter kursene internt i temaene basert på sort_order
+  Object.keys(programsByTheme).forEach(themeId => {
+    programsByTheme[themeId].sort((a, b) => {
+      if (a.sort_order !== b.sort_order) {
+        return (a.sort_order || 0) - (b.sort_order || 0)
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+  })
 
   if (loading) {
     return <div className="text-center py-8">Laster...</div>
@@ -542,13 +557,13 @@ export default function AdminProgramsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Kurs</h1>
-          <p className="text-gray-600 dark:text-gray-300">Administrer kurs og temaer for bedriften</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Kursadministrasjon</h1>
+          <p className="text-gray-600 dark:text-gray-300">Administrer kurs og programmer for bedriften</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={() => setShowThemeForm(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            Nytt tema
+            Nytt program
           </Button>
           <Button onClick={() => setShowForm(true)}>
             <Plus className="w-4 h-4 mr-2" />
@@ -557,44 +572,21 @@ export default function AdminProgramsPage() {
         </div>
       </div>
 
-      {/* Theme Form Modal */}
+      {/* Theme Form Modal (Bruker ThemeForm komponent nå) */}
       <Modal isOpen={showThemeForm} onClose={resetThemeForm}>
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nytt tema</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nytt program</h3>
           </CardHeader>
           <CardContent>
-              <form onSubmit={handleCreateTheme} className="space-y-3">
-              <Input
-                label="Temanavn"
-                value={themeFormData.name}
-                onChange={(e) => setThemeFormData((prev) => ({ ...prev, name: e.target.value }))}
-                required
-                placeholder="F.eks. HMS og sikkerhet"
-              />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Beskrivelse
-                </label>
-                <textarea
-                  value={themeFormData.description}
-                  onChange={(e) =>
-                    setThemeFormData((prev) => ({ ...prev, description: e.target.value }))
-                  }
-                  className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
-                  rows={3}
-                  placeholder="Valgfri beskrivelse av temaet"
-                />
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <Button type="submit" className="flex-1" loading={creatingTheme}>
-                  Opprett tema
-                </Button>
-                <Button type="button" variant="secondary" onClick={resetThemeForm} disabled={creatingTheme}>
-                  Avbryt
-                </Button>
-              </div>
-            </form>
+            <ThemeForm
+              formData={themeFormData}
+              isCreating={true}
+              onSubmit={handleCreateTheme}
+              onChange={(data) => setThemeFormData((prev) => ({ ...prev, ...data }))}
+              onCancel={resetThemeForm}
+              buttonText="Opprett program"
+            />
           </CardContent>
         </Card>
       </Modal>
@@ -632,14 +624,14 @@ export default function AdminProgramsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Tema
+                  Program (Tema)
                 </label>
                 <select
                   value={formData.themeId}
                   onChange={(e) => setFormData(prev => ({ ...prev, themeId: e.target.value }))}
                   className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                 >
-                  <option value="">Velg tema (valgfritt)</option>
+                  <option value="">Velg program (valgfritt)</option>
                   {themes.map(theme => (
                     <option key={theme.id} value={theme.id}>
                       {theme.name}
@@ -649,11 +641,22 @@ export default function AdminProgramsPage() {
                 {themes.length === 0 && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     <a href="/admin/themes" className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
-                      Opprett temaer først
+                      Opprett programmer først
                     </a> for å organisere kursene
                   </p>
                 )}
               </div>
+              
+              {formData.themeId && (
+                 <Input
+                  label="Rekkefølge i program"
+                  type="number"
+                  value={formData.sortOrder}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                  helper="Lavere tall kommer først. Brukes for å styre rekkefølgen hvis programmet er sekvensielt."
+                />
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -700,7 +703,7 @@ export default function AdminProgramsPage() {
                     label="Repetisjon hver (måneder)"
                     type="number"
                     min="1"
-                    max="60"
+                    max="365"
                     value={formData.repetitionInterval}
                     onChange={(e) => setFormData(prev => ({ ...prev, repetitionInterval: parseInt(e.target.value) }))}
                   />
@@ -759,19 +762,28 @@ export default function AdminProgramsPage() {
                   <Tag className="h-4 w-4 text-primary-600" />
                   <span className="text-base font-semibold">{theme.name}</span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">({themePrograms.length} kurs)</span>
+                  <span className="text-xs text-gray-400">
+                    {theme.progression_type === 'sequential_auto' ? '(Sekvensiell Auto)' : 
+                     theme.progression_type === 'sequential_manual' ? '(Sekvensiell Manuell)' : ''}
+                  </span>
                 </div>
               </summary>
 
               <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {themePrograms.map((program) => (
+                  {themePrograms.map((program, index) => (
                     <Card key={program.id}>
                       <CardContent className="p-4 space-y-3">
-                        <div className="flex items-start justify_between gap-3">
+                        <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 space-y-2">
-                            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
-                              {program.title}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                {program.sort_order ?? (index + 1)}
+                              </span>
+                              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+                                {program.title}
+                              </h3>
+                            </div>
 
                             {program.description && (
                               <p className="text-sm text-gray-600 dark:text-gray-300">{program.description}</p>
@@ -838,7 +850,7 @@ export default function AdminProgramsPage() {
               <div className="flex items-center gap-2">
                 <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
                 <BookOpen className="h-4 w-4 text-gray-400" />
-                <span className="text-base font-semibold text-gray-600 dark:text-gray-300">Uten tema</span>
+                <span className="text-base font-semibold text-gray-600 dark:text-gray-300">Uten program</span>
                 <span className="text-sm text-gray-400 dark:text-gray-500">
                   ({programsByTheme['no-theme'].length} kurs)
                 </span>
@@ -926,7 +938,7 @@ export default function AdminProgramsPage() {
               {themes.length === 0 && (
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                   Tip: <a href="/admin/themes" className="text-primary-600 hover:text-primary-700">
-                    Opprett temaer først
+                    Opprett programmer først
                   </a> for bedre organisering
                 </p>
               )}

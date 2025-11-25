@@ -8,7 +8,9 @@ import {
   CheckCircle,
   AlertTriangle,
   Tag,
-  ChevronRight
+  ChevronRight,
+  Lock,
+  PauseCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -28,8 +30,9 @@ interface UserAssignment {
   deadline_days: number
   theme_name: string | null
   days_remaining: number
-  calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue'
+  calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'locked' | 'pending'
   progress_percentage: number
+  sort_order?: number
 }
 
 export default async function MyLearningPage() {
@@ -55,28 +58,57 @@ export default async function MyLearningPage() {
   }
 
   // Get user's assignments using the view
-  const { data: assignments, error } = await supabase
+  const { data: assignmentsData, error } = await supabase
     .from('user_assignments')
     .select('*')
     .eq('user_id', profile.id)
-    .order('days_remaining', { ascending: true }) // Priority: expiring soon first
-
+  
   if (error) {
     console.error('Error fetching assignments:', error)
   }
 
-  // Progress calculation no longer needs badges
-  const badgeMap = new Map()
+  // Get sort_order for programs to sort them correctly within themes
+  const { data: programsData } = await supabase
+    .from('training_programs')
+    .select('id, sort_order')
+    .in('id', (assignmentsData || []).map(a => a.program_id))
+
+  const sortOrderMap = new Map(
+    (programsData || []).map(p => [p.id, p.sort_order || 0])
+  )
+
+  // Process assignments to include proper status and sort order
+  const assignments: UserAssignment[] = (assignmentsData || []).map((a: any) => {
+    // Override calculated_status if the raw status is locked or pending
+    let status = a.calculated_status
+    if (a.status === 'locked') status = 'locked'
+    if (a.status === 'pending') status = 'pending'
+
+    return {
+      ...a,
+      calculated_status: status,
+      sort_order: sortOrderMap.get(a.program_id) || 0
+    }
+  })
+
+  // Sort assignments by sort_order then days remaining
+  assignments.sort((a, b) => {
+    // First by days remaining (priority)
+    // But wait, user probably wants to see them in sequence order if it's a program?
+    // Let's prioritize sequence if they belong to the same theme.
+    // But we group by theme anyway.
+    return a.days_remaining - b.days_remaining
+  })
 
   // Group assignments by status
-  const notStarted = assignments?.filter(a => a.calculated_status === 'not_started') || []
-  const inProgress = assignments?.filter(a => a.calculated_status === 'in_progress') || []
-  const completed = assignments?.filter(a => a.calculated_status === 'completed') || []
-  const overdue = assignments?.filter(a => a.calculated_status === 'overdue') || []
+  const notStarted = assignments.filter(a => a.calculated_status === 'not_started')
+  const inProgress = assignments.filter(a => a.calculated_status === 'in_progress')
+  const completed = assignments.filter(a => a.calculated_status === 'completed')
+  const overdue = assignments.filter(a => a.calculated_status === 'overdue')
 
   // Group by theme for better organization
-  const assignmentsByTheme = assignments?.reduce((acc, assignment) => {
-    const theme = assignment.theme_name || 'Uten tema'
+  const assignmentsByTheme = assignments.reduce((acc, assignment) => {
+    const theme = assignment.theme_name || 'Uten program'
     if (!acc[theme]) {
       acc[theme] = []
     }
@@ -84,7 +116,17 @@ export default async function MyLearningPage() {
     return acc
   }, {} as Record<string, UserAssignment[]>) || {}
 
-  // Type guard to ensure themeAssignments is properly typed
+  // Sort assignments within themes by sort_order
+  Object.keys(assignmentsByTheme).forEach(theme => {
+    assignmentsByTheme[theme].sort((a, b) => {
+      // If same sort order (or 0), sort by created/deadline
+      if ((a.sort_order || 0) !== (b.sort_order || 0)) {
+        return (a.sort_order || 0) - (b.sort_order || 0)
+      }
+      return a.days_remaining - b.days_remaining
+    })
+  })
+
   const getThemeAssignments = (themeName: string): UserAssignment[] => {
     return assignmentsByTheme[themeName] || []
   }
@@ -97,6 +139,10 @@ export default async function MyLearningPage() {
         return 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-200 dark:bg-blue-500/20 dark:border-blue-500/40'
       case 'overdue':
         return 'text-red-600 bg-red-50 border-red-200 dark:text-red-200 dark:bg-red-500/20 dark:border-red-500/40'
+      case 'locked':
+        return 'text-gray-400 bg-gray-50 border-gray-200 dark:text-gray-500 dark:bg-gray-800 dark:border-gray-700'
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200 dark:text-yellow-200 dark:bg-yellow-500/20 dark:border-yellow-500/40'
       default:
         return 'text-gray-600 bg-gray-50 border-gray-200 dark:text-gray-300 dark:bg-gray-800 dark:border-gray-700'
     }
@@ -107,6 +153,8 @@ export default async function MyLearningPage() {
       case 'completed': return 'Fullført'
       case 'in_progress': return 'I gang'
       case 'overdue': return 'Forsinket'
+      case 'locked': return 'Låst'
+      case 'pending': return 'Venter'
       default: return 'Ikke startet'
     }
   }
@@ -116,12 +164,16 @@ export default async function MyLearningPage() {
       case 'completed': return <CheckCircle className="w-4 h-4" />
       case 'in_progress': return <PlayCircle className="w-4 h-4" />
       case 'overdue': return <AlertTriangle className="w-4 h-4" />
+      case 'locked': return <Lock className="w-4 h-4" />
+      case 'pending': return <PauseCircle className="w-4 h-4" />
       default: return <Clock className="w-4 h-4" />
     }
   }
 
   const formatDaysRemaining = (days: number, status: string) => {
     if (status === 'completed') return 'Fullført'
+    if (status === 'locked') return 'Låst'
+    if (status === 'pending') return 'Venter på godkjenning'
     if (days < 0) return `${Math.abs(days)} dager forsinket`
     if (days === 0) return 'Frist i dag'
     if (days === 1) return 'Frist i morgen'
@@ -171,35 +223,54 @@ export default async function MyLearningPage() {
 
               <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
                 {themeAssignments.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette temaet.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette programmet.</p>
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {themeAssignments.map((assignment) => {
+                    {themeAssignments.map((assignment, index) => {
                       const status = assignment.calculated_status
+                      const isLocked = status === 'locked' || status === 'pending'
 
                       const actionConfig =
                         status === 'completed'
                           ? {
                               label: 'Se igjen',
                               icon: <CheckCircle className="w-4 h-4" />,
-                              variant: 'secondary' as const
+                              variant: 'secondary' as const,
+                              disabled: false
                             }
                           : status === 'in_progress'
                           ? {
                               label: 'Fortsett',
                               icon: <PlayCircle className="w-4 h-4" />,
-                              variant: 'primary' as const
+                              variant: 'primary' as const,
+                              disabled: false
                             }
                           : status === 'overdue'
                           ? {
                               label: 'Start nå',
                               icon: <AlertTriangle className="w-4 h-4" />,
-                              variant: 'danger' as const
+                              variant: 'danger' as const,
+                              disabled: false
+                            }
+                          : status === 'locked'
+                          ? {
+                              label: 'Låst',
+                              icon: <Lock className="w-4 h-4" />,
+                              variant: 'secondary' as const,
+                              disabled: true
+                            }
+                          : status === 'pending'
+                          ? {
+                              label: 'Venter',
+                              icon: <PauseCircle className="w-4 h-4" />,
+                              variant: 'secondary' as const,
+                              disabled: true
                             }
                           : {
                               label: 'Start',
                               icon: <PlayCircle className="w-4 h-4" />,
-                              variant: 'primary' as const
+                              variant: 'primary' as const,
+                              disabled: false
                             }
 
                       return (
@@ -210,16 +281,23 @@ export default async function MyLearningPage() {
                               ? 'border-red-200 dark:border-red-500/40 shadow-sm'
                               : status === 'completed'
                               ? 'border-green-200 dark:border-green-500/40 shadow-sm'
+                              : isLocked 
+                              ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 opacity-75'
                               : 'shadow-sm'
                           }
                         >
                           <CardContent className="space-y-4 p-4">
                             <div className="flex items-start justify-between gap-3">
-                              <h3 className="text-sm font-semibold leading-tight text-gray-900 dark:text-gray-100">
-                                {assignment.program_title}
-                              </h3>
+                              <div className="flex flex-col">
+                                {themeName !== 'Uten program' && (
+                                  <span className="text-xs text-gray-500 mb-1">Steg {(assignment.sort_order || 0) > 0 ? assignment.sort_order : index + 1}</span>
+                                )}
+                                <h3 className="text-sm font-semibold leading-tight text-gray-900 dark:text-gray-100">
+                                  {assignment.program_title}
+                                </h3>
+                              </div>
                               <span
-                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(
+                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${getStatusColor(
                                   status
                                 )}`}
                               >
@@ -233,16 +311,28 @@ export default async function MyLearningPage() {
                               <span>{formatDaysRemaining(assignment.days_remaining, status)}</span>
                             </div>
 
-                            <Link href={`/programs/${assignment.program_id}`} className="block">
+                            {isLocked ? (
                               <Button
                                 size="sm"
                                 variant={actionConfig.variant}
-                                className="flex w-full items-center justify-center gap-2"
+                                className="flex w-full items-center justify-center gap-2 cursor-not-allowed opacity-70"
+                                disabled
                               >
                                 {actionConfig.icon}
                                 <span>{actionConfig.label}</span>
                               </Button>
-                            </Link>
+                            ) : (
+                              <Link href={`/programs/${assignment.program_id}`} className="block">
+                                <Button
+                                  size="sm"
+                                  variant={actionConfig.variant}
+                                  className="flex w-full items-center justify-center gap-2"
+                                >
+                                  {actionConfig.icon}
+                                  <span>{actionConfig.label}</span>
+                                </Button>
+                              </Link>
+                            )}
                           </CardContent>
                         </Card>
                       )

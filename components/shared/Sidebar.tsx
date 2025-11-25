@@ -32,7 +32,7 @@ interface SidebarProps {
 }
 
 const adminMenuItems = [
-  { href: '/admin/themes', label: 'Oversikt', icon: Home },
+  { href: '/admin/themes', label: 'Programmer', icon: Home },
   { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
   { href: '/admin/users', label: 'Brukere', icon: Users },
   { href: '/admin/departments', label: 'Avdelinger', icon: Building2 },

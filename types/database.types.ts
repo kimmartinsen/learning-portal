@@ -319,6 +319,72 @@ export interface Database {
           }
         ]
       }
+      program_assignments: {
+        Row: {
+          id: string
+          program_id: string
+          assigned_to_user_id: string | null
+          assigned_to_department_id: string | null
+          assigned_by: string
+          assigned_at: string
+          due_date: string
+          is_mandatory: boolean
+          max_attempts: number
+          status: string
+          completed_at: string | null
+          notes: string | null
+          reminder_sent_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          program_id: string
+          assigned_to_user_id?: string | null
+          assigned_to_department_id?: string | null
+          assigned_by: string
+          assigned_at?: string
+          due_date: string
+          is_mandatory?: boolean
+          max_attempts?: number
+          status?: string
+          completed_at?: string | null
+          notes?: string | null
+          reminder_sent_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          program_id?: string
+          assigned_to_user_id?: string | null
+          assigned_to_department_id?: string | null
+          assigned_by?: string
+          assigned_at?: string
+          due_date?: string
+          is_mandatory?: boolean
+          max_attempts?: number
+          status?: string
+          completed_at?: string | null
+          notes?: string | null
+          reminder_sent_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_assignments_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_assignments_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       themes: {
         Row: {
           company_id: string
@@ -327,6 +393,7 @@ export interface Database {
           id: string
           name: string
           order_index: number | null
+          progression_type: string
           updated_at: string | null
         }
         Insert: {
@@ -336,6 +403,7 @@ export interface Database {
           id?: string
           name: string
           order_index?: number | null
+          progression_type?: string
           updated_at?: string | null
         }
         Update: {
@@ -345,6 +413,7 @@ export interface Database {
           id?: string
           name?: string
           order_index?: number | null
+          progression_type?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -367,6 +436,7 @@ export interface Database {
           instructor_id: string | null
           repetition_enabled: boolean | null
           repetition_interval_months: number | null
+          sort_order: number | null
           theme_id: string | null
           title: string
         }
@@ -379,6 +449,7 @@ export interface Database {
           instructor_id?: string | null
           repetition_enabled?: boolean | null
           repetition_interval_months?: number | null
+          sort_order?: number | null
           theme_id?: string | null
           title: string
         }
@@ -391,6 +462,7 @@ export interface Database {
           instructor_id?: string | null
           repetition_enabled?: boolean | null
           repetition_interval_months?: number | null
+          sort_order?: number | null
           theme_id?: string | null
           title?: string
         }
