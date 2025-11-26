@@ -205,48 +205,28 @@ export default function ChecklistsPage() {
   const handleOpenAssign = async (checklist: Checklist) => {
     setAssigningChecklist(checklist)
     
-    // Fetch existing assignments
-    const { data: existingAssignments } = await supabase
+    // Fetch existing department assignments (direkte avdelingstildelinger)
+    const { data: deptAssignments } = await supabase
+      .from('checklist_assignments')
+      .select('assigned_to_department_id')
+      .eq('checklist_id', checklist.id)
+      .not('assigned_to_department_id', 'is', null)
+
+    // Fetch existing individual assignments (ikke auto-assigned)
+    const { data: userAssignments } = await supabase
       .from('checklist_assignments')
       .select('assigned_to_user_id')
       .eq('checklist_id', checklist.id)
+      .not('assigned_to_user_id', 'is', null)
+      .eq('is_auto_assigned', false)
 
-    let initialDeptIds: string[] = []
-    let initialUserIds: string[] = []
+    const initialDeptIds = (deptAssignments || [])
+      .map(a => a.assigned_to_department_id)
+      .filter((id): id is string => id !== null)
 
-    if (existingAssignments && existingAssignments.length > 0) {
-      const userIds = existingAssignments.map(a => a.assigned_to_user_id)
-      
-      // Get department IDs for these users
-      const { data: userDepts } = await supabase
-        .from('user_departments')
-        .select('department_id')
-        .in('user_id', userIds)
-
-      if (userDepts && userDepts.length > 0) {
-        const departmentIds = new Set(userDepts.map(ud => ud.department_id))
-        initialDeptIds = Array.from(departmentIds)
-        
-        // Check if all users are covered by departments
-        const deptUserIds = new Set<string>()
-        for (const deptId of initialDeptIds) {
-          const { data: deptUsers } = await supabase
-            .from('user_departments')
-            .select('user_id')
-            .eq('department_id', deptId)
-          
-          if (deptUsers) {
-            deptUsers.forEach(du => deptUserIds.add(du.user_id))
-          }
-        }
-        
-        // Users not in any department
-        initialUserIds = userIds.filter(id => !deptUserIds.has(id))
-      } else {
-        // No departments, all are individual
-        initialUserIds = userIds
-      }
-    }
+    const initialUserIds = (userAssignments || [])
+      .map(a => a.assigned_to_user_id)
+      .filter((id): id is string => id !== null)
     
     setInitialAssignSelection({
       departmentIds: initialDeptIds,
@@ -271,7 +251,9 @@ export default function ChecklistsPage() {
       
       // Calculate current selection user IDs
       let currentUserIds: string[] = []
-      if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
+      
+      // Get users from selected departments
+      if (assignSelection.departmentIds.length > 0) {
         const { data: deptUsers, error: deptError } = await supabase
           .from('user_departments')
           .select('user_id')
@@ -281,12 +263,17 @@ export default function ChecklistsPage() {
         if (deptUsers) {
           currentUserIds = deptUsers.map(du => du.user_id)
         }
-      } else if (assignSelection.type === 'individual') {
-        currentUserIds = assignSelection.userIds
+      }
+      
+      // Add individual users (always include them, regardless of type)
+      if (assignSelection.userIds.length > 0) {
+        currentUserIds = [...currentUserIds, ...assignSelection.userIds]
       }
 
       // Calculate initial selection user IDs
       let initialUserIds: string[] = []
+      
+      // Get users from initial departments
       if (initialAssignSelection.departmentIds.length > 0) {
         const { data: initialDeptUsers } = await supabase
           .from('user_departments')
@@ -297,7 +284,13 @@ export default function ChecklistsPage() {
           initialUserIds = initialDeptUsers.map(du => du.user_id)
         }
       }
+      
+      // Add initial individual users
       initialUserIds = [...initialUserIds, ...initialAssignSelection.userIds]
+      
+      // Remove duplicates
+      currentUserIds = Array.from(new Set(currentUserIds))
+      initialUserIds = Array.from(new Set(initialUserIds))
 
       // Find users to remove (in initial but not in current)
       const currentUserIdsSet = new Set(currentUserIds)
@@ -310,14 +303,32 @@ export default function ChecklistsPage() {
       let addedCount = 0
       let removedCount = 0
 
-      // Remove assignments
+      // Remove department assignments
+      const removedDepartmentIds = initialAssignSelection.departmentIds.filter(
+        id => !assignSelection.departmentIds.includes(id)
+      )
+
+      if (removedDepartmentIds.length > 0) {
+        // Delete department assignments (triggers will handle auto-assigned user assignments)
+        const { error: deptDeleteError } = await supabase
+          .from('checklist_assignments')
+          .delete()
+          .eq('checklist_id', assigningChecklist.id)
+          .in('assigned_to_department_id', removedDepartmentIds)
+
+        if (deptDeleteError) throw deptDeleteError
+        removedCount += removedDepartmentIds.length
+      }
+
+      // Remove individual user assignments
       if (usersToRemove.length > 0) {
-        // Get assignment IDs to delete
+        // Get assignment IDs to delete (only non-auto-assigned)
         const { data: assignmentsToDelete } = await supabase
           .from('checklist_assignments')
           .select('id')
           .eq('checklist_id', assigningChecklist.id)
           .in('assigned_to_user_id', usersToRemove)
+          .eq('is_auto_assigned', false)
 
         if (assignmentsToDelete && assignmentsToDelete.length > 0) {
           const assignmentIds = assignmentsToDelete.map(a => a.id)
@@ -335,16 +346,40 @@ export default function ChecklistsPage() {
             .in('id', assignmentIds)
 
           if (deleteError) throw deleteError
-          removedCount = assignmentsToDelete.length
+          removedCount += assignmentsToDelete.length
         }
       }
 
-      // Add new assignments
+      // Add new department assignments
+      const addedDepartmentIds = assignSelection.departmentIds.filter(
+        id => !initialAssignSelection.departmentIds.includes(id)
+      )
+
+      if (addedDepartmentIds.length > 0) {
+        const deptAssignmentsToCreate = addedDepartmentIds.map(deptId => ({
+          checklist_id: assigningChecklist.id,
+          assigned_to_department_id: deptId,
+          assigned_by: session?.user.id || null,
+          is_auto_assigned: false
+        }))
+
+        const { error: deptInsertError } = await supabase
+          .from('checklist_assignments')
+          .insert(deptAssignmentsToCreate)
+
+        if (deptInsertError) throw deptInsertError
+
+        // Trigger will automatically create user assignments and item statuses
+        addedCount += addedDepartmentIds.length
+      }
+
+      // Add new individual user assignments
       if (usersToAdd.length > 0) {
         const assignmentsToCreate = usersToAdd.map(userId => ({
           checklist_id: assigningChecklist.id,
           assigned_to_user_id: userId,
-          assigned_by: session?.user.id || null
+          assigned_by: session?.user.id || null,
+          is_auto_assigned: false
         }))
 
         const { error: insertError } = await supabase
@@ -361,6 +396,7 @@ export default function ChecklistsPage() {
             .select('id')
             .eq('checklist_id', assigningChecklist.id)
             .in('assigned_to_user_id', usersToAdd)
+            .eq('is_auto_assigned', false)
 
           if (newAssignments && newAssignments.length > 0) {
             const itemStatuses = newAssignments.flatMap(assignment =>
@@ -377,7 +413,7 @@ export default function ChecklistsPage() {
           }
         }
 
-        addedCount = usersToAdd.length
+        addedCount += usersToAdd.length
       }
 
       // Show success message
