@@ -141,7 +141,7 @@ export default function ThemesPage() {
         name: string
         email: string | null
         departmentName: string
-        items: Record<string, { status: string; itemStatusId?: string }>
+        items: Record<string, { status: string; itemStatusId?: string; assignmentId: string }>
       }>
     }
     error?: string
