@@ -320,7 +320,8 @@ export default function ThemesPage() {
         return
       }
 
-      // Fetch assignments
+      // Fetch assignments (only user assignments, not department assignments)
+      // Department assignments automatically create user assignments via trigger
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('checklist_assignments')
         .select(`
@@ -328,13 +329,14 @@ export default function ThemesPage() {
           assigned_to_user:profiles!checklist_assignments_assigned_to_user_id_fkey(id, full_name, email)
         `)
         .eq('checklist_id', checklistId)
+        .not('assigned_to_user_id', 'is', null) // Only get user assignments
 
       if (assignmentsError) throw assignmentsError
 
       const assignments = (assignmentsData || []).map(a => ({
         ...a,
         assigned_to_user: Array.isArray(a.assigned_to_user) ? a.assigned_to_user[0] : a.assigned_to_user
-      }))
+      })).filter(a => a.assigned_to_user_id !== null) // Extra safety filter
 
       if (assignments.length === 0) {
         setChecklistProgressState(prev => ({
