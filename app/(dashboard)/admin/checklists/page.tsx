@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Edit2, Trash2, ClipboardCheck, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, ClipboardCheck, CheckCircle, Clock, XCircle, ChevronRight, Tag, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -69,7 +69,34 @@ export default function ChecklistsPage() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setChecklists(data || [])
+      
+      // Fetch counts for each checklist
+      if (data) {
+        const checklistsWithCounts = await Promise.all(
+          data.map(async (checklist) => {
+            const [itemsResult, assignmentsResult] = await Promise.all([
+              supabase
+                .from('checklist_items')
+                .select('id', { count: 'exact', head: true })
+                .eq('checklist_id', checklist.id),
+              supabase
+                .from('checklist_assignments')
+                .select('id', { count: 'exact', head: true })
+                .eq('checklist_id', checklist.id)
+            ])
+            
+            return {
+              ...checklist,
+              itemCount: itemsResult.count || 0,
+              assignmentCount: assignmentsResult.count || 0
+            }
+          })
+        )
+        
+        setChecklists(checklistsWithCounts as any)
+      } else {
+        setChecklists([])
+      }
     } catch (error: any) {
       console.error('Error fetching checklists:', error)
       toast.error('Kunne ikke hente sjekklister')
@@ -216,7 +243,7 @@ export default function ChecklistsPage() {
         </Button>
       </div>
 
-      {/* Checklists List */}
+      {/* Checklists List - Similar to Programs page */}
       {checklists.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
@@ -234,21 +261,20 @@ export default function ChecklistsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {checklists.map((checklist) => (
-            <Card key={checklist.id}>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight mb-1">
-                      {checklist.title}
-                    </h3>
-                    {checklist.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                        {checklist.description}
-                      </p>
-                    )}
-                  </div>
+        <div className="space-y-4">
+          {checklists.map((checklist: any) => (
+            <details
+              key={checklist.id}
+              className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800"
+            >
+              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center gap-2">
+                  <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
+                  <Tag className="h-4 w-4 text-primary-600" />
+                  <span className="text-base font-semibold">{checklist.title}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    ({checklist.itemCount || 0} punkter, {checklist.assignmentCount || 0} tildelinger)
+                  </span>
                   <span
                     className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${getStatusColor(
                       checklist.status
@@ -258,30 +284,49 @@ export default function ChecklistsPage() {
                     <span>{getStatusText(checklist.status)}</span>
                   </span>
                 </div>
+                
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Link href={`/admin/checklists/${checklist.id}`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      title="Åpne sjekkliste"
+                    >
+                      <Edit2 className="h-3 w-3 mr-1" />
+                      Åpne
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(checklist.id)}
+                    className="h-7 text-xs text-red-600 hover:text-red-700 dark:hover:text-red-400"
+                    title="Slett sjekkliste"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </summary>
 
-                <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                {checklist.description && (
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                    {checklist.description}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                  <span>
                     Opprettet: {new Date(checklist.created_at).toLocaleDateString('no-NO')}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <Link href={`/admin/checklists/${checklist.id}`}>
-                      <Button size="sm" variant="ghost" title="Åpne sjekkliste">
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDelete(checklist.id)}
-                      className="text-red-600 hover:text-red-700 dark:hover:text-red-400"
-                      title="Slett sjekkliste"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {checklist.updated_at && checklist.updated_at !== checklist.created_at && (
+                    <span>
+                      Oppdatert: {new Date(checklist.updated_at).toLocaleDateString('no-NO')}
+                    </span>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </details>
           ))}
         </div>
       )}
