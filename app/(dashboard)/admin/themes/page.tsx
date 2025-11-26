@@ -42,6 +42,7 @@ type UserAssignmentView = {
   notes: string | null
   calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'locked' | 'pending' | null
   progress_percentage: number | null
+  is_auto_assigned?: boolean
 }
 
 type UserProgressRow = {
@@ -558,7 +559,8 @@ export default function ThemesPage() {
       const assignments: UserAssignmentView[] = (assignmentRows as any[]).map(row => ({
           ...row,
           user_id: row.assigned_to_user_id,
-          calculated_status: row.status as any
+          calculated_status: row.status as any,
+          is_auto_assigned: row.is_auto_assigned || false
       }))
 
       const userIds = Array.from(
