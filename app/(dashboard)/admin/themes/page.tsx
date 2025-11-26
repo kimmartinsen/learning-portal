@@ -326,7 +326,15 @@ export default function ThemesPage() {
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('checklist_assignments')
         .select(`
-          *,
+          id,
+          checklist_id,
+          assigned_to_user_id,
+          assigned_by,
+          assigned_at,
+          status,
+          completed_at,
+          notes,
+          is_auto_assigned,
           assigned_to_user:profiles!checklist_assignments_assigned_to_user_id_fkey(id, full_name, email)
         `)
         .eq('checklist_id', checklistId)
@@ -423,7 +431,8 @@ export default function ThemesPage() {
 
         // Determine department name(s) to display
         let departmentName = 'Ingen avdeling'
-        if (assignment.is_auto_assigned) {
+        const isAutoAssigned = assignment.is_auto_assigned ?? false
+        if (isAutoAssigned) {
           // Auto-assigned: show departments that assigned it
           const assignedDepts = userAssignedDeptsMap.get(assignment.assigned_to_user_id) || []
           if (assignedDepts.length > 0) {
