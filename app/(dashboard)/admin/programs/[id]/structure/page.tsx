@@ -14,7 +14,7 @@ import Link from 'next/link'
 export default function ProgramStructurePage() {
   const router = useRouter()
   const params = useParams()
-  const themeId = params?.themeId as string
+  const themeId = params?.id as string
 
   const [theme, setTheme] = useState<Theme | null>(null)
   const [courses, setCourses] = useState<EnhancedTrainingProgram[]>([])
