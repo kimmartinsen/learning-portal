@@ -3,6 +3,9 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/shared/Sidebar'
 import { Topbar } from '@/components/shared/Topbar'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function DashboardLayout({
   children,
 }: {

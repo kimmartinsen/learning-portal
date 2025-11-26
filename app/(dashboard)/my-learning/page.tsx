@@ -2,6 +2,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
 
 import { Button } from '@/components/ui/Button'
 import {
@@ -67,11 +69,16 @@ export default async function MyLearningPage({
     redirect('/login')
   }
 
-  // Get user's assignments using the view
+  // Get user's assignments using the view - force fresh data
+  console.log(`[${new Date().toISOString()}] Fetching assignments for user:`, profile.id)
+  
   const { data: assignmentsData, error } = await supabase
     .from('user_assignments')
     .select('*')
     .eq('user_id', profile.id)
+    .order('created_at', { ascending: false })
+  
+  console.log(`[${new Date().toISOString()}] Fetched ${assignmentsData?.length || 0} assignments`)
   
   if (error) {
     console.error('Error fetching assignments:', error)
