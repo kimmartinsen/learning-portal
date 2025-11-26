@@ -3,12 +3,10 @@
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 
-// Må matche databasens enum: 'flexible', 'sequential_auto', 'sequential_manual'
-// Men vi bruker norske tekster i UI
 export interface ThemeFormData {
   name: string
   description: string
-  progression_type: 'flexible' | 'sequential_auto' | 'sequential_manual'
+  progression_type?: 'flexible' | 'sequential_auto' | 'sequential_manual'
 }
 
 interface ThemeFormProps {
@@ -48,24 +46,6 @@ export function ThemeForm({
           rows={3}
           placeholder="Beskrivelse av hva programmet inneholder..."
         />
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Progresjon og rekkefølge
-        </label>
-        <select
-          value={formData.progression_type}
-          onChange={(e) => onChange({ progression_type: e.target.value as ThemeFormData['progression_type'] })}
-          className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
-        >
-          <option value="flexible">Fleksibelt (Alle kurs tilgjengelig med en gang)</option>
-          <option value="sequential_auto">Sekvensiell - Automatisk (Neste kurs åpnes når forrige er bestått)</option>
-          <option value="sequential_manual">Sekvensiell - Manuell (Admin må godkjenne neste steg)</option>
-        </select>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Velg hvordan deltakerne skal bevege seg gjennom programmet.
-        </p>
       </div>
 
       <div className="flex space-x-3 pt-4">

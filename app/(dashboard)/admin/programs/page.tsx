@@ -49,8 +49,7 @@ export default function AdminProgramsPage() {
   const [showThemeForm, setShowThemeForm] = useState(false)
   const [themeFormData, setThemeFormData] = useState<ThemeFormData>({
     name: '',
-    description: '',
-    progression_type: 'flexible'
+    description: ''
   })
   const [creatingTheme, setCreatingTheme] = useState(false)
   
@@ -561,7 +560,7 @@ export default function AdminProgramsPage() {
 
   const resetThemeForm = () => {
     setShowThemeForm(false)
-    setThemeFormData({ name: '', description: '', progression_type: 'flexible' })
+    setThemeFormData({ name: '', description: '' })
     setCreatingTheme(false)
   }
 
@@ -578,7 +577,7 @@ export default function AdminProgramsPage() {
             name: themeFormData.name,
             description: themeFormData.description || null,
             company_id: user.company_id,
-            progression_type: themeFormData.progression_type
+            progression_type: 'flexible' // Default til flexible, kan endres i Struktur
           }
         ])
         .select()
@@ -598,6 +597,7 @@ export default function AdminProgramsPage() {
       router.refresh()
     } catch (error: any) {
       toast.error(error.message)
+    } finally {
       setCreatingTheme(false)
     }
   }
