@@ -6,6 +6,87 @@
 -- ============================================================================
 
 -- ============================================================================
+-- STEP 0: Opprett themes-tabellen hvis den ikke finnes
+-- ============================================================================
+
+DO $$ 
+BEGIN
+  -- Opprett themes-tabellen hvis den ikke eksisterer
+  IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'themes') THEN
+    CREATE TABLE themes (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      company_id UUID NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      order_index INTEGER DEFAULT 0,
+      progression_type VARCHAR(50) DEFAULT 'flexible',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    
+    -- Legg til foreign key constraint
+    ALTER TABLE themes ADD CONSTRAINT themes_company_id_fkey 
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
+    
+    -- Legg til check constraint
+    ALTER TABLE themes ADD CONSTRAINT themes_progression_type_check 
+      CHECK (progression_type IN ('flexible', 'sequential_auto', 'sequential_manual'));
+  END IF;
+  
+  -- Legg til progression_type hvis den mangler
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns 
+    WHERE table_schema = 'public' AND table_name = 'themes' AND column_name = 'progression_type'
+  ) THEN
+    ALTER TABLE themes ADD COLUMN progression_type VARCHAR(50) DEFAULT 'flexible';
+    ALTER TABLE themes ADD CONSTRAINT themes_progression_type_check 
+      CHECK (progression_type IN ('flexible', 'sequential_auto', 'sequential_manual'));
+  END IF;
+  
+  -- Legg til order_index hvis den mangler
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns 
+    WHERE table_schema = 'public' AND table_name = 'themes' AND column_name = 'order_index'
+  ) THEN
+    ALTER TABLE themes ADD COLUMN order_index INTEGER DEFAULT 0;
+  END IF;
+END $$;
+
+-- Indekser for themes
+CREATE INDEX IF NOT EXISTS idx_themes_company ON themes(company_id);
+CREATE INDEX IF NOT EXISTS idx_themes_order ON themes(company_id, order_index);
+
+-- Aktiver RLS for themes
+ALTER TABLE themes ENABLE ROW LEVEL SECURITY;
+
+-- RLS policies for themes
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'themes' AND policyname = 'Users view company themes'
+  ) THEN
+    CREATE POLICY "Users view company themes" ON themes FOR SELECT 
+      USING (company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid()));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'themes' AND policyname = 'Admins manage themes'
+  ) THEN
+    CREATE POLICY "Admins manage themes" ON themes FOR ALL 
+      USING (company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+  END IF;
+END $$;
+
+-- Legg til nødvendige kolonner i training_programs hvis de ikke finnes
+ALTER TABLE training_programs 
+  ADD COLUMN IF NOT EXISTS theme_id UUID REFERENCES themes(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS deadline_days INTEGER DEFAULT 14;
+
+CREATE INDEX IF NOT EXISTS idx_programs_theme ON training_programs(theme_id);
+CREATE INDEX IF NOT EXISTS idx_programs_sort_order ON training_programs(theme_id, sort_order);
+
+-- ============================================================================
 -- STEP 1: Legg til nye kolonner og constraints
 -- ============================================================================
 
@@ -25,10 +106,6 @@ COMMENT ON COLUMN training_programs.prerequisite_type IS
 
 COMMENT ON COLUMN training_programs.prerequisite_course_ids IS 
   'Array av training_program IDs som må fullføres før dette kurset låses opp (kun brukt når prerequisite_type = specific_courses)';
-
--- Mark progression_type as deprecated
-COMMENT ON COLUMN themes.progression_type IS 
-  'DEPRECATED: Bruk heller prerequisite_type per kurs i training_programs. Beholdes for bakoverkompatibilitet.';
 
 -- Sett alle eksisterende kurs til 'none' som standard
 UPDATE training_programs
