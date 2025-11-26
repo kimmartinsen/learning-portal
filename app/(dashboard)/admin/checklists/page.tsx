@@ -270,7 +270,7 @@ export default function ChecklistsPage() {
           .select('user_id')
           .eq('department_id', deptId)
         
-        // 2. Delete the department assignment itself
+        // 2. Delete the department assignment itself (trigger will handle user assignments)
         const { error: deptDelError } = await supabase
           .from('checklist_assignments')
           .delete()
@@ -278,35 +278,8 @@ export default function ChecklistsPage() {
           .eq('assigned_to_department_id', deptId)
         
         if (!deptDelError) removedCount++
-
-        // 3. Delete auto-assigned user assignments
-        if (deptUsers && deptUsers.length > 0) {
-          const userIds = deptUsers.map(u => u.user_id)
-          
-          // Get assignment IDs to delete
-          const { data: assignmentsToDelete } = await supabase
-            .from('checklist_assignments')
-            .select('id')
-            .eq('checklist_id', assigningChecklist.id)
-            .in('assigned_to_user_id', userIds)
-            .eq('is_auto_assigned', true)
-
-          if (assignmentsToDelete && assignmentsToDelete.length > 0) {
-            const assignmentIds = assignmentsToDelete.map(a => a.id)
-            
-            // Delete item statuses first
-            await supabase
-              .from('checklist_item_status')
-              .delete()
-              .in('assignment_id', assignmentIds)
-            
-            // Delete assignments
-            await supabase
-              .from('checklist_assignments')
-              .delete()
-              .in('id', assignmentIds)
-          }
-        }
+        // Note: Trigger will automatically handle removal of auto-assigned user assignments
+        // and will preserve them if user is still in another assigned department
       }
       
       // Remove individual assignments

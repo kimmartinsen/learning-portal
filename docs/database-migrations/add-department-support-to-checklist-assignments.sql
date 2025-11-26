@@ -136,6 +136,7 @@ CREATE OR REPLACE FUNCTION handle_checklist_department_removal()
 RETURNS TRIGGER AS $$
 DECLARE
   v_user_id UUID;
+  v_other_dept_assigned BOOLEAN;
 BEGIN
   -- Kun håndter når department assignment fjernes
   IF OLD.assigned_to_department_id IS NOT NULL THEN
@@ -143,29 +144,33 @@ BEGIN
     FOR v_user_id IN 
       SELECT user_id FROM user_departments WHERE department_id = OLD.assigned_to_department_id
     LOOP
-      -- Slett auto-assigned tildelinger for disse brukerne
-      -- (men ikke hvis de har direkte tildelinger fra andre avdelinger)
-      DELETE FROM checklist_assignments
-      WHERE checklist_id = OLD.checklist_id
-      AND assigned_to_user_id = v_user_id
-      AND is_auto_assigned = true
-      AND NOT EXISTS (
-        -- Ikke slett hvis brukeren har direkte tildeling eller er i annen tildelt avdeling
-        SELECT 1 FROM checklist_assignments ca
-        WHERE ca.checklist_id = OLD.checklist_id
-        AND ca.assigned_to_user_id = v_user_id
-        AND ca.id != checklist_assignments.id
-        AND (
-          ca.is_auto_assigned = false OR
-          EXISTS (
-            SELECT 1 FROM user_departments ud
-            JOIN checklist_assignments ca2 ON ca2.assigned_to_department_id = ud.department_id
-            WHERE ud.user_id = v_user_id
-            AND ca2.checklist_id = OLD.checklist_id
-            AND ca2.id != OLD.id
-          )
-        )
-      );
+      -- Sjekk om brukeren fortsatt er i en annen avdeling som har denne sjekklisten tildelt
+      SELECT EXISTS (
+        SELECT 1 
+        FROM user_departments ud
+        JOIN checklist_assignments ca ON ca.assigned_to_department_id = ud.department_id
+        WHERE ud.user_id = v_user_id
+        AND ca.checklist_id = OLD.checklist_id
+        AND ca.assigned_to_department_id != OLD.assigned_to_department_id
+      ) INTO v_other_dept_assigned;
+
+      -- Slett auto-assigned tildeling KUN hvis:
+      -- 1. Brukeren ikke har direkte tildeling (is_auto_assigned = false)
+      -- 2. Brukeren ikke er i en annen tildelt avdeling
+      IF NOT v_other_dept_assigned THEN
+        DELETE FROM checklist_assignments
+        WHERE checklist_id = OLD.checklist_id
+        AND assigned_to_user_id = v_user_id
+        AND is_auto_assigned = true
+        AND NOT EXISTS (
+          -- Ikke slett hvis brukeren har direkte tildeling
+          SELECT 1 FROM checklist_assignments ca
+          WHERE ca.checklist_id = OLD.checklist_id
+          AND ca.assigned_to_user_id = v_user_id
+          AND ca.id != checklist_assignments.id
+          AND ca.is_auto_assigned = false
+        );
+      END IF;
     END LOOP;
   END IF;
 
