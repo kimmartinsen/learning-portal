@@ -182,49 +182,80 @@ export default function ChecklistDetailPage() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const userIds = assignSelection.type === 'individual' 
-        ? assignSelection.userIds 
-        : []
+      let userIds: string[] = []
 
       // If department assignment, get all users in those departments
       if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
-        const { data: deptUsers } = await supabase
+        const { data: deptUsers, error: deptError } = await supabase
           .from('user_departments')
           .select('user_id')
           .in('department_id', assignSelection.departmentIds)
 
-        if (deptUsers) {
-          userIds.push(...deptUsers.map(du => du.user_id))
+        if (deptError) {
+          console.error('Error fetching department users:', deptError)
+          throw deptError
         }
+
+        if (deptUsers && deptUsers.length > 0) {
+          userIds = deptUsers.map(du => du.user_id)
+        } else {
+          toast.error('Ingen brukere funnet i valgte avdeling(er)')
+          return
+        }
+      } else if (assignSelection.type === 'individual') {
+        userIds = assignSelection.userIds
       }
 
-      // Create assignments
-      const assignmentsToCreate = userIds.map(userId => ({
+      if (userIds.length === 0) {
+        toast.error('Velg minst én bruker eller avdeling')
+        return
+      }
+
+      // Check for existing assignments to avoid duplicates
+      const { data: existingAssignments } = await supabase
+        .from('checklist_assignments')
+        .select('assigned_to_user_id')
+        .eq('checklist_id', checklistId)
+        .in('assigned_to_user_id', userIds)
+
+      const existingUserIds = new Set(
+        (existingAssignments || []).map(a => a.assigned_to_user_id)
+      )
+
+      // Filter out users that already have this checklist assigned
+      const newUserIds = userIds.filter(userId => !existingUserIds.has(userId))
+
+      if (newUserIds.length === 0) {
+        toast.info('Alle valgte brukere har allerede fått denne sjekklisten tildelt')
+        setShowAssignModal(false)
+        return
+      }
+
+      // Create assignments for new users only
+      const assignmentsToCreate = newUserIds.map(userId => ({
         checklist_id: checklistId,
         assigned_to_user_id: userId,
         assigned_by: session?.user.id || null
       }))
 
-      if (assignmentsToCreate.length === 0) {
-        toast.error('Velg minst én bruker eller avdeling')
-        return
-      }
-
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('checklist_assignments')
         .insert(assignmentsToCreate)
 
-      if (error) throw error
+      if (insertError) throw insertError
 
-      // Create item statuses for each assignment
-      if (items.length > 0) {
-        const { data: newAssignments } = await supabase
+      // Create item statuses for each new assignment
+      if (items.length > 0 && newUserIds.length > 0) {
+        // Get the newly created assignments
+        const { data: newAssignments, error: fetchError } = await supabase
           .from('checklist_assignments')
           .select('id')
           .eq('checklist_id', checklistId)
-          .in('assigned_to_user_id', userIds)
+          .in('assigned_to_user_id', newUserIds)
 
-        if (newAssignments) {
+        if (fetchError) throw fetchError
+
+        if (newAssignments && newAssignments.length > 0) {
           const itemStatuses = newAssignments.flatMap(assignment =>
             items.map(item => ({
               assignment_id: assignment.id,
@@ -233,18 +264,27 @@ export default function ChecklistDetailPage() {
             }))
           )
 
-          await supabase
+          const { error: statusError } = await supabase
             .from('checklist_item_status')
             .insert(itemStatuses)
+
+          if (statusError) throw statusError
         }
       }
 
-      toast.success(`${userIds.length} bruker(e) tildelt sjekkliste!`)
+      const skippedCount = userIds.length - newUserIds.length
+      if (skippedCount > 0) {
+        toast.success(`${newUserIds.length} bruker(e) tildelt! ${skippedCount} hadde allerede sjekklisten.`)
+      } else {
+        toast.success(`${newUserIds.length} bruker(e) tildelt sjekkliste!`)
+      }
+
       setShowAssignModal(false)
       setAssignSelection({ type: 'department', departmentIds: [], userIds: [] })
       if (user) await fetchData(user.company_id)
       router.refresh()
     } catch (error: any) {
+      console.error('Assignment error:', error)
       toast.error('Kunne ikke tildele: ' + error.message)
     }
   }
@@ -777,3 +817,4 @@ function ChecklistAssignmentCard({
     </Card>
   )
 }
+
