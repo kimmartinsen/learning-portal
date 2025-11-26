@@ -931,7 +931,7 @@ export default function ThemesPage() {
                                               }
                                               
                                               toast.success('Status oppdatert!')
-                                              fetchChecklistProgress(checklistId)
+                                              fetchChecklistProgress(checklist.id)
                                               router.refresh()
                                             } catch (error: any) {
                                               toast.error('Kunne ikke oppdatere status: ' + error.message)
