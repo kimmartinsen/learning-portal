@@ -321,7 +321,7 @@ export default async function MyLearningPage({
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex flex-col">
                                 {themeName !== 'Uten program' && (
-                                  <span className="text-xs text-gray-500 mb-1">Steg {(assignment.sort_order || 0) > 0 ? assignment.sort_order : index + 1}</span>
+                                  <span className="text-xs text-gray-500 mb-1">Steg {(assignment.sort_order != null && assignment.sort_order >= 0) ? assignment.sort_order + 1 : index + 1}</span>
                                 )}
                                 <h3 className="text-sm font-semibold leading-tight text-gray-900 dark:text-gray-100">
                                   {assignment.program_title}

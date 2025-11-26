@@ -168,6 +168,24 @@ export default function AdminProgramsPage() {
     if (!user) return
 
     try {
+      // For new programs in a theme, automatically set next sort_order
+      let sortOrder = formData.sortOrder
+      if (!editingProgram && formData.themeId) {
+        const { data: existingPrograms } = await supabase
+          .from('training_programs')
+          .select('sort_order')
+          .eq('theme_id', formData.themeId)
+          .order('sort_order', { ascending: false })
+          .limit(1)
+        
+        if (existingPrograms && existingPrograms.length > 0) {
+          const maxSortOrder = existingPrograms[0].sort_order
+          sortOrder = (maxSortOrder != null && maxSortOrder >= 0) ? maxSortOrder + 1 : 0
+        } else {
+          sortOrder = 0 // First course in theme
+        }
+      }
+      
       const programData = {
         title: formData.title,
         description: formData.description || null,
@@ -176,7 +194,7 @@ export default function AdminProgramsPage() {
         deadline_days: formData.deadlineDays,
         repetition_enabled: formData.repetitionEnabled,
         repetition_interval_months: formData.repetitionEnabled ? formData.repetitionInterval : null,
-        sort_order: formData.sortOrder,
+        sort_order: sortOrder,
         company_id: user.company_id
       }
 
@@ -1082,7 +1100,7 @@ export default function AdminProgramsPage() {
                           <div className="flex-1 space-y-2">
                             <div className="flex items-center gap-2">
                               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                                {program.sort_order ?? (index + 1)}
+                                {(program.sort_order != null && program.sort_order >= 0) ? program.sort_order + 1 : index + 1}
                               </span>
                               <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
                                 {program.title}
