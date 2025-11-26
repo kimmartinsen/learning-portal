@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Theme } from '@/types/enhanced-database.types'
-import type { Checklist } from '@/types/checklist.types'
+import type { Checklist, ChecklistItem, ChecklistItemStatus } from '@/types/checklist.types'
 import Link from 'next/link'
 
 interface User {
@@ -130,7 +130,22 @@ export default function ThemesPage() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
   const [expandedThemeId, setExpandedThemeId] = useState<string | null>(null)
+  const [expandedChecklistId, setExpandedChecklistId] = useState<string | null>(null)
   const [progressState, setProgressState] = useState<Record<string, ThemeProgressState>>({})
+  const [checklistProgressState, setChecklistProgressState] = useState<Record<string, {
+    loading: boolean
+    data?: {
+      items: ChecklistItem[]
+      userRows: Array<{
+        userId: string
+        name: string
+        email: string | null
+        departmentName: string
+        items: Record<string, { status: string; itemStatusId?: string }>
+      }>
+    }
+    error?: string
+  }>>({})
   
   useEffect(() => {
     fetchUserAndThemes()
@@ -253,6 +268,163 @@ export default function ThemesPage() {
 
     if (!progressState[themeId]) {
       fetchThemeProgress(themeId)
+    }
+  }
+
+  const handleToggleChecklist = (checklistId: string) => {
+    if (expandedChecklistId === checklistId) {
+      setExpandedChecklistId(null)
+      return
+    }
+
+    setExpandedChecklistId(checklistId)
+
+    if (!checklistProgressState[checklistId]) {
+      fetchChecklistProgress(checklistId)
+    }
+  }
+
+  const fetchChecklistProgress = async (checklistId: string) => {
+    if (!user) {
+      toast.error('Kunne ikke hente brukerdata')
+      return
+    }
+
+    setChecklistProgressState(prev => ({
+      ...prev,
+      [checklistId]: { loading: true }
+    }))
+
+    try {
+      // Fetch items
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('checklist_items')
+        .select('*')
+        .eq('checklist_id', checklistId)
+        .order('order_index', { ascending: true })
+
+      if (itemsError) throw itemsError
+      const items = (itemsData as ChecklistItem[] | null) || []
+
+      if (items.length === 0) {
+        setChecklistProgressState(prev => ({
+          ...prev,
+          [checklistId]: {
+            loading: false,
+            data: {
+              items: [],
+              userRows: []
+            }
+          }
+        }))
+        return
+      }
+
+      // Fetch assignments
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('checklist_assignments')
+        .select(`
+          *,
+          assigned_to_user:profiles!checklist_assignments_assigned_to_user_id_fkey(id, full_name, email)
+        `)
+        .eq('checklist_id', checklistId)
+
+      if (assignmentsError) throw assignmentsError
+
+      const assignments = (assignmentsData || []).map(a => ({
+        ...a,
+        assigned_to_user: Array.isArray(a.assigned_to_user) ? a.assigned_to_user[0] : a.assigned_to_user
+      }))
+
+      if (assignments.length === 0) {
+        setChecklistProgressState(prev => ({
+          ...prev,
+          [checklistId]: {
+            loading: false,
+            data: {
+              items,
+              userRows: []
+            }
+          }
+        }))
+        return
+      }
+
+      // Fetch item statuses for all assignments
+      const assignmentIds = assignments.map(a => a.id)
+      const { data: itemStatusesData, error: itemStatusesError } = await supabase
+        .from('checklist_item_status')
+        .select('*')
+        .in('assignment_id', assignmentIds)
+
+      if (itemStatusesError) throw itemStatusesError
+      const itemStatuses = (itemStatusesData as ChecklistItemStatus[] | null) || []
+
+      // Get user departments
+      const userIds = assignments.map(a => a.assigned_to_user_id)
+      const { data: userDeptsData } = await supabase
+        .from('user_departments')
+        .select(`
+          user_id,
+          departments(name)
+        `)
+        .in('user_id', userIds)
+
+      const userDeptsMap = new Map<string, string>()
+      if (userDeptsData) {
+        userDeptsData.forEach(ud => {
+          const deptName = Array.isArray(ud.departments) && ud.departments.length > 0
+            ? ud.departments[0].name
+            : 'Ingen avdeling'
+          userDeptsMap.set(ud.user_id, deptName)
+        })
+      }
+
+      // Build user rows
+      const userRows = assignments.map(assignment => {
+        const user = assignment.assigned_to_user
+        const itemsMap: Record<string, { status: string; itemStatusId?: string }> = {}
+
+        items.forEach(item => {
+          const status = itemStatuses.find(
+            s => s.assignment_id === assignment.id && s.item_id === item.id
+          )
+          itemsMap[item.id] = {
+            status: status?.status || 'not_started',
+            itemStatusId: status?.id
+          }
+        })
+
+        return {
+          userId: assignment.assigned_to_user_id,
+          name: user?.full_name || 'Ukjent bruker',
+          email: user?.email || null,
+          departmentName: userDeptsMap.get(assignment.assigned_to_user_id) || 'Ingen avdeling',
+          items: itemsMap
+        }
+      }).sort((a, b) => a.name.localeCompare(b.name))
+
+      setChecklistProgressState(prev => ({
+        ...prev,
+        [checklistId]: {
+          loading: false,
+          data: {
+            items,
+            userRows
+          }
+        }
+      }))
+    } catch (error: any) {
+      console.error('Error fetching checklist progress:', error)
+      toast.error('Kunne ikke hente progresjon for sjekklisten')
+
+      setChecklistProgressState(prev => ({
+        ...prev,
+        [checklistId]: {
+          loading: false,
+          error: 'Kunne ikke hente progresjon'
+        }
+      }))
     }
   }
 
@@ -633,9 +805,133 @@ export default function ThemesPage() {
 
       {/* Content based on active tab */}
       {activeTab === 'checklists' ? (
-        /* Checklists View */
-        <div className="space-y-4">
-          {checklists.length === 0 ? (
+        /* Checklists View - Same structure as Programs */
+        <div className="grid gap-4">
+          {checklists.length > 0 ? (
+            checklists.map((checklist) => {
+              const isExpanded = expandedChecklistId === checklist.id
+              const progress = checklistProgressState[checklist.id]
+
+              return (
+                <Card key={checklist.id}>
+                  <CardContent className="p-0">
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleChecklist(checklist.id)}
+                        className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none flex-grow"
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-gray-500" />
+                        )}
+                        <div className="flex flex-col">
+                          <span className="flex items-center gap-2">
+                            <ClipboardCheck className="h-4 w-4 text-primary-600" />
+                            {checklist.title}
+                          </span>
+                          <span className="text-xs text-gray-500 font-normal">{checklist.description}</span>
+                        </div>
+                      </button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                        {progress?.loading ? (
+                          <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                            Laster progresjon...
+                          </div>
+                        ) : progress?.error ? (
+                          <div className="py-6 text-center text-sm text-red-600">
+                            {progress.error}
+                          </div>
+                        ) : progress?.data ? (() => {
+                          const data = progress.data
+                          return data.items.length === 0 ? (
+                            <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                              Ingen punkter er lagt til i denne sjekklisten.
+                            </div>
+                          ) : data.userRows.length === 0 ? (
+                            <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                              Ingen brukere er tildelt denne sjekklisten ennå.
+                            </div>
+                          ) : (
+                            <div className="space-y-6">
+                              <div className="overflow-x-auto">
+                                <table className="inline-table w-auto divide-y divide-gray-200">
+                                  <thead className="bg-gray-50 dark:bg-gray-900/50">
+                                    <tr>
+                                      <th className="w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-900 z-10">
+                                        Bruker
+                                      </th>
+                                      {data.items.map((item, index) => (
+                                        <th
+                                          key={item.id}
+                                          className="w-0 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[130px]"
+                                        >
+                                          <div className="flex flex-col items-center gap-1">
+                                            <span>{index + 1}. {item.title}</span>
+                                          </div>
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+                                    {data.userRows.map((row) => (
+                                      <tr key={row.userId}>
+                                        <td className="w-40 px-2 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-900 z-10">
+                                          <div className="flex flex-col">
+                                            <span>{row.name}</span>
+                                            <span className="text-xs text-gray-500 font-normal">{row.departmentName}</span>
+                                          </div>
+                                        </td>
+                                        {data.items.map((item) => {
+                                          const itemStatus = row.items[item.id]
+                                          const status = itemStatus?.status || 'not_started'
+
+                                          if (!itemStatus) {
+                                            return (
+                                              <td key={`${row.userId}-${item.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
+                                                <span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">
+                                                  Ikke startet
+                                                </span>
+                                              </td>
+                                            )
+                                          }
+
+                                          const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_started
+
+                                          return (
+                                            <td key={`${row.userId}-${item.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
+                                              <span
+                                                className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}
+                                              >
+                                                {config.icon}
+                                                <span>{config.label}</span>
+                                              </span>
+                                            </td>
+                                          )
+                                        })}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )
+                        })() : (
+                          <div className="py-6 text-center text-sm text-gray-500">
+                            Ingen data å vise ennå.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })
+          ) : (
             <Card>
               <CardContent className="p-12 text-center space-y-4">
                 <ClipboardCheck className="h-12 w-12 text-gray-400 mx-auto" />
@@ -653,39 +949,6 @@ export default function ThemesPage() {
                 </Link>
               </CardContent>
             </Card>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {checklists.map((checklist) => (
-                <Link key={checklist.id} href={`/admin/checklists/${checklist.id}`}>
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight mb-1">
-                            {checklist.title}
-                          </h3>
-                          {checklist.description && (
-                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                              {checklist.description}
-                            </p>
-                          )}
-                        </div>
-                        <span
-                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${getStatusColor(
-                            checklist.status
-                          )}`}
-                        >
-                          {getStatusText(checklist.status)}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-800">
-                        Opprettet: {new Date(checklist.created_at).toLocaleDateString('no-NO')}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
           )}
         </div>
       ) : (
