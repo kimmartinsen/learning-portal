@@ -93,6 +93,29 @@ export default function AdminProgramsPage() {
   useEffect(() => {
     fetchUserAndData()
   }, [])
+  
+  // Auto-calculate sort_order when theme is selected for new programs
+  useEffect(() => {
+    if (!editingProgram && formData.themeId && user) {
+      const calculateNextSortOrder = async () => {
+        const { data: existingPrograms } = await supabase
+          .from('training_programs')
+          .select('sort_order')
+          .eq('theme_id', formData.themeId)
+          .order('sort_order', { ascending: false })
+          .limit(1)
+        
+        if (existingPrograms && existingPrograms.length > 0) {
+          const maxSortOrder = existingPrograms[0].sort_order
+          const nextSortOrder = (maxSortOrder != null && maxSortOrder >= 0) ? maxSortOrder + 1 : 0
+          setFormData(prev => ({ ...prev, sortOrder: nextSortOrder }))
+        } else {
+          setFormData(prev => ({ ...prev, sortOrder: 0 }))
+        }
+      }
+      calculateNextSortOrder()
+    }
+  }, [formData.themeId, editingProgram, user])
 
   const fetchUserAndData = async () => {
     try {
@@ -948,12 +971,16 @@ export default function AdminProgramsPage() {
               
               {formData.themeId && (
                  <Input
-                  label="Rekkefølge i program"
+                  label={editingProgram ? "Rekkefølge i program" : "Rekkefølge i program (tildeles automatisk)"}
                   type="number"
-                  value={formData.sortOrder}
-                  onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
+                  value={editingProgram ? formData.sortOrder : formData.sortOrder + 1}
+                  onChange={(e) => editingProgram && setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
                   placeholder="0"
-                  helper="Lavere tall kommer først. Brukes for å styre rekkefølgen hvis programmet er sekvensielt."
+                  disabled={!editingProgram}
+                  helper={editingProgram 
+                    ? "Lavere tall kommer først. Brukes for å styre rekkefølgen hvis programmet er sekvensielt." 
+                    : `Dette kurset får automatisk steg ${formData.sortOrder + 1} i programmet.`
+                  }
                 />
               )}
 
