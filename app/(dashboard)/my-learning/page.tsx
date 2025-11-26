@@ -241,7 +241,6 @@ export default async function MyLearningPage({
             <details
               key={themeName}
               className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800 transition-colors duration-200"
-              open
             >
               <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-2">

@@ -1200,7 +1200,7 @@ export default function AdminProgramsPage() {
 
         {/* Programs without theme */}
         {programsByTheme['no-theme'] && programsByTheme['no-theme'].length > 0 && (
-          <details className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800" open>
+          <details className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800">
             <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
               <div className="flex items-center gap-2">
                 <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
