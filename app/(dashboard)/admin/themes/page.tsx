@@ -362,23 +362,45 @@ export default function ThemesPage() {
       if (itemStatusesError) throw itemStatusesError
       const itemStatuses = (itemStatusesData as ChecklistItemStatus[] | null) || []
 
-      // Get user departments
+      // Find which departments assigned this checklist to each user
+      // For auto-assigned: find department assignments where user is a member
+      // For direct assignments: show "Direkte tildelt"
       const userIds = assignments.map(a => a.assigned_to_user_id)
+      
+      // Get all department assignments for this checklist
+      const { data: deptAssignmentsData } = await supabase
+        .from('checklist_assignments')
+        .select('assigned_to_department_id')
+        .eq('checklist_id', checklistId)
+        .not('assigned_to_department_id', 'is', null)
+
+      const deptIds = (deptAssignmentsData || [])
+        .map(a => a.assigned_to_department_id)
+        .filter((id): id is string => id !== null)
+
+      // Get user-department mappings for users in these departments
       const { data: userDeptsData } = await supabase
         .from('user_departments')
         .select(`
           user_id,
+          department_id,
           departments(name)
         `)
         .in('user_id', userIds)
+        .in('department_id', deptIds)
 
-      const userDeptsMap = new Map<string, string>()
+      // Build map: user_id -> array of department names that assigned this checklist
+      const userAssignedDeptsMap = new Map<string, string[]>()
       if (userDeptsData) {
         userDeptsData.forEach(ud => {
           const deptName = Array.isArray(ud.departments) && ud.departments.length > 0
             ? ud.departments[0].name
-            : 'Ingen avdeling'
-          userDeptsMap.set(ud.user_id, deptName)
+            : null
+          if (deptName) {
+            const existing = userAssignedDeptsMap.get(ud.user_id) || []
+            existing.push(deptName)
+            userAssignedDeptsMap.set(ud.user_id, existing)
+          }
         })
       }
 
@@ -398,11 +420,24 @@ export default function ThemesPage() {
           }
         })
 
+        // Determine department name(s) to display
+        let departmentName = 'Ingen avdeling'
+        if (assignment.is_auto_assigned) {
+          // Auto-assigned: show departments that assigned it
+          const assignedDepts = userAssignedDeptsMap.get(assignment.assigned_to_user_id) || []
+          if (assignedDepts.length > 0) {
+            departmentName = assignedDepts.join(', ')
+          }
+        } else {
+          // Direct assignment
+          departmentName = 'Direkte tildelt'
+        }
+
         return {
           userId: assignment.assigned_to_user_id,
           name: user?.full_name || 'Ukjent bruker',
           email: user?.email || null,
-          departmentName: userDeptsMap.get(assignment.assigned_to_user_id) || 'Ingen avdeling',
+          departmentName,
           items: itemsMap
         }
       }).sort((a, b) => a.name.localeCompare(b.name))
@@ -510,7 +545,7 @@ export default function ThemesPage() {
       const { data: assignmentRows, error: assignmentError } = await supabase
         .from('program_assignments')
         .select(
-          'id, program_id, assigned_to_user_id, due_date, status, completed_at, assigned_at, notes'
+          'id, program_id, assigned_to_user_id, due_date, status, completed_at, assigned_at, notes, is_auto_assigned'
         )
         .in('program_id', programIds)
         .not('assigned_to_user_id', 'is', null)
@@ -607,6 +642,42 @@ export default function ThemesPage() {
         return acc
       }, {}) || {}
 
+      // Find which departments assigned programs to each user
+      // Get all department assignments for these programs
+      const { data: deptAssignmentsData } = await supabase
+        .from('program_assignments')
+        .select('program_id, assigned_to_department_id')
+        .in('program_id', programIds)
+        .not('assigned_to_department_id', 'is', null)
+
+      const deptIds = Array.from(new Set(
+        (deptAssignmentsData || [])
+          .map(a => a.assigned_to_department_id)
+          .filter((id): id is string => id !== null)
+      ))
+
+      // Get user-department mappings for users in these departments
+      const { data: userDeptsData } = await supabase
+        .from('user_departments')
+        .select('user_id, department_id')
+        .in('user_id', userIds)
+        .in('department_id', deptIds)
+
+      // Build map: user_id -> array of department names that assigned programs
+      const userAssignedDeptsMap = new Map<string, string[]>()
+      if (userDeptsData) {
+        userDeptsData.forEach(ud => {
+          const deptName = departmentMap[ud.department_id]
+          if (deptName) {
+            const existing = userAssignedDeptsMap.get(ud.user_id) || []
+            if (!existing.includes(deptName)) {
+              existing.push(deptName)
+            }
+            userAssignedDeptsMap.set(ud.user_id, existing)
+          }
+        })
+      }
+
       const userMap = new Map<string, ThemeUserRow>()
       let completedCount = 0
       let overdueCount = 0
@@ -625,13 +696,24 @@ export default function ThemesPage() {
         const userId = profile.id
 
         if (!userMap.has(userId)) {
+          // Determine department name(s) to display
+          let departmentName = 'Uten avdeling'
+          if (assignment.is_auto_assigned) {
+            // Auto-assigned: show departments that assigned it
+            const assignedDepts = userAssignedDeptsMap.get(userId) || []
+            if (assignedDepts.length > 0) {
+              departmentName = assignedDepts.join(', ')
+            }
+          } else {
+            // Direct assignment
+            departmentName = 'Direkte tildelt'
+          }
+
           userMap.set(userId, {
             userId,
             name: profile.full_name || 'Ukjent bruker',
             email: profile.email,
-            departmentName: profile.department_id
-              ? departmentMap[profile.department_id] || 'Uten avdeling'
-              : 'Uten avdeling',
+            departmentName,
             programs: {}
           })
         }
