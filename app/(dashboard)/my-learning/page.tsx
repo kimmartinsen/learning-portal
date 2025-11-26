@@ -76,7 +76,6 @@ export default async function MyLearningPage({
     .from('user_assignments')
     .select('*')
     .eq('user_id', profile.id)
-    .order('created_at', { ascending: false })
   
   console.log(`[${new Date().toISOString()}] Fetched ${assignmentsData?.length || 0} assignments`)
   
