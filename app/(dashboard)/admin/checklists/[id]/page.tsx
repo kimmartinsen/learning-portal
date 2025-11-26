@@ -492,17 +492,66 @@ export default function ChecklistDetailPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
-              {assignments.map((assignment) => (
-                <ChecklistAssignmentCard
-                  key={assignment.id}
-                  assignment={assignment}
-                  items={items}
-                  checklistId={checklistId}
-                  onUpdate={() => user && fetchData(user.company_id)}
-                />
-              ))}
-            </div>
+            <Card>
+              <CardContent className="p-0">
+                <div className="divide-y divide-gray-200 dark:divide-gray-800">
+                  {assignments.map((assignment) => {
+                    const getStatusColor = (status: string) => {
+                      switch (status) {
+                        case 'completed':
+                          return 'text-green-600 bg-green-50 border-green-200 dark:text-green-200 dark:bg-green-500/20 dark:border-green-500/40'
+                        case 'in_progress':
+                          return 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-200 dark:bg-blue-500/20 dark:border-blue-500/40'
+                        case 'cancelled':
+                          return 'text-gray-400 bg-gray-50 border-gray-200 dark:text-gray-500 dark:bg-gray-800 dark:border-gray-700'
+                        default:
+                          return 'text-gray-600 bg-gray-50 border-gray-200 dark:text-gray-300 dark:bg-gray-800 dark:border-gray-700'
+                      }
+                    }
+
+                    const getStatusText = (status: string) => {
+                      switch (status) {
+                        case 'completed':
+                          return 'Fullført'
+                        case 'in_progress':
+                          return 'I gang'
+                        case 'cancelled':
+                          return 'Avbrutt'
+                        default:
+                          return 'Ikke startet'
+                      }
+                    }
+
+                    return (
+                      <div key={assignment.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                              {assignment.assigned_to_user?.full_name || 'Ukjent bruker'}
+                            </h3>
+                            {assignment.assigned_to_user?.email && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                                {assignment.assigned_to_user.email}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Tildelt: {new Date(assignment.assigned_at).toLocaleDateString('no-NO')}
+                            </p>
+                          </div>
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(
+                              assignment.status
+                            )}`}
+                          >
+                            {getStatusText(assignment.status)}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </>
       )}
@@ -580,241 +629,6 @@ export default function ChecklistDetailPage() {
         </Modal>
       )}
     </div>
-  )
-}
-
-// Component for displaying and managing individual assignment
-function ChecklistAssignmentCard({
-  assignment,
-  items,
-  checklistId,
-  onUpdate
-}: {
-  assignment: ChecklistAssignment
-  items: ChecklistItem[]
-  checklistId: string
-  onUpdate: () => void
-}) {
-  const [itemStatuses, setItemStatuses] = useState<ChecklistItemStatus[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchItemStatuses()
-  }, [assignment.id])
-
-  const fetchItemStatuses = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('checklist_item_status')
-        .select(`
-          *,
-          completed_by_user:profiles!checklist_item_status_completed_by_fkey(id, full_name)
-        `)
-        .eq('assignment_id', assignment.id)
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-
-      // Create statuses for all items if they don't exist
-      const existingItemIds = (data || []).map(s => s.item_id)
-      const missingItems = items.filter(item => !existingItemIds.includes(item.id))
-
-      if (missingItems.length > 0) {
-        const newStatuses = missingItems.map(item => ({
-          assignment_id: assignment.id,
-          item_id: item.id,
-          status: 'not_started' as const
-        }))
-
-        await supabase
-          .from('checklist_item_status')
-          .insert(newStatuses)
-      }
-
-      // Refetch after creating missing statuses
-      const { data: allStatuses } = await supabase
-        .from('checklist_item_status')
-        .select(`
-          *,
-          completed_by_user:profiles!checklist_item_status_completed_by_fkey(id, full_name)
-        `)
-        .eq('assignment_id', assignment.id)
-        .order('created_at', { ascending: true })
-
-      setItemStatuses(allStatuses?.map(s => ({
-        ...s,
-        completed_by_user: Array.isArray(s.completed_by_user) ? s.completed_by_user[0] : s.completed_by_user
-      })) || [])
-    } catch (error: any) {
-      console.error('Error fetching item statuses:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleStatusChange = async (itemId: string, newStatus: ChecklistItemStatus['status']) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      const existingStatus = itemStatuses.find(s => s.item_id === itemId)
-      
-      const updateData: any = {
-        status: newStatus,
-        updated_at: new Date().toISOString()
-      }
-
-      if (newStatus === 'completed') {
-        updateData.completed_at = new Date().toISOString()
-        updateData.completed_by = session?.user.id || null
-      } else {
-        updateData.completed_at = null
-        updateData.completed_by = null
-      }
-
-      if (existingStatus) {
-        const { error } = await supabase
-          .from('checklist_item_status')
-          .update(updateData)
-          .eq('id', existingStatus.id)
-
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('checklist_item_status')
-          .insert([{
-            assignment_id: assignment.id,
-            item_id: itemId,
-            ...updateData
-          }])
-
-        if (error) throw error
-      }
-      
-      toast.success('Status oppdatert!')
-      fetchItemStatuses()
-      onUpdate()
-    } catch (error: any) {
-      toast.error('Kunne ikke oppdatere status: ' + error.message)
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-600 bg-green-50 border-green-200 dark:text-green-200 dark:bg-green-500/20 dark:border-green-500/40'
-      case 'in_progress':
-        return 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-200 dark:bg-blue-500/20 dark:border-blue-500/40'
-      case 'cancelled':
-        return 'text-gray-400 bg-gray-50 border-gray-200 dark:text-gray-500 dark:bg-gray-800 dark:border-gray-700'
-      default:
-        return 'text-gray-600 bg-gray-50 border-gray-200 dark:text-gray-300 dark:bg-gray-800 dark:border-gray-700'
-    }
-  }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Fullført'
-      case 'in_progress':
-        return 'I gang'
-      case 'cancelled':
-        return 'Avbrutt'
-      default:
-        return 'Ikke startet'
-    }
-  }
-
-  const completedCount = itemStatuses.filter(s => s.status === 'completed').length
-  const totalCount = items.length
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
-
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-              {assignment.assigned_to_user?.full_name || 'Ukjent bruker'}
-            </h3>
-            {assignment.assigned_to_user?.email && (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {assignment.assigned_to_user.email}
-              </p>
-            )}
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Tildelt: {new Date(assignment.assigned_at).toLocaleDateString('no-NO')}
-            </p>
-          </div>
-          <span
-            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusColor(
-              assignment.status
-            )}`}
-          >
-            {getStatusText(assignment.status)}
-          </span>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Fremdrift
-            </span>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {completedCount} av {totalCount} punkter
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-            <div
-              className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Items Status */}
-        {loading ? (
-          <div className="text-center py-4 text-sm text-gray-500">Laster...</div>
-        ) : (
-          <div className="space-y-2">
-            {items.map((item, index) => {
-              const status = itemStatuses.find(s => s.item_id === item.id)
-              const currentStatus = status?.status || 'not_started'
-
-              return (
-                <div key={item.id} className="flex items-center justify-between p-2 rounded border border-gray-200 dark:border-gray-800">
-                  <div className="flex items-center gap-3 flex-1">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                      {index + 1}
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {item.title}
-                      </p>
-                      {status?.completed_at && status.completed_by_user && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          Fullført: {new Date(status.completed_at).toLocaleDateString('no-NO')} av {status.completed_by_user.full_name}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <select
-                    value={currentStatus}
-                    onChange={(e) => handleStatusChange(item.id, e.target.value as ChecklistItemStatus['status'])}
-                    className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-                  >
-                    <option value="not_started">Ikke startet</option>
-                    <option value="in_progress">I gang</option>
-                    <option value="completed">Fullført</option>
-                    <option value="cancelled">Avbrutt</option>
-                  </select>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
   )
 }
 
