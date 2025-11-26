@@ -372,10 +372,26 @@ export default function ThemesPage() {
       const itemStatuses = (itemStatusesData as ChecklistItemStatus[] | null) || []
 
       // Find which departments assigned this checklist to each user
-      // For auto-assigned: find department assignments where user is a member
-      // For direct assignments: show "Direkte tildelt"
-      const userIds = assignments.map(a => a.assigned_to_user_id)
+      // Same logic as for courses
+      const userIds = assignments.map(a => a.assigned_to_user_id).filter((id): id is string => id !== null)
       
+      // Get all departments for the company
+      const { data: departmentsData, error: departmentsError } = await supabase
+        .from('departments')
+        .select('id, name')
+        .eq('company_id', user.company_id)
+
+      if (departmentsError) {
+        throw departmentsError
+      }
+
+      const departmentMap = (departmentsData as { id: string; name: string }[] | null)?.reduce<
+        Record<string, string>
+      >((acc, department) => {
+        acc[department.id] = department.name
+        return acc
+      }, {}) || {}
+
       // Get all department assignments for this checklist
       const { data: deptAssignmentsData } = await supabase
         .from('checklist_assignments')
@@ -383,18 +399,16 @@ export default function ThemesPage() {
         .eq('checklist_id', checklistId)
         .not('assigned_to_department_id', 'is', null)
 
-      const deptIds = (deptAssignmentsData || [])
-        .map(a => a.assigned_to_department_id)
-        .filter((id): id is string => id !== null)
+      const deptIds = Array.from(new Set(
+        (deptAssignmentsData || [])
+          .map(a => a.assigned_to_department_id)
+          .filter((id): id is string => id !== null)
+      ))
 
       // Get user-department mappings for users in these departments
       const { data: userDeptsData } = await supabase
         .from('user_departments')
-        .select(`
-          user_id,
-          department_id,
-          departments(name)
-        `)
+        .select('user_id, department_id')
         .in('user_id', userIds)
         .in('department_id', deptIds)
 
@@ -402,12 +416,9 @@ export default function ThemesPage() {
       const userAssignedDeptsMap = new Map<string, string[]>()
       if (userDeptsData) {
         userDeptsData.forEach(ud => {
-          const deptName = Array.isArray(ud.departments) && ud.departments.length > 0
-            ? ud.departments[0].name
-            : null
+          const deptName = departmentMap[ud.department_id]
           if (deptName) {
             const existing = userAssignedDeptsMap.get(ud.user_id) || []
-            // Check if deptName is already in array (avoid duplicates)
             if (existing.indexOf(deptName) === -1) {
               existing.push(deptName)
             }
@@ -432,23 +443,17 @@ export default function ThemesPage() {
           }
         })
 
-        // Determine department name(s) to display
+        // Determine department name(s) to display (same logic as courses)
         let departmentName = 'Ingen avdeling'
-        const isAutoAssigned = assignment.is_auto_assigned
-        
-        // Check if user is in any department that has this checklist assigned
-        const assignedDepts = userAssignedDeptsMap.get(assignment.assigned_to_user_id) || []
-        
-        if (assignedDepts.length > 0) {
-          // User is in department(s) that assigned this checklist
-          departmentName = assignedDepts.join(', ')
-        } else if (isAutoAssigned === false) {
-          // Explicitly direct assignment (not auto-assigned)
-          departmentName = 'Direkte tildelt'
+        if (assignment.is_auto_assigned) {
+          // Auto-assigned: show departments that assigned it
+          const assignedDepts = userAssignedDeptsMap.get(assignment.assigned_to_user_id) || []
+          if (assignedDepts.length > 0) {
+            departmentName = assignedDepts.join(', ')
+          }
         } else {
-          // is_auto_assigned is null/undefined or true, but no departments found
-          // This shouldn't happen, but fallback to "Ingen avdeling"
-          departmentName = 'Ingen avdeling'
+          // Direct assignment
+          departmentName = 'Direkte tildelt'
         }
 
         return {
