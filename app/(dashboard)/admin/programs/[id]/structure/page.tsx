@@ -92,6 +92,78 @@ export default function ProgramStructurePage() {
     )
     setHasChanges(true)
   }
+  
+  const updateExistingAssignments = async () => {
+    // Oppdater alle assignments til 'locked' basert på de nye prerequisite-innstillingene
+    try {
+      // Hent alle program_assignments for dette temaet
+      const courseIds = courses.map(c => c.id)
+      
+      const { data: assignments } = await supabase
+        .from('program_assignments')
+        .select('id, program_id, assigned_to_user_id, status')
+        .in('program_id', courseIds)
+        .not('assigned_to_user_id', 'is', null)
+      
+      if (!assignments) return
+      
+      // For hver assignment, sjekk om den skal være låst
+      for (const assignment of assignments) {
+        const course = courses.find(c => c.id === assignment.program_id)
+        if (!course || assignment.status === 'completed') continue
+        
+        let shouldBeLocked = false
+        
+        if (course.prerequisite_type === 'previous_auto' || course.prerequisite_type === 'previous_manual') {
+          // Finn forrige kurs
+          const courseIndex = courses.findIndex(c => c.id === course.id)
+          if (courseIndex > 0) {
+            const previousCourse = courses[courseIndex - 1]
+            
+            // Sjekk om forrige kurs er fullført
+            const { data: prevAssignment } = await supabase
+              .from('program_assignments')
+              .select('status')
+              .eq('program_id', previousCourse.id)
+              .eq('assigned_to_user_id', assignment.assigned_to_user_id)
+              .single()
+            
+            if (!prevAssignment || prevAssignment.status !== 'completed') {
+              shouldBeLocked = true
+            }
+          }
+        } else if (course.prerequisite_type === 'specific_courses' && course.prerequisite_course_ids && course.prerequisite_course_ids.length > 0) {
+          // Sjekk om alle spesifikke kurs er fullført
+          const { data: prereqAssignments } = await supabase
+            .from('program_assignments')
+            .select('status')
+            .in('program_id', course.prerequisite_course_ids)
+            .eq('assigned_to_user_id', assignment.assigned_to_user_id)
+          
+          const allCompleted = prereqAssignments && 
+            prereqAssignments.length === course.prerequisite_course_ids.length &&
+            prereqAssignments.every(a => a.status === 'completed')
+          
+          if (!allCompleted) {
+            shouldBeLocked = true
+          }
+        }
+        
+        // Oppdater status hvis nødvendig
+        const newStatus = shouldBeLocked ? 'locked' : 
+                         (assignment.status === 'locked' ? 'assigned' : assignment.status)
+        
+        if (newStatus !== assignment.status) {
+          await supabase
+            .from('program_assignments')
+            .update({ status: newStatus })
+            .eq('id', assignment.id)
+        }
+      }
+    } catch (error) {
+      console.error('Error updating assignments:', error)
+    }
+  }
 
   const handleSave = async () => {
     try {
@@ -120,6 +192,10 @@ export default function ProgramStructurePage() {
 
       toast.success('Programstruktur lagret!')
       setHasChanges(false)
+      
+      // Oppdater assignments basert på nye prerequisites
+      await updateExistingAssignments()
+      
       router.refresh()
     } catch (error: any) {
       console.error('Error saving structure:', error)
