@@ -526,6 +526,9 @@ export default function AdminProgramsPage() {
       if (error) throw error
       toast.success('Kurs slettet!')
       fetchPrograms(user!.company_id)
+      
+      // VIKTIG: Trigger refresh av alle Server Components (inkludert Min opplæring)
+      router.refresh()
     } catch (error: any) {
       toast.error('Kunne ikke slette kurs: ' + error.message)
     }
@@ -590,6 +593,9 @@ export default function AdminProgramsPage() {
         themeId: data?.id || prev.themeId
       }))
       resetThemeForm()
+      
+      // VIKTIG: Trigger refresh av alle Server Components
+      router.refresh()
     } catch (error: any) {
       toast.error(error.message)
       setCreatingTheme(false)
