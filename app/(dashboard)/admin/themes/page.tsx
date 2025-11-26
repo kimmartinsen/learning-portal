@@ -431,16 +431,21 @@ export default function ThemesPage() {
 
         // Determine department name(s) to display
         let departmentName = 'Ingen avdeling'
-        const isAutoAssigned = assignment.is_auto_assigned ?? false
-        if (isAutoAssigned) {
-          // Auto-assigned: show departments that assigned it
-          const assignedDepts = userAssignedDeptsMap.get(assignment.assigned_to_user_id) || []
-          if (assignedDepts.length > 0) {
-            departmentName = assignedDepts.join(', ')
-          }
-        } else {
-          // Direct assignment
+        const isAutoAssigned = assignment.is_auto_assigned
+        
+        // Check if user is in any department that has this checklist assigned
+        const assignedDepts = userAssignedDeptsMap.get(assignment.assigned_to_user_id) || []
+        
+        if (assignedDepts.length > 0) {
+          // User is in department(s) that assigned this checklist
+          departmentName = assignedDepts.join(', ')
+        } else if (isAutoAssigned === false) {
+          // Explicitly direct assignment (not auto-assigned)
           departmentName = 'Direkte tildelt'
+        } else {
+          // is_auto_assigned is null/undefined or true, but no departments found
+          // This shouldn't happen, but fallback to "Ingen avdeling"
+          departmentName = 'Ingen avdeling'
         }
 
         return {
