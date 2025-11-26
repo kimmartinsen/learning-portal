@@ -641,7 +641,7 @@ export default function ThemesPage() {
                                         }
 
                                         const config = statusConfig[status.status]
-                                        const isLockedOrPending = status.status === 'locked' || status.status === 'pending'
+                                        const isPending = status.status === 'pending'
 
                                         return (
                                           <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
@@ -653,12 +653,12 @@ export default function ThemesPage() {
                                                 <span>{config.label}</span>
                                               </span>
                                               
-                                              {isLockedOrPending && (
+                                              {isPending && (
                                                 <Button 
                                                   size="sm" 
                                                   variant="ghost"
-                                                  className="h-6 w-6 p-0 text-gray-500 hover:text-blue-600"
-                                                  title="Lås opp kurs"
+                                                  className="h-6 w-6 p-0 text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300"
+                                                  title="Godkjenn og lås opp kurs"
                                                   onClick={() => handleUnlock(status.assignmentId, theme.id)}
                                                 >
                                                   <Unlock className="h-3 w-3" />
