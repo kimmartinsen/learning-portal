@@ -162,6 +162,9 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
           newMap.set(p.module_id, p)
         })
         setProgressMap(newMap)
+        
+        // Refresh to update "Min opplæring" and other pages immediately
+        router.refresh()
 
         // Check if program is completed (all modules completed AND all final quizzes passed)
         const allModulesCompleted = sortedModules.every(module => {

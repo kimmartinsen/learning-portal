@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Lock, PauseCircle, Unlock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -120,6 +121,7 @@ const statusConfig: Record<
 }
 
 export default function ThemesPage() {
+  const router = useRouter()
   const [themes, setThemes] = useState<Theme[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
@@ -200,8 +202,11 @@ export default function ThemesPage() {
       
       toast.success('Kurs låst opp')
       
-      // Refresh progress data
+      // Refresh progress data for this theme
       fetchThemeProgress(themeId)
+      
+      // VIKTIG: Trigger refresh av alle Server Components (inkludert Min opplæring)
+      router.refresh()
     } catch (error: any) {
       toast.error('Kunne ikke låse opp kurs: ' + error.message)
     }
