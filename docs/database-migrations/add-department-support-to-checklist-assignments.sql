@@ -5,15 +5,19 @@
 -- får alle avdelinger tildelt når man prøver å gjenopprette tildelinger
 -- ============================================================================
 
--- 1. Legg til assigned_to_department_id kolonne
+-- 1. Gjør assigned_to_user_id nullable (som i program_assignments)
+ALTER TABLE checklist_assignments
+ALTER COLUMN assigned_to_user_id DROP NOT NULL;
+
+-- 2. Legg til assigned_to_department_id kolonne
 ALTER TABLE checklist_assignments
 ADD COLUMN IF NOT EXISTS assigned_to_department_id UUID REFERENCES departments(id) ON DELETE CASCADE;
 
--- 2. Legg til is_auto_assigned flagg (for å skille mellom direkte og auto-assigned)
+-- 3. Legg til is_auto_assigned flagg (for å skille mellom direkte og auto-assigned)
 ALTER TABLE checklist_assignments
 ADD COLUMN IF NOT EXISTS is_auto_assigned BOOLEAN DEFAULT false;
 
--- 3. Oppdater UNIQUE constraint til å tillate enten user_id ELLER department_id
+-- 4. Oppdater UNIQUE constraint til å tillate enten user_id ELLER department_id
 ALTER TABLE checklist_assignments
 DROP CONSTRAINT IF EXISTS checklist_assignments_checklist_id_assigned_to_user_id_key;
 
