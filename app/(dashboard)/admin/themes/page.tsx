@@ -407,7 +407,10 @@ export default function ThemesPage() {
             : null
           if (deptName) {
             const existing = userAssignedDeptsMap.get(ud.user_id) || []
-            existing.push(deptName)
+            // Check if deptName is already in array (avoid duplicates)
+            if (existing.indexOf(deptName) === -1) {
+              existing.push(deptName)
+            }
             userAssignedDeptsMap.set(ud.user_id, existing)
           }
         })
@@ -686,7 +689,7 @@ export default function ThemesPage() {
           const deptName = departmentMap[ud.department_id]
           if (deptName) {
             const existing = userAssignedDeptsMap.get(ud.user_id) || []
-            if (!existing.includes(deptName)) {
+            if (existing.indexOf(deptName) === -1) {
               existing.push(deptName)
             }
             userAssignedDeptsMap.set(ud.user_id, existing)
