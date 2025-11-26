@@ -28,6 +28,19 @@ export default async function ProgramPage({ params }: PageProps) {
     redirect('/login')
   }
 
+  // Check if user has access to this program (via program_assignments)
+  const { data: assignment } = await supabase
+    .from('program_assignments')
+    .select('status')
+    .eq('program_id', params.id)
+    .eq('assigned_to_user_id', profile.id)
+    .single()
+
+  // If no assignment or status is locked/pending, deny access
+  if (!assignment || assignment.status === 'locked' || assignment.status === 'pending') {
+    redirect('/my-learning?error=locked')
+  }
+
   // Get program with modules
   const { data: program, error } = await supabase
     .from('training_programs')

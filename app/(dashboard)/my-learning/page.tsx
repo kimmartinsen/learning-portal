@@ -39,7 +39,11 @@ interface UserAssignment {
   sort_order?: number
 }
 
-export default async function MyLearningPage() {
+export default async function MyLearningPage({
+  searchParams
+}: {
+  searchParams: { error?: string }
+}) {
   const supabase = createServerSupabaseClient()
   
   const {
@@ -49,6 +53,8 @@ export default async function MyLearningPage() {
   if (!session) {
     redirect('/login')
   }
+  
+  const showLockedError = searchParams.error === 'locked'
 
   // Get user profile
   const { data: profile } = await supabase
@@ -192,6 +198,20 @@ export default async function MyLearningPage() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Min opplæring</h1>
         <p className="text-gray-600 dark:text-gray-300">Oversikt over dine personlige kursoppdrag</p>
       </div>
+
+      {/* Locked Course Alert */}
+      {showLockedError && (
+        <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-500/40 dark:bg-yellow-900/20">
+          <CardContent className="p-4 text-yellow-800 dark:text-yellow-200">
+            <div className="flex items-center space-x-2">
+              <Lock className="w-5 h-5 text-yellow-600 dark:text-yellow-300" />
+              <span className="font-medium">
+                Dette kurset er låst. Du må fullføre tidligere kurs først.
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Priority Alert for Overdue */}
       {overdue.length > 0 && (
