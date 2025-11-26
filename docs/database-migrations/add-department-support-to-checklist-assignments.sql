@@ -137,21 +137,29 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_user_id UUID;
   v_other_dept_assigned BOOLEAN;
+  v_removed_dept_id UUID;
+  v_checklist_id UUID;
 BEGIN
   -- Kun håndter når department assignment fjernes
   IF OLD.assigned_to_department_id IS NOT NULL THEN
+    -- Lagre verdiene før de forsvinner
+    v_removed_dept_id := OLD.assigned_to_department_id;
+    v_checklist_id := OLD.checklist_id;
+    
     -- Finn alle brukere i denne avdelingen
     FOR v_user_id IN 
-      SELECT user_id FROM user_departments WHERE department_id = OLD.assigned_to_department_id
+      SELECT user_id FROM user_departments WHERE department_id = v_removed_dept_id
     LOOP
       -- Sjekk om brukeren fortsatt er i en annen avdeling som har denne sjekklisten tildelt
+      -- Vi må sjekke FØR raden er slettet, så vi bruker OLD.checklist_id og sammenligner med andre avdelinger
       SELECT EXISTS (
         SELECT 1 
         FROM user_departments ud
-        JOIN checklist_assignments ca ON ca.assigned_to_department_id = ud.department_id
+        INNER JOIN checklist_assignments ca ON ca.assigned_to_department_id = ud.department_id
         WHERE ud.user_id = v_user_id
-        AND ca.checklist_id = OLD.checklist_id
-        AND ca.assigned_to_department_id != OLD.assigned_to_department_id
+        AND ca.checklist_id = v_checklist_id
+        AND ca.assigned_to_department_id IS NOT NULL
+        AND ca.assigned_to_department_id != v_removed_dept_id
       ) INTO v_other_dept_assigned;
 
       -- Slett auto-assigned tildeling KUN hvis:
@@ -159,13 +167,13 @@ BEGIN
       -- 2. Brukeren ikke er i en annen tildelt avdeling
       IF NOT v_other_dept_assigned THEN
         DELETE FROM checklist_assignments
-        WHERE checklist_id = OLD.checklist_id
+        WHERE checklist_id = v_checklist_id
         AND assigned_to_user_id = v_user_id
         AND is_auto_assigned = true
         AND NOT EXISTS (
           -- Ikke slett hvis brukeren har direkte tildeling
           SELECT 1 FROM checklist_assignments ca
-          WHERE ca.checklist_id = OLD.checklist_id
+          WHERE ca.checklist_id = v_checklist_id
           AND ca.assigned_to_user_id = v_user_id
           AND ca.id != checklist_assignments.id
           AND ca.is_auto_assigned = false
@@ -181,7 +189,7 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS trigger_handle_checklist_department_removal ON checklist_assignments;
 
 CREATE TRIGGER trigger_handle_checklist_department_removal
-  AFTER DELETE ON checklist_assignments
+  BEFORE DELETE ON checklist_assignments
   FOR EACH ROW
   WHEN (OLD.assigned_to_department_id IS NOT NULL)
   EXECUTE FUNCTION handle_checklist_department_removal();
