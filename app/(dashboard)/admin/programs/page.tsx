@@ -871,7 +871,7 @@ export default function AdminProgramsPage() {
           <CardContent>
             <ThemeForm
               formData={themeFormData}
-              isCreating={true}
+              isCreating={creatingTheme}
               onSubmit={handleCreateTheme}
               onChange={(data) => setThemeFormData((prev) => ({ ...prev, ...data }))}
               onCancel={resetThemeForm}
