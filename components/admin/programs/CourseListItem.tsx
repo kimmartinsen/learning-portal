@@ -63,7 +63,8 @@ export function CourseListItem({
     }
   }
 
-  const availableCourses = allCourses.filter(c => c.id !== course.id)
+  // Kun vis kurs som kommer FØR dette kurset i rekkefølgen
+  const availableCourses = allCourses.filter((c, idx) => idx < index && c.id !== course.id)
 
   return (
     <Card
@@ -110,14 +111,13 @@ export function CourseListItem({
                 Avhengighet:
               </label>
               <select
-                value={prerequisiteType}
+                value={prerequisiteType === 'specific_courses' ? 'none' : prerequisiteType}
                 onChange={(e) => handlePrerequisiteTypeChange(e.target.value)}
                 className="block w-full max-w-md rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
               >
                 <option value="none">Tilgjengelig umiddelbart</option>
                 <option value="previous_auto">Åpnes automatisk etter forrige kurs</option>
                 <option value="previous_manual">Krever godkjenning etter forrige kurs</option>
-                <option value="specific_courses">Avhenger av spesifikke kurs...</option>
               </select>
 
               {/* Info for each type */}
@@ -129,47 +129,8 @@ export function CourseListItem({
                   {prerequisiteType === 'previous_auto' && index === 0 && 'Dette er første kurs, så det vil alltid være tilgjengelig.'}
                   {prerequisiteType === 'previous_manual' && index > 0 && `Når "${allCourses[index - 1]?.title}" er fullført, venter kurset på din godkjenning før det åpnes.`}
                   {prerequisiteType === 'previous_manual' && index === 0 && 'Dette er første kurs, så det vil alltid være tilgjengelig.'}
-                  {prerequisiteType === 'specific_courses' && 'Velg hvilke kurs som må fullføres før dette kurset åpnes.'}
                 </span>
               </div>
-
-              {/* Specific Courses Selector */}
-              {prerequisiteType === 'specific_courses' && (
-                <div className="mt-3 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Velg kurs som må fullføres først:
-                  </p>
-                  {availableCourses.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Ingen andre kurs tilgjengelig i dette programmet.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {availableCourses.map((availableCourse) => (
-                        <label
-                          key={availableCourse.id}
-                          className="flex items-center gap-2 cursor-pointer hover:bg-white dark:hover:bg-gray-700 p-2 rounded transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedCourseIds.includes(availableCourse.id)}
-                            onChange={() => handleCourseToggle(availableCourse.id)}
-                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            {availableCourse.title}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                  {selectedCourseIds.length > 0 && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                      ✓ {selectedCourseIds.length} kurs valgt. Alle må fullføres før dette kurset åpnes.
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>
