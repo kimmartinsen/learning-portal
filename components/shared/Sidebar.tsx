@@ -14,7 +14,8 @@ import {
   GraduationCap,
   BarChart3,
   Menu,
-  X
+  X,
+  ClipboardCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { toast } from 'sonner'
@@ -37,6 +38,7 @@ const adminMenuItems = [
   { href: '/admin/users', label: 'Brukere', icon: Users },
   { href: '/admin/departments', label: 'Avdelinger', icon: Building2 },
   { href: '/admin/programs', label: 'Kurs', icon: GraduationCap },
+  { href: '/admin/checklists', label: 'Sjekklister', icon: ClipboardCheck },
   { href: '/admin/reports', label: 'Rapporter', icon: BarChart3 },
 ]
 

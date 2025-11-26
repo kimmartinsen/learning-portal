@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Lock, PauseCircle, Unlock } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Lock, PauseCircle, Unlock, ClipboardCheck, GraduationCap, Plus } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Theme } from '@/types/enhanced-database.types'
+import type { Checklist } from '@/types/checklist.types'
+import Link from 'next/link'
 
 interface User {
   id: string
@@ -122,7 +124,9 @@ const statusConfig: Record<
 
 export default function ThemesPage() {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState<'programs' | 'checklists'>('programs')
   const [themes, setThemes] = useState<Theme[]>([])
+  const [checklists, setChecklists] = useState<Checklist[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
   const [expandedThemeId, setExpandedThemeId] = useState<string | null>(null)
@@ -150,12 +154,23 @@ export default function ThemesPage() {
       }
 
       setUser(profile)
+      await Promise.all([
+        fetchThemes(profile.company_id),
+        fetchChecklists(profile.company_id)
+      ])
+    } catch (error: any) {
+      toast.error('Kunne ikke hente programmer: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-      // Fetch themes for the user's company
+  const fetchThemes = async (companyId: string) => {
+    try {
       const { data: themesData, error } = await supabase
         .from('themes')
         .select('*')
-        .eq('company_id', profile.company_id)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: true })
 
       if (error) throw error
@@ -165,7 +180,7 @@ export default function ThemesPage() {
       const { data: programThemeRows } = await supabase
         .from('training_programs')
         .select('theme_id')
-        .eq('company_id', profile.company_id)
+        .eq('company_id', companyId)
 
       if (programThemeRows) {
         const hasNoThemePrograms = programThemeRows.some(row => !row.theme_id)
@@ -174,7 +189,7 @@ export default function ThemesPage() {
             id: 'no-theme',
             name: 'Uten program',
             description: 'Kurs som ikke er knyttet til et program',
-            company_id: profile.company_id,
+            company_id: companyId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             order_index: 9999,
@@ -185,9 +200,24 @@ export default function ThemesPage() {
 
       setThemes(filteredThemes)
     } catch (error: any) {
-      toast.error('Kunne ikke hente programmer: ' + error.message)
-    } finally {
-      setLoading(false)
+      console.error('Error fetching themes:', error)
+      toast.error('Kunne ikke hente programmer')
+    }
+  }
+
+  const fetchChecklists = async (companyId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('checklists')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setChecklists(data || [])
+    } catch (error: any) {
+      console.error('Error fetching checklists:', error)
+      // Don't show error toast for checklists as they might not exist yet
     }
   }
 
@@ -531,18 +561,136 @@ export default function ThemesPage() {
     return <div className="text-center py-8">Laster...</div>
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-600 bg-green-50 border-green-200 dark:text-green-200 dark:bg-green-500/20 dark:border-green-500/40'
+      case 'in_progress':
+        return 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-200 dark:bg-blue-500/20 dark:border-blue-500/40'
+      case 'cancelled':
+        return 'text-gray-400 bg-gray-50 border-gray-200 dark:text-gray-500 dark:bg-gray-800 dark:border-gray-700'
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200 dark:text-gray-300 dark:bg-gray-800 dark:border-gray-700'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'Fullført'
+      case 'in_progress':
+        return 'I gang'
+      case 'cancelled':
+        return 'Avbrutt'
+      default:
+        return 'Ikke startet'
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Oversikt</h1>
-          <p className="text-gray-600 dark:text-gray-300">Status og progresjon for alle programmer</p>
+          <p className="text-gray-600 dark:text-gray-300">
+            {activeTab === 'programs' ? 'Status og progresjon for alle programmer' : 'Oversikt over alle sjekklister'}
+          </p>
         </div>
       </div>
 
-      {/* Themes List */}
-      <div className="grid gap-4">
+      {/* Tabs */}
+      <div className="border-b border-gray-200 dark:border-gray-800">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('programs')}
+            className={`
+              flex items-center gap-2 border-b-2 py-4 px-1 text-sm font-medium transition-colors
+              ${activeTab === 'programs'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }
+            `}
+          >
+            <GraduationCap className="h-4 w-4" />
+            Kursprogram
+          </button>
+          <button
+            onClick={() => setActiveTab('checklists')}
+            className={`
+              flex items-center gap-2 border-b-2 py-4 px-1 text-sm font-medium transition-colors
+              ${activeTab === 'checklists'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }
+            `}
+          >
+            <ClipboardCheck className="h-4 w-4" />
+            Sjekklister
+          </button>
+        </nav>
+      </div>
+
+      {/* Content based on active tab */}
+      {activeTab === 'checklists' ? (
+        /* Checklists View */
+        <div className="space-y-4">
+          {checklists.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center space-y-4">
+                <ClipboardCheck className="h-12 w-12 text-gray-400 mx-auto" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Ingen sjekklister ennå
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Gå til "Sjekklister" for å opprette din første sjekkliste.
+                </p>
+                <Link href="/admin/checklists">
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Opprett sjekkliste
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {checklists.map((checklist) => (
+                <Link key={checklist.id} href={`/admin/checklists/${checklist.id}`}>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight mb-1">
+                            {checklist.title}
+                          </h3>
+                          {checklist.description && (
+                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                              {checklist.description}
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${getStatusColor(
+                            checklist.status
+                          )}`}
+                        >
+                          {getStatusText(checklist.status)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-800">
+                        Opprettet: {new Date(checklist.created_at).toLocaleDateString('no-NO')}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Programs View */
+        <div className="grid gap-4">
         {themes.length > 0 ? (
           themes.map((theme) => {
             const isExpanded = expandedThemeId === theme.id
@@ -704,6 +852,7 @@ export default function ThemesPage() {
           </Card>
         )}
       </div>
+      )}
     </div>
   )
 }
