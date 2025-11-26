@@ -48,8 +48,9 @@ export function Modal({ isOpen, onClose, children, size = 'md' }: ModalProps) {
         aria-label="Lukk dialog"
       />
       <div 
-        className={`relative z-10 w-full ${sizeClasses[size]} max-h-[85vh] overflow-y-auto`}
+        className={`relative z-10 w-full ${sizeClasses[size]} max-h-[85vh] overflow-y-auto pointer-events-auto`}
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         {children}
       </div>
