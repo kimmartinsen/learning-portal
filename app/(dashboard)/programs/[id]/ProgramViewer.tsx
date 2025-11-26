@@ -204,6 +204,13 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
             console.error('Error creating completion notification:', notifError)
           }
           
+          // Redirect to My Learning to show updated status
+          toast.success(`🎉 Gratulerer! Du har fullført "${program.title}"`)
+          setTimeout(() => {
+            router.push('/my-learning?completed=true')
+            router.refresh()
+          }, 1500)
+          
           // Send notification to instructor if assigned
           if (program.instructor_id) {
             // Get user's name for the notification
