@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Edit2, Trash2, ClipboardCheck, CheckCircle, Clock, XCircle, ChevronRight, Tag, Users } from 'lucide-react'
+import { Plus, Edit2, Trash2, ClipboardCheck, CheckCircle, Clock, XCircle, ChevronRight, Tag, UserPlus } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import type { Checklist } from '@/types/checklist.types'
+import type { Checklist, ChecklistItem } from '@/types/checklist.types'
+import { AssignmentSelector } from '@/components/admin/AssignmentSelector'
 import Link from 'next/link'
 
 interface User {
@@ -21,11 +22,30 @@ interface User {
 export default function ChecklistsPage() {
   const router = useRouter()
   const [checklists, setChecklists] = useState<Checklist[]>([])
+  const [checklistItems, setChecklistItems] = useState<Record<string, ChecklistItem[]>>({})
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingChecklist, setEditingChecklist] = useState<Checklist | null>(null)
+  const [showItemForm, setShowItemForm] = useState(false)
+  const [currentChecklistId, setCurrentChecklistId] = useState<string | null>(null)
+  const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null)
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [assigningChecklist, setAssigningChecklist] = useState<Checklist | null>(null)
+  const [assignSelection, setAssignSelection] = useState<{
+    type: 'department' | 'individual'
+    departmentIds: string[]
+    userIds: string[]
+  }>({
+    type: 'department',
+    departmentIds: [],
+    userIds: []
+  })
   const [formData, setFormData] = useState({
+    title: '',
+    description: ''
+  })
+  const [itemFormData, setItemFormData] = useState({
     title: '',
     description: ''
   })
@@ -69,33 +89,30 @@ export default function ChecklistsPage() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      
-      // Fetch counts for each checklist
-      if (data) {
-        const checklistsWithCounts = await Promise.all(
-          data.map(async (checklist) => {
-            const [itemsResult, assignmentsResult] = await Promise.all([
-              supabase
-                .from('checklist_items')
-                .select('id', { count: 'exact', head: true })
-                .eq('checklist_id', checklist.id),
-              supabase
-                .from('checklist_assignments')
-                .select('id', { count: 'exact', head: true })
-                .eq('checklist_id', checklist.id)
-            ])
-            
-            return {
-              ...checklist,
-              itemCount: itemsResult.count || 0,
-              assignmentCount: assignmentsResult.count || 0
+      setChecklists(data || [])
+
+      // Fetch items for all checklists
+      if (data && data.length > 0) {
+        const checklistIds = data.map(c => c.id)
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('checklist_items')
+          .select('*')
+          .in('checklist_id', checklistIds)
+          .order('order_index', { ascending: true })
+
+        if (itemsError) throw itemsError
+
+        // Group items by checklist_id
+        const itemsByChecklist: Record<string, ChecklistItem[]> = {}
+        if (itemsData) {
+          itemsData.forEach(item => {
+            if (!itemsByChecklist[item.checklist_id]) {
+              itemsByChecklist[item.checklist_id] = []
             }
+            itemsByChecklist[item.checklist_id].push(item)
           })
-        )
-        
-        setChecklists(checklistsWithCounts as any)
-      } else {
-        setChecklists([])
+        }
+        setChecklistItems(itemsByChecklist)
       }
     } catch (error: any) {
       console.error('Error fetching checklists:', error)
@@ -180,10 +197,224 @@ export default function ChecklistsPage() {
     }
   }
 
+  const handleOpenAssign = async (checklist: Checklist) => {
+    setAssigningChecklist(checklist)
+    
+    // Fetch existing assignments
+    const { data: existingAssignments } = await supabase
+      .from('checklist_assignments')
+      .select('assigned_to_user_id')
+      .eq('checklist_id', checklist.id)
+
+    if (existingAssignments) {
+      const userIds = existingAssignments.map(a => a.assigned_to_user_id)
+      
+      // Get department IDs for these users
+      const { data: userDepts } = await supabase
+        .from('user_departments')
+        .select('department_id')
+        .in('user_id', userIds)
+
+      const departmentIds = new Set(userDepts?.map(ud => ud.department_id) || [])
+      
+      setAssignSelection({
+        type: 'department',
+        departmentIds: Array.from(departmentIds),
+        userIds: []
+      })
+    }
+    
+    setShowAssignModal(true)
+  }
+
+  const handleAssign = async () => {
+    if (!user || !assigningChecklist) return
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      let userIds: string[] = []
+
+      if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
+        const { data: deptUsers, error: deptError } = await supabase
+          .from('user_departments')
+          .select('user_id')
+          .in('department_id', assignSelection.departmentIds)
+
+        if (deptError) throw deptError
+        if (deptUsers) {
+          userIds = deptUsers.map(du => du.user_id)
+        }
+      } else if (assignSelection.type === 'individual') {
+        userIds = assignSelection.userIds
+      }
+
+      if (userIds.length === 0) {
+        toast.error('Velg minst én bruker eller avdeling')
+        return
+      }
+
+      // Check for existing assignments
+      const { data: existingAssignments } = await supabase
+        .from('checklist_assignments')
+        .select('assigned_to_user_id')
+        .eq('checklist_id', assigningChecklist.id)
+        .in('assigned_to_user_id', userIds)
+
+      const existingUserIds = new Set(
+        (existingAssignments || []).map(a => a.assigned_to_user_id)
+      )
+
+      const newUserIds = userIds.filter(userId => !existingUserIds.has(userId))
+
+      if (newUserIds.length === 0) {
+        toast.info('Alle valgte brukere har allerede fått denne sjekklisten tildelt')
+        setShowAssignModal(false)
+        return
+      }
+
+      // Create assignments
+      const assignmentsToCreate = newUserIds.map(userId => ({
+        checklist_id: assigningChecklist.id,
+        assigned_to_user_id: userId,
+        assigned_by: session?.user.id || null
+      }))
+
+      const { error: insertError } = await supabase
+        .from('checklist_assignments')
+        .insert(assignmentsToCreate)
+
+      if (insertError) throw insertError
+
+      // Create item statuses
+      const items = checklistItems[assigningChecklist.id] || []
+      if (items.length > 0 && newUserIds.length > 0) {
+        const { data: newAssignments } = await supabase
+          .from('checklist_assignments')
+          .select('id')
+          .eq('checklist_id', assigningChecklist.id)
+          .in('assigned_to_user_id', newUserIds)
+
+        if (newAssignments && newAssignments.length > 0) {
+          const itemStatuses = newAssignments.flatMap(assignment =>
+            items.map(item => ({
+              assignment_id: assignment.id,
+              item_id: item.id,
+              status: 'not_started' as const
+            }))
+          )
+
+          await supabase
+            .from('checklist_item_status')
+            .insert(itemStatuses)
+        }
+      }
+
+      const skippedCount = userIds.length - newUserIds.length
+      if (skippedCount > 0) {
+        toast.success(`${newUserIds.length} bruker(e) tildelt! ${skippedCount} hadde allerede sjekklisten.`)
+      } else {
+        toast.success(`${newUserIds.length} bruker(e) tildelt sjekkliste!`)
+      }
+
+      setShowAssignModal(false)
+      setAssigningChecklist(null)
+      setAssignSelection({ type: 'department', departmentIds: [], userIds: [] })
+      if (user) {
+        await fetchChecklists(user.company_id)
+        router.refresh()
+      }
+    } catch (error: any) {
+      console.error('Assignment error:', error)
+      toast.error('Kunne ikke tildele: ' + error.message)
+    }
+  }
+
+  const handleItemSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!currentChecklistId) return
+
+    try {
+      if (editingItem) {
+        const { error } = await supabase
+          .from('checklist_items')
+          .update({
+            title: itemFormData.title,
+            description: itemFormData.description || null
+          })
+          .eq('id', editingItem.id)
+
+        if (error) throw error
+        toast.success('Punkt oppdatert!')
+      } else {
+        const items = checklistItems[currentChecklistId] || []
+        const maxOrder = items.length > 0 
+          ? Math.max(...items.map(i => i.order_index || 0))
+          : -1
+
+        const { error } = await supabase
+          .from('checklist_items')
+          .insert([{
+            checklist_id: currentChecklistId,
+            title: itemFormData.title,
+            description: itemFormData.description || null,
+            order_index: maxOrder + 1
+          }])
+
+        if (error) throw error
+        toast.success('Punkt lagt til!')
+      }
+
+      resetItemForm()
+      if (user) {
+        await fetchChecklists(user.company_id)
+        router.refresh()
+      }
+    } catch (error: any) {
+      toast.error(error.message)
+    }
+  }
+
+  const handleEditItem = (item: ChecklistItem) => {
+    setEditingItem(item)
+    setItemFormData({
+      title: item.title,
+      description: item.description || ''
+    })
+    setCurrentChecklistId(item.checklist_id)
+    setShowItemForm(true)
+  }
+
+  const handleDeleteItem = async (itemId: string, checklistId: string) => {
+    if (!confirm('Er du sikker på at du vil slette dette punktet?')) return
+
+    try {
+      const { error } = await supabase
+        .from('checklist_items')
+        .delete()
+        .eq('id', itemId)
+
+      if (error) throw error
+      toast.success('Punkt slettet!')
+      if (user) {
+        await fetchChecklists(user.company_id)
+        router.refresh()
+      }
+    } catch (error: any) {
+      toast.error('Kunne ikke slette punkt: ' + error.message)
+    }
+  }
+
   const resetForm = () => {
     setShowForm(false)
     setEditingChecklist(null)
     setFormData({ title: '', description: '' })
+  }
+
+  const resetItemForm = () => {
+    setShowItemForm(false)
+    setEditingItem(null)
+    setCurrentChecklistId(null)
+    setItemFormData({ title: '', description: '' })
   }
 
   const getStatusColor = (status: string) => {
@@ -262,76 +493,126 @@ export default function ChecklistsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {checklists.map((checklist: any) => (
-            <details
-              key={checklist.id}
-              className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800"
-            >
-              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
-                <div className="flex items-center gap-2">
-                  <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
-                  <Tag className="h-4 w-4 text-primary-600" />
-                  <span className="text-base font-semibold">{checklist.title}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    ({checklist.itemCount || 0} punkter, {checklist.assignmentCount || 0} tildelinger)
-                  </span>
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${getStatusColor(
-                      checklist.status
-                    )}`}
-                  >
-                    {getStatusIcon(checklist.status)}
-                    <span>{getStatusText(checklist.status)}</span>
-                  </span>
-                </div>
-                
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <Link href={`/admin/checklists/${checklist.id}`}>
+          {checklists.map((checklist) => {
+            const items = checklistItems[checklist.id] || []
+            
+            return (
+              <details
+                key={checklist.id}
+                className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800"
+              >
+                <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                  <div className="flex items-center gap-2">
+                    <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
+                    <Tag className="h-4 w-4 text-primary-600" />
+                    <span className="text-base font-semibold">{checklist.title}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      ({items.length} punkter)
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => {
+                        setCurrentChecklistId(checklist.id)
+                        setShowItemForm(true)
+                      }}
                       className="h-7 text-xs"
-                      title="Åpne sjekkliste"
+                      title="Legg til sjekkpunkt"
                     >
-                      <Edit2 className="h-3 w-3 mr-1" />
-                      Åpne
+                      <Plus className="h-3 w-3 mr-1" />
+                      Legg til sjekkpunkt
                     </Button>
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(checklist.id)}
-                    className="h-7 text-xs text-red-600 hover:text-red-700 dark:hover:text-red-400"
-                    title="Slett sjekkliste"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </summary>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleOpenAssign(checklist)}
+                      className="h-7 text-xs"
+                    >
+                      <UserPlus className="h-3 w-3 mr-1" />
+                      Tildel sjekkliste
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(checklist)}
+                      title="Rediger sjekkliste"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(checklist.id)}
+                      className="text-red-600 hover:text-red-700 dark:hover:text-red-400"
+                      title="Slett sjekkliste"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </summary>
 
-              <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
-                {checklist.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                    {checklist.description}
-                  </p>
-                )}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                  <span>
-                    Opprettet: {new Date(checklist.created_at).toLocaleDateString('no-NO')}
-                  </span>
-                  {checklist.updated_at && checklist.updated_at !== checklist.created_at && (
-                    <span>
-                      Oppdatert: {new Date(checklist.updated_at).toLocaleDateString('no-NO')}
-                    </span>
+                <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                  {items.length === 0 ? (
+                    <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                      Ingen punkter i denne sjekklisten ennå.
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {items.map((item, index) => (
+                        <Card key={item.id}>
+                          <CardContent className="p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                    {(item.order_index != null && item.order_index >= 0) ? item.order_index + 1 : index + 1}
+                                  </span>
+                                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+                                    {item.title}
+                                  </h3>
+                                </div>
+
+                                {item.description && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-300">{item.description}</p>
+                                )}
+                              </div>
+
+                              <div className="flex space-x-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditItem(item)}
+                                  title="Rediger punkt"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteItem(item.id, item.checklist_id)}
+                                  className="text-red-600 hover:text-red-700 dark:hover:text-red-400"
+                                  title="Slett punkt"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
-            </details>
-          ))}
+              </details>
+            )
+          })}
         </div>
       )}
 
-      {/* Create/Edit Modal */}
+      {/* Create/Edit Checklist Modal */}
       <Modal isOpen={showForm} onClose={resetForm}>
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
           <CardHeader>
@@ -372,6 +653,79 @@ export default function ChecklistsPage() {
           </CardContent>
         </Card>
       </Modal>
+
+      {/* Item Form Modal */}
+      <Modal isOpen={showItemForm} onClose={resetItemForm}>
+        <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
+          <CardHeader>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {editingItem ? 'Rediger punkt' : 'Nytt sjekkpunkt'}
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleItemSubmit} className="space-y-4">
+              <Input
+                label="Tittel"
+                value={itemFormData.title}
+                onChange={(e) => setItemFormData(prev => ({ ...prev, title: e.target.value }))}
+                required
+                placeholder="F.eks. Sjekk brannslokningsapparat"
+              />
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Beskrivelse
+                </label>
+                <textarea
+                  value={itemFormData.description}
+                  onChange={(e) => setItemFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-400"
+                  rows={3}
+                  placeholder="Beskrivelse av punktet..."
+                />
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <Button type="submit" className="flex-1">
+                  {editingItem ? 'Lagre endringer' : 'Legg til punkt'}
+                </Button>
+                <Button type="button" variant="secondary" onClick={resetItemForm}>
+                  Avbryt
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </Modal>
+
+      {/* Assign Modal */}
+      {user && assigningChecklist && (
+        <Modal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)}>
+          <Card className="w-full max-w-2xl bg-white dark:bg-gray-900 dark:border-gray-700">
+            <CardHeader>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Tildel sjekkliste: {assigningChecklist.title}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Velg brukere eller avdelinger som skal få denne sjekklisten tildelt.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <AssignmentSelector
+                companyId={user.company_id}
+                onSelectionChange={setAssignSelection}
+                selection={assignSelection}
+              />
+              <div className="flex space-x-3 pt-4 mt-4 border-t border-gray-200 dark:border-gray-800">
+                <Button onClick={handleAssign} className="flex-1">
+                  Tildel sjekkliste
+                </Button>
+                <Button variant="secondary" onClick={() => setShowAssignModal(false)}>
+                  Avbryt
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </Modal>
+      )}
     </div>
   )
 }
