@@ -190,7 +190,7 @@ export function AssignmentSelector({
     <div className="space-y-4">
       {/* Assignment Type Selector */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Tildelingstype
         </label>
         <div className="flex space-x-2">
@@ -229,16 +229,16 @@ export function AssignmentSelector({
       </div>
 
       {/* Selection List */}
-      <div className="max-h-64 overflow-y-auto border rounded-md">
+      <div className="max-h-64 overflow-y-auto border rounded-md border-gray-300 dark:border-gray-700">
         {assignmentType === 'department' ? (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredDepartments.length > 0 ? (
               filteredDepartments.map((department) => (
                 <div
                   key={department.id}
                   className={cn(
-                    "p-3 cursor-pointer hover:bg-gray-50 transition-colors",
-                    selectedDepartments.includes(department.id) && "bg-primary-50"
+                    "p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
+                    selectedDepartments.includes(department.id) && "bg-primary-50 dark:bg-primary-900/30"
                   )}
                   onClick={() => toggleDepartment(department.id)}
                 >
@@ -248,41 +248,41 @@ export function AssignmentSelector({
                         "w-5 h-5 rounded border-2 flex items-center justify-center",
                         selectedDepartments.includes(department.id)
                           ? "bg-primary-600 border-primary-600"
-                          : "border-gray-300"
+                          : "border-gray-300 dark:border-gray-600"
                       )}>
                         {selectedDepartments.includes(department.id) && (
                           <Check className="w-3 h-3 text-white" />
                         )}
                       </div>
-                      <Building2 className="w-5 h-5 text-gray-400" />
+                      <Building2 className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                       <div>
-                        <p className="font-medium text-gray-900">{department.name}</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{department.name}</p>
                         {department.description && (
-                          <p className="text-sm text-gray-500">{department.description}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{department.description}</p>
                         )}
                       </div>
                     </div>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       {department.user_count} brukere
                     </span>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                 Ingen avdelinger funnet
               </div>
             )}
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
                 <div
                   key={user.id}
                   className={cn(
-                    "p-3 cursor-pointer hover:bg-gray-50 transition-colors",
-                    selectedUsers.includes(user.id) && "bg-primary-50"
+                    "p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
+                    selectedUsers.includes(user.id) && "bg-primary-50 dark:bg-primary-900/30"
                   )}
                   onClick={() => toggleUser(user.id)}
                 >
@@ -291,18 +291,18 @@ export function AssignmentSelector({
                       "w-5 h-5 rounded border-2 flex items-center justify-center",
                       selectedUsers.includes(user.id)
                         ? "bg-primary-600 border-primary-600"
-                        : "border-gray-300"
+                        : "border-gray-300 dark:border-gray-600"
                     )}>
                       {selectedUsers.includes(user.id) && (
                         <Check className="w-3 h-3 text-white" />
                       )}
                     </div>
-                    <Users className="w-5 h-5 text-gray-400" />
+                    <Users className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <div>
-                      <p className="font-medium text-gray-900">{user.full_name}</p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{user.full_name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                       {user.user_departments && user.user_departments.length > 0 && (
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
                           {user.user_departments
                             .map(ud => ud.departments && ud.departments.length > 0 ? ud.departments[0].name : '')
                             .filter(name => name !== '')
@@ -314,7 +314,7 @@ export function AssignmentSelector({
                 </div>
               ))
             ) : (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                 Ingen brukere funnet
               </div>
             )}
