@@ -383,7 +383,7 @@ export default function ThemesPage() {
       // Build user rows
       const userRows = assignments.map(assignment => {
         const user = assignment.assigned_to_user
-        const itemsMap: Record<string, { status: string; itemStatusId?: string }> = {}
+        const itemsMap: Record<string, { status: string; itemStatusId?: string; assignmentId: string }> = {}
 
         items.forEach(item => {
           const status = itemStatuses.find(
@@ -391,7 +391,8 @@ export default function ThemesPage() {
           )
           itemsMap[item.id] = {
             status: status?.status || 'not_started',
-            itemStatusId: status?.id
+            itemStatusId: status?.id,
+            assignmentId: assignment.id
           }
         })
 
@@ -889,27 +890,69 @@ export default function ThemesPage() {
                                         {data.items.map((item) => {
                                           const itemStatus = row.items[item.id]
                                           const status = itemStatus?.status || 'not_started'
+                                          const assignmentId = itemStatus?.assignmentId
 
-                                          if (!itemStatus) {
-                                            return (
-                                              <td key={`${row.userId}-${item.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
-                                                <span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">
-                                                  Ikke startet
-                                                </span>
-                                              </td>
-                                            )
+                                          const handleStatusChange = async (newStatus: string) => {
+                                            if (!assignmentId) return
+
+                                            try {
+                                              const { data: { session } } = await supabase.auth.getSession()
+                                              
+                                              const updateData: any = {
+                                                status: newStatus,
+                                                updated_at: new Date().toISOString()
+                                              }
+
+                                              if (newStatus === 'completed') {
+                                                updateData.completed_at = new Date().toISOString()
+                                                updateData.completed_by = session?.user.id || null
+                                              } else {
+                                                updateData.completed_at = null
+                                                updateData.completed_by = null
+                                              }
+
+                                              if (itemStatus?.itemStatusId) {
+                                                const { error } = await supabase
+                                                  .from('checklist_item_status')
+                                                  .update(updateData)
+                                                  .eq('id', itemStatus.itemStatusId)
+
+                                                if (error) throw error
+                                              } else {
+                                                const { error } = await supabase
+                                                  .from('checklist_item_status')
+                                                  .insert([{
+                                                    assignment_id: assignmentId,
+                                                    item_id: item.id,
+                                                    ...updateData
+                                                  }])
+
+                                                if (error) throw error
+                                              }
+                                              
+                                              toast.success('Status oppdatert!')
+                                              fetchChecklistProgress(checklistId)
+                                              router.refresh()
+                                            } catch (error: any) {
+                                              toast.error('Kunne ikke oppdatere status: ' + error.message)
+                                            }
                                           }
 
                                           const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_started
 
                                           return (
-                                            <td key={`${row.userId}-${item.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
-                                              <span
-                                                className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}
+                                            <td key={`${row.userId}-${item.id}`} className="px-3 py-2 text-center align-middle min-w-[130px]">
+                                              <select
+                                                value={status}
+                                                onChange={(e) => handleStatusChange(e.target.value)}
+                                                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer"
+                                                onClick={(e) => e.stopPropagation()}
                                               >
-                                                {config.icon}
-                                                <span>{config.label}</span>
-                                              </span>
+                                                <option value="not_started">Ikke startet</option>
+                                                <option value="in_progress">I gang</option>
+                                                <option value="completed">Fullført</option>
+                                                <option value="cancelled">Avbrutt</option>
+                                              </select>
                                             </td>
                                           )
                                         })}
