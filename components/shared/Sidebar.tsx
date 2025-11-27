@@ -55,7 +55,7 @@ const userMenuItems = [
   { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
 ]
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, isInstructor = false }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
