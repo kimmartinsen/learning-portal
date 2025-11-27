@@ -66,16 +66,31 @@ export function Sidebar({ user, isInstructor = false }: SidebarProps) {
 
   const handleSignOut = async () => {
     try {
+      // Sign out and wait for it to complete
       const { error } = await supabase.auth.signOut()
       if (error) throw error
       
+      // Wait a bit to ensure cookies are cleared
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Verify session is actually cleared
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        // Session still exists, try again with a longer wait
+        await new Promise(resolve => setTimeout(resolve, 500))
+        await supabase.auth.signOut()
+      }
+      
       toast.success('Logget ut')
+      
       // Use window.location for a full page reload to clear all state
-      // This ensures middleware doesn't redirect back to dashboard
-      window.location.href = '/login?logout=true'
+      // Add a timestamp to prevent caching
+      window.location.href = `/login?logout=true&t=${Date.now()}`
     } catch (error) {
       console.error('Logout error:', error)
       toast.error('Kunne ikke logge ut')
+      // Still try to redirect to login even if logout failed
+      window.location.href = `/login?logout=true&t=${Date.now()}`
     }
   }
 

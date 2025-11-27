@@ -18,6 +18,18 @@ function LoginForm() {
   })
 
   useEffect(() => {
+    // Check if user is already logged in
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        // User is already logged in, offer to go to dashboard or log out
+        toast.info('Du er allerede logget inn. Gå til dashboard eller logg ut først.', {
+          duration: 5000,
+        })
+      }
+    }
+    checkSession()
+
     const message = searchParams.get('message')
     if (message) {
       toast.info(message)
@@ -48,6 +60,16 @@ function LoginForm() {
     setLoading(true)
 
     try {
+      // Check if user is already logged in
+      const { data: { session: existingSession } } = await supabase.auth.getSession()
+      if (existingSession) {
+        // User is already logged in, redirect to dashboard
+        toast.info('Du er allerede logget inn. Omdirigerer til dashboard...')
+        const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+        window.location.href = redirectTo
+        return
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
