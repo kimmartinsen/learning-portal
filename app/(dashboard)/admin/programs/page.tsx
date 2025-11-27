@@ -367,7 +367,8 @@ export default function AdminProgramsPage() {
                 const dueDate = new Date()
                 dueDate.setDate(dueDate.getDate() + (formData.deadlineDays || 14))
                 
-                const { error: directInsertError } = await supabase
+                // 1. Opprett avdelingstildeling
+                const { error: deptInsertError } = await supabase
                   .from('program_assignments')
                   .insert({
                     program_id: programId,
@@ -378,8 +379,37 @@ export default function AdminProgramsPage() {
                     status: 'assigned'
                   })
                 
-                if (directInsertError) {
-                  throw new Error(`Kunne ikke tildele til avdeling: ${directInsertError.message || funcError.message}`)
+                if (deptInsertError) {
+                  throw new Error(`Kunne ikke tildele til avdeling: ${deptInsertError.message || funcError.message}`)
+                }
+                
+                // 2. Opprett individuelle brukertildelinger for alle brukere i avdelingen
+                if (deptUsers && deptUsers.length > 0) {
+                  const userAssignments = deptUsers
+                    .filter(u => !alreadyAssignedUserIds.has(u.user_id))
+                    .map(u => ({
+                      program_id: programId,
+                      assigned_to_user_id: u.user_id,
+                      assigned_by: user.id,
+                      due_date: dueDate.toISOString(),
+                      notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs',
+                      status: 'assigned',
+                      is_auto_assigned: true
+                    }))
+                  
+                  if (userAssignments.length > 0) {
+                    const { error: userInsertError } = await supabase
+                      .from('program_assignments')
+                      .insert(userAssignments)
+                    
+                    if (userInsertError) {
+                      console.error('Error creating user assignments:', userInsertError)
+                      // Ikke kast feil her, avdelingstildelingen er allerede opprettet
+                      toast.warning('Avdeling tildelt, men noen brukertildelinger feilet')
+                    } else {
+                      newlyAssignedUserIds.push(...userAssignments.map(a => a.assigned_to_user_id!))
+                    }
+                  }
                 }
               }
               
