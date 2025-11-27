@@ -318,7 +318,7 @@ export default function UsersPage() {
   const resetForm = () => {
     setShowForm(false)
     setEditingProfile(null)
-    setFormData({ email: '', fullName: '', role: 'user', departmentId: '', password: '' })
+    setFormData({ email: '', fullName: '', password: '', role: 'user', departmentIds: [] })
   }
 
   const getRoleText = (role: string) => {
