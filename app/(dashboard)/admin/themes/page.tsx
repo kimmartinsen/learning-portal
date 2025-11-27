@@ -1219,8 +1219,7 @@ export default function ThemesPage() {
                                               const { data: { session } } = await supabase.auth.getSession()
                                               
                                               const updateData: any = {
-                                                status: newStatus === 'completed' ? 'completed' : newStatus === 'in_progress' ? 'started' : 'assigned',
-                                                updated_at: new Date().toISOString()
+                                                status: newStatus === 'completed' ? 'completed' : newStatus === 'in_progress' ? 'started' : 'assigned'
                                               }
 
                                               if (newStatus === 'completed') {

@@ -16,7 +16,27 @@ COMMENT ON COLUMN training_programs.course_type IS
 -- 2. INDEKSER
 CREATE INDEX IF NOT EXISTS idx_training_programs_course_type ON training_programs(course_type);
 
--- 3. OPPDATER RLS POLICIES FOR program_assignments
+-- 3. LEGG TIL updated_at I program_assignments (hvis den ikke finnes)
+ALTER TABLE program_assignments
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- Opprett trigger for å auto-oppdatere updated_at
+CREATE OR REPLACE FUNCTION update_program_assignment_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Fjern trigger hvis den allerede eksisterer, og opprett på nytt
+DROP TRIGGER IF EXISTS trigger_program_assignment_updated_at ON program_assignments;
+CREATE TRIGGER trigger_program_assignment_updated_at
+  BEFORE UPDATE ON program_assignments
+  FOR EACH ROW
+  EXECUTE FUNCTION update_program_assignment_updated_at();
+
+-- 4. OPPDATER RLS POLICIES FOR program_assignments
 -- La instruktører oppdatere status for fysiske kurs de er instruktør for
 
 -- Fjern policy hvis den allerede eksisterer
@@ -57,8 +77,9 @@ CREATE POLICY "Instructors can update physical course assignments" ON program_as
 -- ============================================================================
 -- Nå har du:
 -- 1. course_type i training_programs (e-course eller physical-course)
--- 2. Fysiske kurs fungerer som ett enkelt sjekkpunkt - ingen separate items
--- 3. Instruktører kan oppdatere status på program_assignments for fysiske kurs de er instruktør for
--- 4. Admin kan allerede oppdatere status (via eksisterende policies)
+-- 2. updated_at kolonne i program_assignments med auto-update trigger
+-- 3. Fysiske kurs fungerer som ett enkelt sjekkpunkt - ingen separate items
+-- 4. Instruktører kan oppdatere status på program_assignments for fysiske kurs de er instruktør for
+-- 5. Admin kan allerede oppdatere status (via eksisterende policies)
 -- ============================================================================
 
