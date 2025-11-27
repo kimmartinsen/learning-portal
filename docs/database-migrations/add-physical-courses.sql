@@ -19,9 +19,10 @@ CREATE INDEX IF NOT EXISTS idx_training_programs_course_type ON training_program
 -- 3. OPPDATER RLS POLICIES FOR program_assignments
 -- La instruktører oppdatere status for fysiske kurs de er instruktør for
 
--- Først, sjekk om det finnes en eksisterende policy vi kan oppdatere
--- Vi legger til en ny policy som lar instruktører oppdatere status for fysiske kurs
+-- Fjern policy hvis den allerede eksisterer
+DROP POLICY IF EXISTS "Instructors can update physical course assignments" ON program_assignments;
 
+-- Opprett policy som lar instruktører oppdatere status for fysiske kurs
 CREATE POLICY "Instructors can update physical course assignments" ON program_assignments
   FOR UPDATE
   USING (

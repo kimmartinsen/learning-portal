@@ -22,6 +22,7 @@ type ThemeProgram = {
   title: string
   description: string | null
   sort_order?: number
+  course_type?: 'e-course' | 'physical-course'
 }
 
 type ProfileRecord = {
@@ -505,7 +506,7 @@ export default function ThemesPage() {
       
       let programsQuery = supabase
         .from('training_programs')
-        .select('id, title, description, sort_order')
+        .select('id, title, description, sort_order, course_type')
         // Hvis vi har sort_order, bruk den. Ellers created_at.
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true })
@@ -1196,6 +1197,7 @@ export default function ThemesPage() {
                                       </td>
                                       {data.programs.map((program) => {
                                         const status = row.programs[program.id]
+                                        const isPhysicalCourse = program.course_type === 'physical-course'
 
                                         if (!status) {
                                           return (
@@ -1210,6 +1212,60 @@ export default function ThemesPage() {
                                         const config = statusConfig[status.status]
                                         const isPending = status.status === 'pending'
 
+                                        // For fysiske kurs, vis dropdown for å oppdatere status
+                                        if (isPhysicalCourse) {
+                                          const handleStatusChange = async (newStatus: string) => {
+                                            try {
+                                              const { data: { session } } = await supabase.auth.getSession()
+                                              
+                                              const updateData: any = {
+                                                status: newStatus === 'completed' ? 'completed' : newStatus === 'in_progress' ? 'started' : 'assigned',
+                                                updated_at: new Date().toISOString()
+                                              }
+
+                                              if (newStatus === 'completed') {
+                                                updateData.completed_at = new Date().toISOString()
+                                              } else {
+                                                updateData.completed_at = null
+                                              }
+
+                                              const { error } = await supabase
+                                                .from('program_assignments')
+                                                .update(updateData)
+                                                .eq('id', status.assignmentId)
+
+                                              if (error) throw error
+                                              
+                                              toast.success('Status oppdatert!')
+                                              fetchThemeProgress(theme.id)
+                                              router.refresh()
+                                            } catch (error: any) {
+                                              toast.error('Kunne ikke oppdatere status: ' + error.message)
+                                            }
+                                          }
+
+                                          // Map status for dropdown
+                                          const currentStatus = status.status === 'completed' ? 'completed' 
+                                            : status.status === 'in_progress' || status.status === 'started' ? 'in_progress'
+                                            : 'not_started'
+
+                                          return (
+                                            <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-center align-middle min-w-[130px]">
+                                              <select
+                                                value={currentStatus}
+                                                onChange={(e) => handleStatusChange(e.target.value)}
+                                                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                <option value="not_started">Ikke startet</option>
+                                                <option value="in_progress">I gang</option>
+                                                <option value="completed">Fullført</option>
+                                              </select>
+                                            </td>
+                                          )
+                                        }
+
+                                        // For e-kurs, vis badge som før
                                         return (
                                           <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
                                             <div className="flex items-center gap-2 justify-center">
