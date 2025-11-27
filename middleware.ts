@@ -93,13 +93,25 @@ export async function middleware(request: NextRequest) {
   )
 
   // Only redirect authenticated users away from auth pages if there's no error parameter
-  // This allows error messages to be displayed
+  // AND if we can actually fetch their profile (to avoid redirect loops)
   if (isAuthRoute && session) {
     const hasError = request.nextUrl.searchParams.has('error')
     if (!hasError) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      // Verify that we can actually fetch the profile before redirecting
+      // This prevents redirect loops when RLS blocks profile access
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .single()
+      
+      // Only redirect if profile can be fetched successfully
+      if (profile && !profileError) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+      // If profile can't be fetched, don't redirect - let them stay on login
+      // The layout will handle signing them out and showing the error
     }
-    // If there's an error, let them see it (but they'll likely be redirected back due to layout error)
   }
 
   // Redirect to login if trying to access protected route without session

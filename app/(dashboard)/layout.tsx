@@ -41,14 +41,28 @@ export default async function DashboardLayout({
     console.error('Error hint:', error.hint)
     console.error('Error details:', error.details)
     
-    // If RLS is blocking, redirect to login with specific error
-    // This prevents infinite loops while still showing the error
+    // If we can't fetch profile, the session is invalid or RLS is blocking
+    // Clear the session and redirect to login
+    // This prevents infinite redirect loops
+    try {
+      await supabase.auth.signOut()
+    } catch (signOutError) {
+      console.error('Error signing out:', signOutError)
+    }
+    
+    // Redirect to login with error message
     redirect(`/login?error=profile_access&message=${encodeURIComponent(error.message)}`)
   }
 
   if (!profile) {
     console.error('No profile found for user:', session.user.id)
-    throw new Error('Brukerprofil ikke funnet. Kontakt administrator.')
+    // Clear the session and redirect to login
+    try {
+      await supabase.auth.signOut()
+    } catch (signOutError) {
+      console.error('Error signing out:', signOutError)
+    }
+    redirect('/login?error=no_profile')
   }
 
   // Sjekk om brukeren er instruktør for noen kurs
