@@ -1246,7 +1246,7 @@ export default function ThemesPage() {
 
                                           // Map status for dropdown
                                           const currentStatus = status.status === 'completed' ? 'completed' 
-                                            : status.status === 'in_progress' || status.status === 'started' ? 'in_progress'
+                                            : status.status === 'in_progress' ? 'in_progress'
                                             : 'not_started'
 
                                           return (
