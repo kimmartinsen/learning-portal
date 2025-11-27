@@ -341,78 +341,67 @@ export default function AdminProgramsPage() {
                 .from('user_departments')
                 .select('user_id')
                 .eq('department_id', departmentId)
-              
+
               // Get existing user assignments for this program
               const { data: existingUserAssignments } = await supabase
                 .from('program_assignments')
                 .select('assigned_to_user_id')
                 .eq('program_id', programId)
                 .in('assigned_to_user_id', (deptUsers || []).map(u => u.user_id))
-              
+
               const alreadyAssignedUserIds = new Set(
                 (existingUserAssignments || []).map(a => a.assigned_to_user_id)
               )
-              
-              // Call the database function (it will also check for duplicates)
-              const { error: funcError } = await supabase.rpc('assign_program_to_department', {
-                p_program_id: programId,
-                p_department_id: departmentId,
-                p_assigned_by: user.id,
-                p_notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs'
-              })
-              
-              if (funcError) {
-                console.error('Error in assign_program_to_department:', funcError)
-                // Hvis funksjonen feiler, prøv direkte INSERT som fallback
-                const dueDate = new Date()
-                dueDate.setDate(dueDate.getDate() + (formData.deadlineDays || 14))
-                
-                // 1. Opprett avdelingstildeling
-                const { error: deptInsertError } = await supabase
-                  .from('program_assignments')
-                  .insert({
+
+              // FIKSET: Bruk direkte INSERT i stedet for RPC (omgår database-funksjon problemer)
+              const dueDate = new Date()
+              dueDate.setDate(dueDate.getDate() + (formData.deadlineDays || 14))
+
+              // 1. Opprett avdelingstildeling
+              const { error: deptInsertError } = await supabase
+                .from('program_assignments')
+                .insert({
+                  program_id: programId,
+                  assigned_to_department_id: departmentId,
+                  assigned_by: user.id,
+                  due_date: dueDate.toISOString(),
+                  notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs',
+                  status: 'assigned'
+                })
+
+              if (deptInsertError) {
+                console.error('Error creating department assignment:', deptInsertError)
+                throw new Error(`Kunne ikke tildele til avdeling: ${deptInsertError.message}`)
+              }
+
+              // 2. Opprett individuelle brukertildelinger for alle brukere i avdelingen
+              if (deptUsers && deptUsers.length > 0) {
+                const userAssignments = deptUsers
+                  .filter(u => !alreadyAssignedUserIds.has(u.user_id))
+                  .map(u => ({
                     program_id: programId,
-                    assigned_to_department_id: departmentId,
+                    assigned_to_user_id: u.user_id,
                     assigned_by: user.id,
                     due_date: dueDate.toISOString(),
                     notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs',
-                    status: 'assigned'
-                  })
-                
-                if (deptInsertError) {
-                  throw new Error(`Kunne ikke tildele til avdeling: ${deptInsertError.message || funcError.message}`)
-                }
-                
-                // 2. Opprett individuelle brukertildelinger for alle brukere i avdelingen
-                if (deptUsers && deptUsers.length > 0) {
-                  const userAssignments = deptUsers
-                    .filter(u => !alreadyAssignedUserIds.has(u.user_id))
-                    .map(u => ({
-                      program_id: programId,
-                      assigned_to_user_id: u.user_id,
-                      assigned_by: user.id,
-                      due_date: dueDate.toISOString(),
-                      notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs',
-                      status: 'assigned',
-                      is_auto_assigned: true
-                    }))
-                  
-                  if (userAssignments.length > 0) {
-                    const { error: userInsertError } = await supabase
-                      .from('program_assignments')
-                      .insert(userAssignments)
-                    
-                    if (userInsertError) {
-                      console.error('Error creating user assignments:', userInsertError)
-                      // Ikke kast feil her, avdelingstildelingen er allerede opprettet
-                      toast.warning('Avdeling tildelt, men noen brukertildelinger feilet')
-                    } else {
-                      newlyAssignedUserIds.push(...userAssignments.map(a => a.assigned_to_user_id!))
-                    }
+                    status: 'assigned',
+                    is_auto_assigned: true
+                  }))
+
+                if (userAssignments.length > 0) {
+                  const { error: userInsertError } = await supabase
+                    .from('program_assignments')
+                    .insert(userAssignments)
+
+                  if (userInsertError) {
+                    console.error('Error creating user assignments:', userInsertError)
+                    toast.warning('Avdeling tildelt, men noen brukertildelinger feilet')
+                  } else {
+                    newlyAssignedUserIds.push(...userAssignments.map(a => a.assigned_to_user_id!))
                   }
                 }
               }
-              
+
               // Only add users who weren't already assigned (for notifications)
               if (deptUsers) {
                 const newUsers = deptUsers
@@ -436,35 +425,27 @@ export default function AdminProgramsPage() {
               .single()
 
             if (!existing) {
-              const { error: funcError } = await supabase.rpc('assign_program_to_user', {
-                p_program_id: programId,
-                p_user_id: userId,
-                p_assigned_by: user.id,
-                p_notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs'
-              })
-              
-              if (funcError) {
-                console.error('Error in assign_program_to_user:', funcError)
-                // Hvis funksjonen feiler, prøv direkte INSERT som fallback
-                const dueDate = new Date()
-                dueDate.setDate(dueDate.getDate() + (formData.deadlineDays || 14))
-                
-                const { error: directInsertError } = await supabase
-                  .from('program_assignments')
-                  .insert({
-                    program_id: programId,
-                    assigned_to_user_id: userId,
-                    assigned_by: user.id,
-                    due_date: dueDate.toISOString(),
-                    notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs',
-                    status: 'assigned',
-                    is_auto_assigned: false
-                  })
-                
-                if (directInsertError) {
-                  throw new Error(`Kunne ikke tildele til bruker: ${directInsertError.message || funcError.message}`)
-                }
+              // FIKSET: Bruk direkte INSERT i stedet for RPC (omgår database-funksjon problemer)
+              const dueDate = new Date()
+              dueDate.setDate(dueDate.getDate() + (formData.deadlineDays || 14))
+
+              const { error: directInsertError } = await supabase
+                .from('program_assignments')
+                .insert({
+                  program_id: programId,
+                  assigned_to_user_id: userId,
+                  assigned_by: user.id,
+                  due_date: dueDate.toISOString(),
+                  notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs',
+                  status: 'assigned',
+                  is_auto_assigned: false
+                })
+
+              if (directInsertError) {
+                console.error('Error creating user assignment:', directInsertError)
+                throw new Error(`Kunne ikke tildele til bruker: ${directInsertError.message}`)
               }
+
               newlyAssignedUserIds.push(userId)
             }
           }
