@@ -92,6 +92,11 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route)
   )
 
+  // Redirect authenticated users away from auth pages
+  if (isAuthRoute && session) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
   // Redirect to login if trying to access protected route without session
   if (isProtectedRoute && !session) {
     const redirectUrl = new URL('/login', request.url)
