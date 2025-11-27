@@ -59,9 +59,10 @@ interface Props {
   program: Program
   userProgress: UserProgress[]
   userId: string
+  isInstructor?: boolean
 }
 
-export default function ProgramViewer({ program, userProgress, userId }: Props) {
+export default function ProgramViewer({ program, userProgress, userId, isInstructor = false }: Props) {
   const router = useRouter()
   const [currentModuleIndex, setCurrentModuleIndex] = useState<number | null>(null)
   const [progressMap, setProgressMap] = useState<Map<string, UserProgress>>(new Map())
@@ -320,6 +321,7 @@ export default function ProgramViewer({ program, userProgress, userId }: Props) 
         onComplete={(data) => handleModuleComplete(sortedModules[currentModuleIndex].id, data)}
         moduleIndex={currentModuleIndex}
         totalModules={totalModules}
+        isInstructor={isInstructor}
       />
     )
   }

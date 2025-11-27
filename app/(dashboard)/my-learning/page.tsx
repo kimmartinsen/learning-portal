@@ -40,6 +40,7 @@ interface UserAssignment {
   progress_percentage: number
   sort_order?: number
   course_type?: 'e-course' | 'physical-course'
+  is_instructor?: boolean
 }
 
 export default async function MyLearningPage({
@@ -84,10 +85,10 @@ export default async function MyLearningPage({
     console.error('Error fetching assignments:', error)
   }
 
-  // Get sort_order and course_type for programs to sort them correctly within themes
+  // Get sort_order, course_type, and instructor_id for programs to sort them correctly within themes
   const { data: programsData } = await supabase
     .from('training_programs')
-    .select('id, sort_order, course_type')
+    .select('id, sort_order, course_type, instructor_id')
     .in('id', (assignmentsData || []).map(a => a.program_id))
 
   const sortOrderMap = new Map(
@@ -96,6 +97,10 @@ export default async function MyLearningPage({
   
   const courseTypeMap = new Map(
     (programsData || []).map(p => [p.id, p.course_type || 'e-course'])
+  )
+  
+  const instructorMap = new Map(
+    (programsData || []).map(p => [p.id, p.instructor_id === profile.id])
   )
 
   // Process assignments to include proper status and sort order
@@ -109,7 +114,8 @@ export default async function MyLearningPage({
       ...a,
       calculated_status: status,
       sort_order: sortOrderMap.get(a.program_id) || 0,
-      course_type: courseTypeMap.get(a.program_id) || 'e-course'
+      course_type: courseTypeMap.get(a.program_id) || 'e-course',
+      is_instructor: instructorMap.get(a.program_id) || false
     }
   })
 
@@ -266,9 +272,10 @@ export default async function MyLearningPage({
                       const status = assignment.calculated_status
                       const isLocked = status === 'locked' || status === 'pending'
                       const isPhysicalCourse = assignment.course_type === 'physical-course'
+                      const isInstructor = assignment.is_instructor || false
 
-                      // For fysiske kurs, ikke vis action knapp (de har ikke innhold)
-                      if (isPhysicalCourse) {
+                      // For fysiske kurs eller instruktører, ikke vis action knapp
+                      if (isPhysicalCourse || isInstructor) {
                         return (
                           <Card
                             key={assignment.id}

@@ -213,6 +213,35 @@ BEGIN
   END LOOP;
 END $$;
 
+-- 7. TRIGGER: Forhindre at instruktører endrer status på user_progress
+-- Hvis en instruktør prøver å endre status, sett den tilbake til completed
+CREATE OR REPLACE FUNCTION prevent_instructor_progress_changes()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_instructor_id UUID;
+BEGIN
+  -- Sjekk om brukeren er instruktør for dette kurset
+  SELECT instructor_id INTO v_instructor_id
+  FROM training_programs
+  WHERE id = NEW.program_id;
+
+  -- Hvis brukeren er instruktør, sett status til completed og behold completed_at
+  IF v_instructor_id = NEW.user_id THEN
+    NEW.status := 'completed';
+    NEW.completed_at := COALESCE(NEW.completed_at, OLD.completed_at, NOW());
+    NEW.started_at := COALESCE(NEW.started_at, OLD.started_at, NOW());
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_prevent_instructor_progress_changes ON user_progress;
+CREATE TRIGGER trigger_prevent_instructor_progress_changes
+  BEFORE INSERT OR UPDATE ON user_progress
+  FOR EACH ROW
+  EXECUTE FUNCTION prevent_instructor_progress_changes();
+
 -- ============================================================================
 -- FERDIG! ✅
 -- ============================================================================
@@ -220,5 +249,7 @@ END $$;
 -- 1. Når en bruker settes som instruktør for et kurs, får de automatisk
 --    status "Fullført" på det kurset (hvis de har en assignment)
 -- 2. Eksisterende instruktør-assignments blir oppdatert til "completed"
+-- 3. Alle moduler markeres som fullført i user_progress for instruktører
+-- 4. Instruktører kan ikke endre status på user_progress (automatisk satt tilbake til completed)
 -- ============================================================================
 

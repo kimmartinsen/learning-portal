@@ -74,11 +74,15 @@ export default async function ProgramPage({ params }: PageProps) {
     .eq('user_id', profile.id)
     .eq('program_id', params.id)
 
+  // Check if user is instructor for this program
+  const isInstructor = program.instructor_id === profile.id
+
   return (
     <ProgramViewer
       program={program}
       userProgress={userProgress || []}
       userId={profile.id}
+      isInstructor={isInstructor}
     />
   )
 }

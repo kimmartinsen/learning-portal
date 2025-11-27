@@ -102,14 +102,19 @@ export default function ModuleViewer({
   const questions: Question[] = content.questions || []
 
   useEffect(() => {
-    // Mark module as started when first loaded
-    if (!hasStartedProgress && !progress) {
+    // Mark module as started when first loaded (but not for instructors)
+    if (!isInstructor && !hasStartedProgress && !progress) {
       markModuleStarted()
       setHasStartedProgress(true)
     }
-  }, [])
+  }, [isInstructor])
 
   const markModuleStarted = async () => {
+    // Don't allow instructors to change status
+    if (isInstructor) {
+      return
+    }
+    
     try {
       const { error } = await supabase
         .from('user_progress')
@@ -138,6 +143,12 @@ export default function ModuleViewer({
   }
 
   const markModuleCompleted = async (additionalData: any = {}) => {
+    // Don't allow instructors to change status
+    if (isInstructor) {
+      toast.info('Du er instruktør for dette kurset. Statusen kan ikke endres.')
+      return
+    }
+    
     try {
       const updateData = {
         user_id: userId,
