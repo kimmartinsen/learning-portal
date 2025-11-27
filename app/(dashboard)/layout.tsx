@@ -37,9 +37,13 @@ export default async function DashboardLayout({
   if (error) {
     console.error('Error fetching profile in layout:', error)
     console.error('Error details:', JSON.stringify(error, null, 2))
-    // If RLS is blocking, we need to show an error page instead of redirecting
-    // because redirecting will cause a loop
-    throw new Error(`Kunne ikke hente brukerprofil: ${error.message}. Dette kan være et RLS-problem.`)
+    console.error('Error code:', error.code)
+    console.error('Error hint:', error.hint)
+    console.error('Error details:', error.details)
+    
+    // If RLS is blocking, redirect to login with specific error
+    // This prevents infinite loops while still showing the error
+    redirect(`/login?error=profile_access&message=${encodeURIComponent(error.message)}`)
   }
 
   if (!profile) {
