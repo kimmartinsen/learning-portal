@@ -17,9 +17,14 @@ export default async function AdminOverviewPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name')
+    .select('full_name, role')
     .eq('id', session.user.id)
     .single()
+
+  // Check if user is admin
+  if (!profile || profile.role !== 'admin') {
+    redirect('/dashboard')
+  }
 
   const adminLinks = [
     {

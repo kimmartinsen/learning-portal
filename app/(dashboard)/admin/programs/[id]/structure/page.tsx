@@ -31,6 +31,25 @@ export default function ProgramStructurePage() {
     try {
       setLoading(true)
 
+      // Check if user is admin
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/login')
+        return
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!profile || profile.role !== 'admin') {
+        toast.error('Ikke autorisert')
+        router.push('/dashboard')
+        return
+      }
+
       // Fetch theme
       const { data: themeData, error: themeError } = await supabase
         .from('themes')

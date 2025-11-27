@@ -74,6 +74,12 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route)
   )
 
+  // Admin routes that require admin role
+  const adminRoutes = ['/admin']
+  const isAdminRoute = adminRoutes.some(route => 
+    request.nextUrl.pathname.startsWith(route)
+  )
+
   // Auth routes (login, signup)
   const authRoutes = ['/login', '/signup']
   const isAuthRoute = authRoutes.some(route => 
@@ -85,6 +91,20 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
     return NextResponse.redirect(redirectUrl)
+  }
+
+  // Check admin role for admin routes
+  if (isAdminRoute && session) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single()
+
+    if (!profile || profile.role !== 'admin') {
+      // User is not admin, redirect to dashboard
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   return response

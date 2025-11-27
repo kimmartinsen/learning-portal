@@ -142,8 +142,9 @@ export default function ThemeDetailPage({ params }: ThemeDetailPageProps) {
         return
       }
 
-      if (profile.role !== 'admin') {
-        setError('Du har ikke tilgang til denne siden')
+      if (!profile || profile.role !== 'admin') {
+        toast.error('Ikke autorisert')
+        router.push('/dashboard')
         return
       }
 

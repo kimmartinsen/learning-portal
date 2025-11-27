@@ -1,8 +1,31 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Download, BarChart3, Users, TrendingUp } from 'lucide-react'
+import { redirect } from 'next/navigation'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-export default function AdminReportsPage() {
+export default async function AdminReportsPage() {
+  const supabase = createServerSupabaseClient()
+  
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session) {
+    redirect('/login')
+  }
+
+  // Get user profile and check admin role
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .single()
+
+  // Check if user is admin
+  if (!profile || profile.role !== 'admin') {
+    redirect('/dashboard')
+  }
   return (
     <div className="space-y-6">
       {/* Header */}
