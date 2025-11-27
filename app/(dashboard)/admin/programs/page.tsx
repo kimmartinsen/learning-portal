@@ -179,11 +179,12 @@ export default function AdminProgramsPage() {
 
 
   const fetchInstructors = async (companyId: string) => {
+    // Hent alle brukere og admins - alle kan være instruktører
     const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name')
       .eq('company_id', companyId)
-      .in('role', ['admin', 'instructor'])
+      .in('role', ['admin', 'user'])
       .order('full_name')
 
     if (error) throw error

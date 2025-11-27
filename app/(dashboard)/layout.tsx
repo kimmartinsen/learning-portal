@@ -39,11 +39,20 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
+  // Sjekk om brukeren er instruktør for noen kurs
+  const { count } = await supabase
+    .from('training_programs')
+    .select('id', { count: 'exact', head: true })
+    .eq('instructor_id', profile.id)
+    .eq('company_id', profile.company_id)
+  
+  const isInstructor = (count || 0) > 0
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
       <Topbar user={profile} className="border-b border-gray-200 dark:border-gray-900 lg:pl-[14rem]" />
       <div className="flex">
-        <Sidebar user={profile} />
+        <Sidebar user={profile} isInstructor={isInstructor} />
         <main className="flex-1 px-6 py-6 lg:px-8 lg:py-8">
           {children}
         </main>

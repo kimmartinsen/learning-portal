@@ -30,6 +30,7 @@ interface User {
 
 interface SidebarProps {
   user: User | null
+  isInstructor?: boolean
 }
 
 const adminMenuItems = [
@@ -61,7 +62,8 @@ export function Sidebar({ user }: SidebarProps) {
 
   const getMenuItems = () => {
     if (user?.role === 'admin') return adminMenuItems
-    if (user?.role === 'instructor') return instructorMenuItems
+    // Hvis brukeren er instruktør for noen kurs (uavhengig av rolle), vis instruktør-meny
+    if (isInstructor) return instructorMenuItems
     return userMenuItems
   }
 
@@ -150,7 +152,7 @@ export function Sidebar({ user }: SidebarProps) {
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                   {user.role === 'admin' ? 'Administrator' : 
-                   user.role === 'instructor' ? 'Instruktør' : 'Bruker'}
+                   isInstructor ? 'Instruktør' : 'Bruker'}
                 </p>
               </div>
             )}

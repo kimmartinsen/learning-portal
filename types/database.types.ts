@@ -570,6 +570,6 @@ export interface Database {
   }
 }
 
-export type UserRole = 'admin' | 'instructor' | 'user'
+export type UserRole = 'admin' | 'user'
 export type ModuleType = 'video' | 'document' | 'quiz' | 'interactive'
 export type ProgressStatus = 'not_started' | 'in_progress' | 'completed'

@@ -43,10 +43,11 @@ CREATE TRIGGER trigger_program_assignment_updated_at
 DROP POLICY IF EXISTS "Instructors can update physical course assignments" ON program_assignments;
 
 -- Opprett policy som lar instruktører oppdatere status for fysiske kurs
+-- Instruktører er brukere/admins som er satt som instructor_id på kurset
 CREATE POLICY "Instructors can update physical course assignments" ON program_assignments
   FOR UPDATE
   USING (
-    -- Sjekk om dette er et fysisk kurs
+    -- Sjekk om dette er et fysisk kurs og brukeren er instruktør for kurset
     EXISTS (
       SELECT 1 FROM training_programs tp
       WHERE tp.id = program_assignments.program_id
@@ -54,7 +55,7 @@ CREATE POLICY "Instructors can update physical course assignments" ON program_as
       AND tp.instructor_id = auth.uid()
       AND tp.company_id IN (
         SELECT company_id FROM profiles 
-        WHERE id = auth.uid() AND role = 'instructor'
+        WHERE id = auth.uid()
       )
     )
   )
@@ -67,7 +68,7 @@ CREATE POLICY "Instructors can update physical course assignments" ON program_as
       AND tp.instructor_id = auth.uid()
       AND tp.company_id IN (
         SELECT company_id FROM profiles 
-        WHERE id = auth.uid() AND role = 'instructor'
+        WHERE id = auth.uid()
       )
     )
   );

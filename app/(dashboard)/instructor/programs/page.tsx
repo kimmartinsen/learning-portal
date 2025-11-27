@@ -66,14 +66,12 @@ export default function InstructorProgramsPage() {
         .eq('id', session.user.id)
         .single()
 
-      if (!profile || profile.role !== 'instructor') {
+      if (!profile) {
         toast.error('Ikke autorisert')
         return
       }
 
-      setUser(profile)
-
-      // Hent kurs hvor brukeren er instruktør
+      // Sjekk om brukeren er instruktør for noen kurs
       const { data: coursesData, error: coursesError } = await supabase
         .from('training_programs')
         .select('id, title, description, course_type, deadline_days, instructor_id')
@@ -82,6 +80,14 @@ export default function InstructorProgramsPage() {
         .order('created_at', { ascending: false })
 
       if (coursesError) throw coursesError
+      
+      // Hvis brukeren ikke er instruktør for noen kurs, vis feilmelding
+      if (!coursesData || coursesData.length === 0) {
+        toast.error('Du er ikke instruktør for noen kurs')
+        return
+      }
+
+      setUser(profile)
       setCourses(coursesData || [])
 
       // Hent assignments for disse kursene

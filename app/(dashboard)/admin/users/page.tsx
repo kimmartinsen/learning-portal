@@ -48,7 +48,7 @@ export default function UsersPage() {
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
-    role: 'user' as 'admin' | 'instructor' | 'user',
+    role: 'user' as 'admin' | 'user',
     departmentId: '',
     password: '',
   })
@@ -281,7 +281,7 @@ export default function UsersPage() {
     setFormData({
       email: profile.email,
       fullName: profile.full_name,
-      role: profile.role as 'admin' | 'instructor' | 'user',
+      role: profile.role as 'admin' | 'user',
       departmentId: firstDepartment,
       password: '',
     })
@@ -392,14 +392,16 @@ export default function UsersPage() {
                 </label>
                 <select
                   value={formData.role}
-                  onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as any }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as 'admin' | 'user' }))}
                   className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                   required
                 >
                   <option value="user">Bruker</option>
-                  <option value="instructor">Instruktør</option>
                   <option value="admin">Administrator</option>
                 </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Instruktør settes per kurs, ikke som rolle.
+                </p>
               </div>
 
               <div>

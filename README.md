@@ -65,7 +65,7 @@ CREATE TABLE profiles (
   department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   full_name VARCHAR(255) NOT NULL,
-  role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'instructor', 'user')),
+  role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'user')),
   avatar_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -259,12 +259,12 @@ CREATE POLICY "Users upload own avatar" ON storage.objects FOR INSERT
 CREATE POLICY "Users view documents" ON storage.objects FOR SELECT 
   USING (bucket_id = 'training-documents' AND auth.uid() IN (SELECT id FROM profiles));
 CREATE POLICY "Instructors upload documents" ON storage.objects FOR INSERT 
-  WITH CHECK (bucket_id = 'training-documents' AND auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'instructor')));
+  WITH CHECK (bucket_id = 'training-documents' AND auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
 
 CREATE POLICY "Users view videos" ON storage.objects FOR SELECT 
   USING (bucket_id = 'training-videos' AND auth.uid() IN (SELECT id FROM profiles));
 CREATE POLICY "Instructors upload videos" ON storage.objects FOR INSERT 
-  WITH CHECK (bucket_id = 'training-videos' AND auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin', 'instructor')));
+  WITH CHECK (bucket_id = 'training-videos' AND auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
 ```
 
 ### 4. Start utviklingsserveren

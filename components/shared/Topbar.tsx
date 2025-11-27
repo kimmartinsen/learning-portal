@@ -81,8 +81,7 @@ export function Topbar({ user, className }: TopbarProps) {
                 {user?.full_name}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                {user?.role === 'admin' ? 'Administrator' : 
-                 user?.role === 'instructor' ? 'Instruktør' : 'Bruker'}
+                {user?.role === 'admin' ? 'Administrator' : 'Bruker'}
               </p>
             </div>
             

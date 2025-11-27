@@ -15,15 +15,27 @@ const getSessionAndProfile = cache(async () => {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, role')
+    .select('id, role, company_id')
     .eq('id', session.user.id)
     .single()
 
-  return { session, profile }
+  // Sjekk om brukeren er instruktør for noen kurs
+  let isInstructor = false
+  if (profile) {
+    const { count } = await supabase
+      .from('training_programs')
+      .select('id', { count: 'exact', head: true })
+      .eq('instructor_id', profile.id)
+      .eq('company_id', profile.company_id)
+    
+    isInstructor = (count || 0) > 0
+  }
+
+  return { session, profile, isInstructor }
 })
 
 export default async function DashboardPage() {
-  const { session, profile } = await getSessionAndProfile()
+  const { session, profile, isInstructor } = await getSessionAndProfile()
 
   if (!session) {
     redirect('/login')
@@ -37,7 +49,8 @@ export default async function DashboardPage() {
     redirect('/admin')
   }
 
-  if (profile.role === 'instructor') {
+  // Hvis brukeren er instruktør for noen kurs, send til instruktør-oversikt
+  if (isInstructor) {
     redirect('/instructor/programs')
   }
 
