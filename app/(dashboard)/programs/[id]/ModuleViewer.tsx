@@ -85,7 +85,8 @@ export default function ModuleViewer({
   onBack, 
   onComplete,
   moduleIndex,
-  totalModules 
+  totalModules,
+  isInstructor = false
 }: Props) {
   const [questionAnswers, setQuestionAnswers] = useState<Map<string, number>>(new Map())
   const [showQuestionFeedback, setShowQuestionFeedback] = useState<Map<string, boolean>>(new Map())
