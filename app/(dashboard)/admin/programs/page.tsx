@@ -397,17 +397,10 @@ export default function AdminProgramsPage() {
                     console.error('Error creating user assignments:', userInsertError)
                     toast.warning('Avdeling tildelt, men noen brukertildelinger feilet')
                   } else {
+                    // Legg til brukere i notifikasjonslisten (kun én gang!)
                     newlyAssignedUserIds.push(...userAssignments.map(a => a.assigned_to_user_id!))
                   }
                 }
-              }
-
-              // Only add users who weren't already assigned (for notifications)
-              if (deptUsers) {
-                const newUsers = deptUsers
-                  .filter(u => !alreadyAssignedUserIds.has(u.user_id))
-                  .map(u => u.user_id)
-                newlyAssignedUserIds.push(...newUsers)
               }
             }
           }
