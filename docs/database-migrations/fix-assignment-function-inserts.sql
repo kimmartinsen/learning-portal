@@ -113,11 +113,30 @@ DROP POLICY IF EXISTS "Allow function inserts for admins" ON public.program_assi
 
 CREATE POLICY "Allow function inserts for admins" ON public.program_assignments FOR INSERT 
   WITH CHECK (
-    -- Tillat hvis current_user er postgres (SECURITY DEFINER funksjon)
-    -- Dette er den viktigste sjekken for funksjoner
+    -- PRIORITET 1: Tillat hvis current_user er postgres (SECURITY DEFINER funksjon)
+    -- Dette er den viktigste sjekken og må komme først for å unngå å lese fra training_programs
     current_user = 'postgres'
     OR
-    -- Tillat hvis assigned_by er en admin i samme bedrift som programmet
+    -- PRIORITET 2: Tillat direkte INSERT fra admin (auth.uid() = assigned_by og er admin)
+    -- Dette unngår å lese fra training_programs hvis mulig
+    (
+      auth.uid() = program_assignments.assigned_by
+      AND EXISTS(
+        SELECT 1 
+        FROM public.profiles p
+        WHERE p.id = auth.uid()
+          AND p.role = 'admin'
+      )
+      AND EXISTS(
+        SELECT 1 
+        FROM public.training_programs tp
+        WHERE tp.id = program_assignments.program_id
+          AND tp.company_id = (SELECT company_id FROM public.profiles WHERE id = auth.uid())
+      )
+    )
+    OR
+    -- PRIORITET 3: Tillat hvis assigned_by er en admin i samme bedrift som programmet
+    -- Dette er fallback for SECURITY DEFINER funksjoner som ikke kjører som postgres
     EXISTS(
       SELECT 1 
       FROM public.profiles p
@@ -125,19 +144,6 @@ CREATE POLICY "Allow function inserts for admins" ON public.program_assignments 
       WHERE p.id = program_assignments.assigned_by
         AND p.role = 'admin'
         AND p.company_id = tp.company_id
-    )
-    OR
-    -- Tillat direkte INSERT fra admin (auth.uid() = assigned_by og er admin)
-    (
-      auth.uid() = program_assignments.assigned_by
-      AND EXISTS(
-        SELECT 1 
-        FROM public.profiles p
-        JOIN public.training_programs tp ON tp.id = program_assignments.program_id
-        WHERE p.id = auth.uid()
-          AND p.role = 'admin'
-          AND p.company_id = tp.company_id
-      )
     )
   );
 
