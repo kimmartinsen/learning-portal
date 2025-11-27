@@ -654,8 +654,13 @@ export default function AdminProgramsPage() {
         ])
 
         if (deptResponse.data || userResponse.data) {
-          const currentDeptIds = (deptResponse.data || []).map(a => a.assigned_to_department_id).filter(Boolean) as string[]
-          const currentUserIds = (userResponse.data || []).map(a => a.assigned_to_user_id).filter(Boolean) as string[]
+          // Remove duplicates using Set
+          const currentDeptIds = Array.from(new Set(
+            (deptResponse.data || []).map(a => a.assigned_to_department_id).filter(Boolean) as string[]
+          ))
+          const currentUserIds = Array.from(new Set(
+            (userResponse.data || []).map(a => a.assigned_to_user_id).filter(Boolean) as string[]
+          ))
           
           setAssignSelection(prev => ({
             ...prev,
