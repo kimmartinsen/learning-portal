@@ -581,30 +581,27 @@ export default function InstructorProgramsPage() {
     }
   }
 
-  const handleStatusChange = async (themeId: string, assignmentId: string, newStatus: string) => {
+  const handleConfirmPhysicalCourse = async (themeId: string, assignmentId: string) => {
+    if (!confirm('Er du sikker på at du vil bekrefte at dette kurset er gjennomført?')) {
+      return
+    }
+
     try {
-      const updateData: any = {
-        status: newStatus === 'completed' ? 'completed' : newStatus === 'in_progress' ? 'started' : 'assigned'
-      }
-
-      if (newStatus === 'completed') {
-        updateData.completed_at = new Date().toISOString()
-      } else {
-        updateData.completed_at = null
-      }
-
       const { error } = await supabase
         .from('program_assignments')
-        .update(updateData)
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
         .eq('id', assignmentId)
 
       if (error) throw error
       
-      toast.success('Status oppdatert!')
+      toast.success('Kurs bekreftet som gjennomført!')
       fetchThemeProgress(themeId)
       router.refresh()
     } catch (error: any) {
-      toast.error('Kunne ikke oppdatere status: ' + error.message)
+      toast.error('Kunne ikke bekrefte kurs: ' + error.message)
     }
   }
 
@@ -743,26 +740,30 @@ export default function InstructorProgramsPage() {
                                         }
 
                                         const config = statusConfig[status.status]
-                                        const isPending = status.status === 'pending'
 
-                                        // For fysiske kurs, vis dropdown for å oppdatere status
+                                        // For fysiske kurs, vis "Bekreft gjennomført" knapp hvis ikke allerede fullført
                                         if (isPhysicalCourse) {
-                                          const currentStatus = status.status === 'completed' ? 'completed' 
-                                            : status.status === 'in_progress' ? 'in_progress'
-                                            : 'not_started'
-
+                                          const isCompleted = status.status === 'completed'
+                                          
                                           return (
                                             <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-center align-middle min-w-[130px]">
-                                              <select
-                                                value={currentStatus}
-                                                onChange={(e) => handleStatusChange(theme.id, status.assignmentId, e.target.value)}
-                                                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer"
-                                                onClick={(e) => e.stopPropagation()}
-                                              >
-                                                <option value="not_started">Ikke startet</option>
-                                                <option value="in_progress">I gang</option>
-                                                <option value="completed">Fullført</option>
-                                              </select>
+                                              {isCompleted ? (
+                                                <span
+                                                  className={`inline-flex items-center justify-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}
+                                                >
+                                                  {config.icon}
+                                                  <span>{config.label}</span>
+                                                </span>
+                                              ) : (
+                                                <Button
+                                                  size="sm"
+                                                  onClick={() => handleConfirmPhysicalCourse(theme.id, status.assignmentId)}
+                                                  className="text-xs"
+                                                >
+                                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                                  Bekreft gjennomført
+                                                </Button>
+                                              )}
                                             </td>
                                           )
                                         }
