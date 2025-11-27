@@ -211,11 +211,13 @@ export default function UsersPage() {
           if (signupError) throw signupError
           if (!signupData.user) throw new Error('Kunne ikke opprette bruker')
 
+          const userId = signupData.user.id
+
           // Opprett profil
           const { error: profileError } = await supabase
             .from('profiles')
             .insert([{
-              id: signupData.user.id,
+              id: userId,
               email: formData.email,
               full_name: formData.fullName,
               role: formData.role,
@@ -227,7 +229,7 @@ export default function UsersPage() {
           // Legg til avdelinger
           if (formData.departmentIds.length > 0) {
             const deptInserts = formData.departmentIds.map(deptId => ({
-              user_id: signupData.user.id,
+              user_id: userId,
               department_id: deptId,
             }))
             
