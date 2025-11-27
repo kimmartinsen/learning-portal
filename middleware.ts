@@ -74,8 +74,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route)
   )
 
-  // Auth routes (login, signup, change-password)
-  const authRoutes = ['/login', '/signup', '/change-password']
+  // Auth routes (login, signup)
+  const authRoutes = ['/login', '/signup']
   const isAuthRoute = authRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
   )
