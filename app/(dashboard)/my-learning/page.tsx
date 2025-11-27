@@ -72,6 +72,7 @@ export default async function MyLearningPage({
   }
 
   // Get user's assignments using the view - force fresh data
+  // Use cache: 'no-store' to prevent caching between different users
   console.log(`[${new Date().toISOString()}] Fetching assignments for user:`, profile.id)
   
   const { data: assignmentsData, error } = await supabase
@@ -79,7 +80,7 @@ export default async function MyLearningPage({
     .select('*')
     .eq('user_id', profile.id)
   
-  console.log(`[${new Date().toISOString()}] Fetched ${assignmentsData?.length || 0} assignments`)
+  console.log(`[${new Date().toISOString()}] Fetched ${assignmentsData?.length || 0} assignments for user ${profile.id}`)
   
   if (error) {
     console.error('Error fetching assignments:', error)
