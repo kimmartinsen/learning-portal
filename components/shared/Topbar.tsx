@@ -1,15 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { generateInitials } from '@/lib/utils'
+import { generateInitials, cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { useTheme } from '@/components/providers/ThemeProvider'
-import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
 
@@ -53,16 +49,6 @@ export function Topbar({ user, className }: TopbarProps) {
             </div>
             <div className="text-base font-semibold text-gray-900 dark:text-gray-100">
               Opplæringsportal
-            </div>
-          </div>
-          <div className="hidden md:flex md:max-w-md lg:max-w-lg w-full">
-            <div className="relative w-full">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                className="pl-9"
-                placeholder="Søk etter kurs, temaer eller brukere"
-                type="search"
-              />
             </div>
           </div>
         </div>
