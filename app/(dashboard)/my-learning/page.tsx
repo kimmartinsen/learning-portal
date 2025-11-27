@@ -39,6 +39,7 @@ interface UserAssignment {
   calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'locked' | 'pending'
   progress_percentage: number
   sort_order?: number
+  course_type?: 'e-course' | 'physical-course'
 }
 
 export default async function MyLearningPage({
@@ -83,14 +84,18 @@ export default async function MyLearningPage({
     console.error('Error fetching assignments:', error)
   }
 
-  // Get sort_order for programs to sort them correctly within themes
+  // Get sort_order and course_type for programs to sort them correctly within themes
   const { data: programsData } = await supabase
     .from('training_programs')
-    .select('id, sort_order')
+    .select('id, sort_order, course_type')
     .in('id', (assignmentsData || []).map(a => a.program_id))
 
   const sortOrderMap = new Map(
     (programsData || []).map(p => [p.id, p.sort_order || 0])
+  )
+  
+  const courseTypeMap = new Map(
+    (programsData || []).map(p => [p.id, p.course_type || 'e-course'])
   )
 
   // Process assignments to include proper status and sort order
@@ -103,7 +108,8 @@ export default async function MyLearningPage({
     return {
       ...a,
       calculated_status: status,
-      sort_order: sortOrderMap.get(a.program_id) || 0
+      sort_order: sortOrderMap.get(a.program_id) || 0,
+      course_type: courseTypeMap.get(a.program_id) || 'e-course'
     }
   })
 
@@ -259,6 +265,47 @@ export default async function MyLearningPage({
                     {themeAssignments.map((assignment, index) => {
                       const status = assignment.calculated_status
                       const isLocked = status === 'locked' || status === 'pending'
+                      const isPhysicalCourse = assignment.course_type === 'physical-course'
+
+                      // For fysiske kurs, ikke vis action knapp (de har ikke innhold)
+                      if (isPhysicalCourse) {
+                        return (
+                          <Card
+                            key={assignment.id}
+                            className={
+                              status === 'completed'
+                                ? 'border-green-200 dark:border-green-500/40 shadow-sm'
+                                : 'shadow-sm'
+                            }
+                          >
+                            <CardContent className="space-y-4 p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex flex-col">
+                                  {themeName !== 'Uten program' && (
+                                    <span className="text-xs text-gray-500 mb-1">Steg {(assignment.sort_order != null && assignment.sort_order >= 0) ? assignment.sort_order + 1 : index + 1}</span>
+                                  )}
+                                  <h3 className="text-sm font-semibold leading-tight text-gray-900 dark:text-gray-100">
+                                    {assignment.program_title}
+                                  </h3>
+                                </div>
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${getStatusColor(
+                                    status
+                                  )}`}
+                                >
+                                  {getStatusIcon(status)}
+                                  <span>{getStatusText(status)}</span>
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <Clock className="h-4 w-4" />
+                                <span>{formatDaysRemaining(assignment.days_remaining, status)}</span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      }
 
                       const actionConfig =
                         status === 'completed'

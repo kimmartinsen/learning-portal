@@ -758,9 +758,9 @@ export default function InstructorProgramsPage() {
                                                 <Button
                                                   size="sm"
                                                   onClick={() => handleConfirmPhysicalCourse(theme.id, status.assignmentId)}
-                                                  className="text-xs"
+                                                  className="bg-green-600 hover:bg-green-700 text-white border-green-700 dark:bg-green-500 dark:hover:bg-green-600"
                                                 >
-                                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                                  <CheckCircle className="w-4 h-4 mr-2" />
                                                   Bekreft gjennomført
                                                 </Button>
                                               )}
