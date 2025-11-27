@@ -22,6 +22,13 @@ function LoginForm() {
     if (message) {
       toast.info(message)
     }
+    
+    const error = searchParams.get('error')
+    if (error === 'profile_access') {
+      toast.error('Kunne ikke hente brukerprofil. Vennligst prøv igjen.')
+    } else if (error === 'no_profile') {
+      toast.error('Brukerprofil ikke funnet. Kontakt administrator.')
+    }
   }, [searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -34,9 +34,17 @@ export default async function DashboardLayout({
     .eq('id', session.user.id)
     .single()
 
-  if (error || !profile) {
-    console.error('Error fetching profile:', error)
-    redirect('/login')
+  if (error) {
+    console.error('Error fetching profile in layout:', error)
+    console.error('Error details:', JSON.stringify(error, null, 2))
+    // If RLS is blocking, try to show a helpful error
+    // But still redirect to login for now
+    redirect('/login?error=profile_access')
+  }
+
+  if (!profile) {
+    console.error('No profile found for user:', session.user.id)
+    redirect('/login?error=no_profile')
   }
 
   // Sjekk om brukeren er instruktør for noen kurs

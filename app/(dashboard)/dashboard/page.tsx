@@ -13,22 +13,32 @@ const getSessionAndProfile = cache(async () => {
     return { session: null, profile: null }
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('id, role, company_id')
     .eq('id', session.user.id)
     .single()
 
+  if (profileError) {
+    console.error('Error fetching profile in dashboard:', profileError)
+    console.error('Error details:', JSON.stringify(profileError, null, 2))
+    return { session, profile: null, isInstructor: false }
+  }
+
   // Sjekk om brukeren er instruktør for noen kurs
   let isInstructor = false
   if (profile) {
-    const { count } = await supabase
+    const { count, error: instructorError } = await supabase
       .from('training_programs')
       .select('id', { count: 'exact', head: true })
       .eq('instructor_id', profile.id)
       .eq('company_id', profile.company_id)
     
-    isInstructor = (count || 0) > 0
+    if (instructorError) {
+      console.error('Error checking instructor status:', instructorError)
+    } else {
+      isInstructor = (count || 0) > 0
+    }
   }
 
   return { session, profile, isInstructor }
