@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { generateInitials } from '@/lib/utils'
+import { generateInitials, cn } from '@/lib/utils'
 
 interface Profile {
   id: string
@@ -46,11 +46,10 @@ export default function UsersPage() {
   const [user, setUser] = useState<User | null>(null)
   
   const [formData, setFormData] = useState({
-    email: '',
+    email: '', // Kun for redigering
     fullName: '',
     role: 'user' as 'admin' | 'user',
-    departmentId: '',
-    password: '',
+    departmentIds: [] as string[], // Flere avdelinger
   })
 
   useEffect(() => {
@@ -158,7 +157,6 @@ export default function UsersPage() {
           .update({
             full_name: formData.fullName,
             role: formData.role,
-            department_id: formData.departmentId || null,
           })
           .eq('id', editingProfile.id)
 
@@ -171,103 +169,81 @@ export default function UsersPage() {
           .delete()
           .eq('user_id', editingProfile.id)
 
-        // Then add new department if one is selected
-        if (formData.departmentId) {
+        // Then add new departments
+        if (formData.departmentIds.length > 0) {
+          const deptInserts = formData.departmentIds.map(deptId => ({
+            user_id: editingProfile.id,
+            department_id: deptId,
+          }))
+          
           const { error: deptError } = await supabase
             .from('user_departments')
-            .insert({
-              user_id: editingProfile.id,
-              department_id: formData.departmentId,
-            })
+            .insert(deptInserts)
           
           if (deptError) throw deptError
         }
 
         toast.success('Bruker oppdatert!')
       } else {
-        // Create new user via auth
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          user_metadata: {
-            full_name: formData.fullName,
-          }
-        })
-
-        if (authError) {
-          // Fallback to client-side signup if admin method fails
-          const { data: signupData, error: signupError } = await supabase.auth.signUp({
-            email: formData.email,
-            password: formData.password,
-            options: {
-              data: {
-                full_name: formData.fullName,
-              }
-            }
-          })
-
-          if (signupError) throw signupError
-          if (!signupData.user) throw new Error('Could not create user')
-
-          // Create profile
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([{
-              id: signupData.user.id,
-              email: formData.email,
-              full_name: formData.fullName,
-              role: formData.role,
-              company_id: user.company_id,
-              department_id: formData.departmentId || null,
-            }])
-
-          if (profileError) throw profileError
-
-          // Add to user_departments if department is selected
-          if (formData.departmentId) {
-            const { error: deptError } = await supabase
-              .from('user_departments')
-              .insert({
-                user_id: signupData.user.id,
-                department_id: formData.departmentId,
-              })
-            
-            if (deptError) throw deptError
-          }
+        // Opprett invitasjon i stedet for å opprette bruker direkte
+        // Brukeren må opprette sin egen konto ved første innlogging
+        
+        // Generer unik token (bruk crypto API hvis tilgjengelig, ellers fallback)
+        let token: string
+        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+          const array = new Uint8Array(32)
+          crypto.getRandomValues(array)
+          token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
         } else {
-          // Create profile for admin-created user
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([{
-              id: authData.user.id,
-              email: formData.email,
-              full_name: formData.fullName,
-              role: formData.role,
-              company_id: user.company_id,
-              department_id: formData.departmentId || null,
-            }])
+          // Fallback for server-side
+          token = Math.random().toString(36).substring(2, 15) + 
+                  Math.random().toString(36).substring(2, 15) +
+                  Date.now().toString(36)
+        }
+        
+        // Opprett invitasjon
+        const { data: invitationData, error: invitationError } = await supabase
+          .from('invitations')
+          .insert([{
+            company_id: user.company_id,
+            email: formData.email,
+            full_name: formData.fullName,
+            role: formData.role,
+            invited_by: user.id,
+            token: token,
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 dager
+          }])
+          .select()
+          .single()
 
-          if (profileError) throw profileError
+        if (invitationError) throw invitationError
 
-          // Add to user_departments if department is selected
-          if (formData.departmentId) {
-            const { error: deptError } = await supabase
-              .from('user_departments')
-              .insert({
-                user_id: authData.user.id,
-                department_id: formData.departmentId,
-              })
-            
-            if (deptError) throw deptError
-          }
+        // Legg til avdelinger
+        if (formData.departmentIds.length > 0 && invitationData) {
+          const deptInserts = formData.departmentIds.map(deptId => ({
+            invitation_id: invitationData.id,
+            department_id: deptId,
+          }))
+          
+          const { error: deptError } = await supabase
+            .from('invitation_departments')
+            .insert(deptInserts)
+          
+          if (deptError) throw deptError
         }
 
-        toast.success('Bruker opprettet!')
+        // TODO: Send invitasjons-e-post her (kan implementeres senere)
+        // For nå: vis token/lenke i toast eller modal
+        const invitationLink = `${window.location.origin}/accept-invitation/${token}`
+        toast.success(
+          `Invitasjon opprettet! Lenke: ${invitationLink}`,
+          { duration: 10000 }
+        )
       }
 
       setShowForm(false)
       setEditingProfile(null)
-      setFormData({ email: '', fullName: '', role: 'user', departmentId: '', password: '' })
+      setFormData({ email: '', fullName: '', role: 'user', departmentIds: [] })
       fetchUserAndProfiles()
     } catch (error: any) {
       toast.error(error.message)
@@ -276,14 +252,15 @@ export default function UsersPage() {
 
   const handleEdit = (profile: Profile) => {
     setEditingProfile(profile)
-    // Get first department from user_departments (for simplicity, UI only supports one)
-    const firstDepartment = profile.user_departments?.[0]?.departments?.id || ''
+    // Get all departments from user_departments
+    const departmentIds = (profile.user_departments || [])
+      .map(ud => ud.departments?.id)
+      .filter((id): id is string => id !== undefined)
     setFormData({
       email: profile.email,
       fullName: profile.full_name,
       role: profile.role as 'admin' | 'user',
-      departmentId: firstDepartment,
-      password: '',
+      departmentIds: departmentIds,
     })
     setShowForm(true)
   }
@@ -357,16 +334,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-3">
-              <Input
-                label="E-post"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                required
-                disabled={!!editingProfile}
-                placeholder="bruker@bedrift.no"
-              />
-
+              {/* Fullt navn først */}
               <Input
                 label="Fullt navn"
                 value={formData.fullName}
@@ -375,14 +343,27 @@ export default function UsersPage() {
                 placeholder="Ola Nordmann"
               />
 
+              {/* E-post kun for redigering */}
+              {editingProfile && (
+                <Input
+                  label="E-post"
+                  type="email"
+                  value={formData.email}
+                  disabled
+                  placeholder="bruker@bedrift.no"
+                />
+              )}
+
+              {/* E-post for ny bruker (for invitasjon) */}
               {!editingProfile && (
                 <Input
-                  label="Passord"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  label="E-post"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   required
-                  placeholder="Minst 6 tegn"
+                  placeholder="bruker@bedrift.no"
+                  helper="Brukeren vil motta en invitasjon og opprette sin egen konto"
                 />
               )}
 
@@ -405,19 +386,52 @@ export default function UsersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Avdeling
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Avdelinger
                 </label>
-                <select
-                  value={formData.departmentId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, departmentId: e.target.value }))}
-                  className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-                >
-                  <option value="">Ingen avdeling</option>
-                  {departments.map(dept => (
-                    <option key={dept.id} value={dept.id}>{dept.name}</option>
-                  ))}
-                </select>
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-700 rounded-lg p-2 bg-white dark:bg-gray-900">
+                  {departments.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                      Ingen avdelinger tilgjengelig
+                    </p>
+                  ) : (
+                    departments.map(dept => {
+                      const isSelected = formData.departmentIds.includes(dept.id)
+                      return (
+                        <label
+                          key={dept.id}
+                          className={cn(
+                            "flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
+                            isSelected && "bg-primary-50 dark:bg-primary-900/20"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  departmentIds: [...prev.departmentIds, dept.id]
+                                }))
+                              } else {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  departmentIds: prev.departmentIds.filter(id => id !== dept.id)
+                                }))
+                              }
+                            }}
+                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <span className="text-sm text-gray-900 dark:text-gray-100">{dept.name}</span>
+                        </label>
+                      )
+                    })
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Velg en eller flere avdelinger. Brukeren kan være med i flere avdelinger.
+                </p>
               </div>
 
               <div className="flex space-x-3 pt-4">
