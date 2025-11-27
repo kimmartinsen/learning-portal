@@ -541,6 +541,44 @@ export default function AdminProgramsPage() {
     }
   }
 
+  const handleDeleteTheme = async (themeId: string) => {
+    // First check if theme has any courses
+    const themePrograms = programs.filter(p => p.theme_id === themeId)
+    
+    if (themePrograms.length > 0) {
+      const courseCount = themePrograms.length
+      if (!confirm(
+        `Dette programmet inneholder ${courseCount} kurs. ` +
+        `Alle kursene vil bli flyttet til "Uten program". ` +
+        `Er du sikker på at du vil slette programmet?`
+      )) return
+    } else {
+      if (!confirm('Er du sikker på at du vil slette dette programmet?')) return
+    }
+
+    try {
+      // Delete the theme
+      // Note: theme_id in training_programs has ON DELETE SET NULL, so courses will be preserved
+      const { error } = await supabase
+        .from('themes')
+        .delete()
+        .eq('id', themeId)
+
+      if (error) throw error
+      
+      toast.success('Program slettet!')
+      await Promise.all([
+        fetchPrograms(user!.company_id),
+        fetchThemes(user!.company_id)
+      ])
+      
+      // VIKTIG: Trigger refresh av alle Server Components
+      router.refresh()
+    } catch (error: any) {
+      toast.error('Kunne ikke slette program: ' + error.message)
+    }
+  }
+
   const handleEditModules = (program: EnhancedTrainingProgram) => {
     // Navigate to module builder
     window.location.href = `/admin/programs/${program.id}/modules`
@@ -1157,6 +1195,16 @@ export default function AdminProgramsPage() {
                   >
                     <UserPlus className="h-3 w-3 mr-1" />
                     Tildel program
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteTheme(theme.id)}
+                    className="h-7 text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                    title="Slett program"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Slett
                   </Button>
                 </div>
               </summary>
