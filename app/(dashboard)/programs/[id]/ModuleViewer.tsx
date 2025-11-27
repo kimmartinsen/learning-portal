@@ -51,6 +51,7 @@ interface Props {
   onComplete: (data?: any) => void
   moduleIndex: number
   totalModules: number
+  isInstructor?: boolean
 }
 
 interface Question {
