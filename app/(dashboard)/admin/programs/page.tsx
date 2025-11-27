@@ -852,39 +852,88 @@ export default function AdminProgramsPage() {
 
         // Assign to departments
         if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
-          // Only assign if new or kept (RPC handles duplicates gracefully)
           for (const deptId of assignSelection.departmentIds) {
              // 1. Get users in dept
              const { data: deptUsers } = await supabase
                 .from('user_departments')
                 .select('user_id')
                 .eq('department_id', deptId)
-             
+
              if (deptUsers) {
                allAssignedUserIds.push(...deptUsers.map(u => u.user_id))
              }
 
-             // 2. Create dept assignment
-             const { error } = await supabase.rpc('assign_program_to_department', {
-                p_program_id: programId,
-                p_department_id: deptId,
-                p_assigned_by: user.id,
-                p_notes: 'Del av program-tildeling: ' + assigningTheme.name
-             })
-             if (!error) successCount++
+             // 2. Create dept assignment - DIREKTE INSERT
+             const { data: program } = await supabase
+                .from('training_programs')
+                .select('deadline_days')
+                .eq('id', programId)
+                .single()
+
+             const dueDate = new Date()
+             dueDate.setDate(dueDate.getDate() + (program?.deadline_days || 14))
+
+             const { error: deptError } = await supabase
+                .from('program_assignments')
+                .insert({
+                  program_id: programId,
+                  assigned_to_department_id: deptId,
+                  assigned_by: user.id,
+                  due_date: dueDate.toISOString(),
+                  notes: 'Del av program-tildeling: ' + assigningTheme.name,
+                  status: 'assigned'
+                })
+
+             if (!deptError) {
+               successCount++
+
+               // 3. Create individual user assignments
+               if (deptUsers && deptUsers.length > 0) {
+                 const userAssignments = deptUsers.map(u => ({
+                   program_id: programId,
+                   assigned_to_user_id: u.user_id,
+                   assigned_by: user.id,
+                   due_date: dueDate.toISOString(),
+                   notes: 'Del av program-tildeling: ' + assigningTheme.name,
+                   status: 'assigned',
+                   is_auto_assigned: true
+                 }))
+
+                 await supabase
+                   .from('program_assignments')
+                   .insert(userAssignments)
+               }
+             }
           }
         }
         
         // Assign to individuals
         if (assignSelection.type === 'individual' && assignSelection.userIds.length > 0) {
           allAssignedUserIds.push(...assignSelection.userIds)
+
+          // Get program deadline
+          const { data: program } = await supabase
+            .from('training_programs')
+            .select('deadline_days')
+            .eq('id', programId)
+            .single()
+
+          const dueDate = new Date()
+          dueDate.setDate(dueDate.getDate() + (program?.deadline_days || 14))
+
           for (const userId of assignSelection.userIds) {
-             const { error } = await supabase.rpc('assign_program_to_user', {
-                p_program_id: programId,
-                p_user_id: userId,
-                p_assigned_by: user.id,
-                p_notes: 'Del av program-tildeling: ' + assigningTheme.name
-             })
+             const { error } = await supabase
+                .from('program_assignments')
+                .insert({
+                  program_id: programId,
+                  assigned_to_user_id: userId,
+                  assigned_by: user.id,
+                  due_date: dueDate.toISOString(),
+                  notes: 'Del av program-tildeling: ' + assigningTheme.name,
+                  status: 'assigned',
+                  is_auto_assigned: false
+                })
+
              if (!error) successCount++
           }
         }
