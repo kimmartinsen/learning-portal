@@ -24,11 +24,29 @@ export function FocusRefresher() {
         return
       }
       
-      lastUserIdRef.current = currentUserId
+      // Initialize on first mount
+      if (lastUserIdRef.current === null && currentUserId) {
+        lastUserIdRef.current = currentUserId
+      }
     }
 
     // Check user change immediately and on mount
     checkUserChange()
+    
+    // Also check on auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        const newUserId = session?.user?.id || null
+        if (lastUserIdRef.current !== null && lastUserIdRef.current !== newUserId) {
+          window.location.reload()
+        }
+        lastUserIdRef.current = newUserId
+      }
+    })
+    
+    return () => {
+      subscription.unsubscribe()
+    }
 
     const refresh = () => {
       const now = Date.now()

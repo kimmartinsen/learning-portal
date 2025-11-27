@@ -46,7 +46,8 @@ function LoginForm() {
       if (data.user) {
         toast.success('Logget inn!')
         const redirectTo = searchParams.get('redirectTo') || '/dashboard'
-        router.push(redirectTo)
+        // Force a hard refresh to clear any cached data from previous user
+        window.location.href = redirectTo
       }
       
     } catch (error: any) {

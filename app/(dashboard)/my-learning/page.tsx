@@ -20,6 +20,7 @@ import {
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { FocusRefresher } from '@/components/utils/FocusRefresher'
+import { UserChangeDetector } from '@/components/utils/UserChangeDetector'
 
 interface UserAssignment {
   id: string
@@ -211,6 +212,7 @@ export default async function MyLearningPage({
 
   return (
     <div className="space-y-6">
+      <UserChangeDetector />
       <FocusRefresher />
       {/* Header */}
       <div>
