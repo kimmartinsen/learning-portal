@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Lock, PauseCircle, GraduationCap } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Lock, PauseCircle, Unlock, GraduationCap } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import type { Theme } from '@/types/enhanced-database.types'
 
 interface User {
   id: string
@@ -14,10 +15,11 @@ interface User {
   company_id: string
 }
 
-type Course = {
+type ThemeProgram = {
   id: string
   title: string
   description: string | null
+  sort_order?: number
   course_type?: 'e-course' | 'physical-course'
 }
 
@@ -59,22 +61,28 @@ type UserProgramStatus = {
   completedAt: string | null
 }
 
-type CourseUserRow = {
+type ThemeUserRow = {
   userId: string
   name: string
   email: string | null
   departmentName: string
-  status: UserProgramStatus
+  programs: Record<string, UserProgramStatus>
 }
 
-type CourseProgressData = {
-  course: Course
-  userRows: CourseUserRow[]
+type ThemeProgressData = {
+  programs: ThemeProgram[]
+  userRows: ThemeUserRow[]
+  summary: {
+    totalAssignments: number
+    completedCount: number
+    overdueCount: number
+    inProgressCount: number
+  }
 }
 
-type CourseProgressState = {
+type ThemeProgressState = {
   loading: boolean
-  data?: CourseProgressData
+  data?: ThemeProgressData
   error?: string
 }
 
@@ -116,17 +124,17 @@ const statusConfig: Record<
 
 export default function InstructorProgramsPage() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [courses, setCourses] = useState<Course[]>([])
+  const [themes, setThemes] = useState<Theme[]>([])
   const [loading, setLoading] = useState(true)
-  const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null)
-  const [progressState, setProgressState] = useState<Record<string, CourseProgressState>>({})
+  const [user, setUser] = useState<User | null>(null)
+  const [expandedThemeId, setExpandedThemeId] = useState<string | null>(null)
+  const [progressState, setProgressState] = useState<Record<string, ThemeProgressState>>({})
 
   useEffect(() => {
-    fetchUserAndCourses()
+    fetchUserAndThemes()
   }, [])
 
-  const fetchUserAndCourses = async () => {
+  const fetchUserAndThemes = async () => {
     try {
       setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -146,45 +154,87 @@ export default function InstructorProgramsPage() {
         return
       }
 
-      // Hent kurs instruktøren er tildelt
-      const { data: coursesData, error: coursesError } = await supabase
-        .from('training_programs')
-        .select('id, title, description, course_type')
-        .eq('instructor_id', profile.id)
-        .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: false })
-
-      if (coursesError) throw coursesError
-
-      if (!coursesData || coursesData.length === 0) {
-        setUser(profile)
-        setCourses([])
-        return
-      }
-
       setUser(profile)
-      setCourses(coursesData || [])
+      await fetchThemes(profile.company_id, profile.id)
     } catch (error: any) {
-      console.error('Error fetching data:', error)
       toast.error('Kunne ikke hente data: ' + error.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleToggleCourse = (courseId: string) => {
-    if (expandedCourseId === courseId) {
-      setExpandedCourseId(null)
+  const fetchThemes = async (companyId: string, instructorId: string) => {
+    try {
+      // Hent alle kurs instruktøren er tildelt
+      const { data: instructorCourses, error: coursesError } = await supabase
+        .from('training_programs')
+        .select('id, theme_id')
+        .eq('instructor_id', instructorId)
+        .eq('company_id', companyId)
+
+      if (coursesError) throw coursesError
+
+      if (!instructorCourses || instructorCourses.length === 0) {
+        setThemes([])
+        return
+      }
+
+      // Hent unike theme_id-er (inkludert null for kurs uten tema)
+      const themeIds = Array.from(new Set(
+        instructorCourses
+          .map(c => c.theme_id)
+          .filter((id): id is string => id !== null)
+      ))
+
+      // Hent temaer
+      let themesData: Theme[] = []
+      if (themeIds.length > 0) {
+        const { data: themesDataRaw, error: themesError } = await supabase
+          .from('themes')
+          .select('*')
+          .in('id', themeIds)
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: true })
+
+        if (themesError) throw themesError
+        themesData = themesDataRaw || []
+      }
+
+      // Hvis noen kurs ikke har tema, legg til "Uten program"
+      const hasNoThemeCourses = instructorCourses.some(c => !c.theme_id)
+      if (hasNoThemeCourses) {
+        themesData.push({
+          id: 'no-theme',
+          name: 'Uten program',
+          description: 'Kurs som ikke er knyttet til et program',
+          company_id: companyId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          order_index: 9999,
+          progression_type: 'flexible'
+        } as Theme)
+      }
+
+      setThemes(themesData)
+    } catch (error: any) {
+      console.error('Error fetching themes:', error)
+      toast.error('Kunne ikke hente programmer')
+    }
+  }
+
+  const handleToggleTheme = (themeId: string) => {
+    if (expandedThemeId === themeId) {
+      setExpandedThemeId(null)
     } else {
-      setExpandedCourseId(courseId)
-      // Hent progresjon når kurset utvides
-      if (!progressState[courseId] || !progressState[courseId].data) {
-        fetchCourseProgress(courseId)
+      setExpandedThemeId(themeId)
+      // Hent progresjon når programmet utvides
+      if (!progressState[themeId] || !progressState[themeId].data) {
+        fetchThemeProgress(themeId)
       }
     }
   }
 
-  const fetchCourseProgress = async (courseId: string) => {
+  const fetchThemeProgress = async (themeId: string) => {
     if (!user) {
       toast.error('Kunne ikke hente brukerdata')
       return
@@ -192,47 +242,95 @@ export default function InstructorProgramsPage() {
 
     setProgressState(prev => ({
       ...prev,
-      [courseId]: { loading: true }
+      [themeId]: { loading: true }
     }))
 
     try {
-      // Hent kurset
-      const { data: courseData, error: courseError } = await supabase
+      const isNoTheme = themeId === 'no-theme'
+      
+      // Hent kurs i dette programmet som instruktøren er tildelt
+      let programsQuery = supabase
         .from('training_programs')
-        .select('id, title, description, course_type')
-        .eq('id', courseId)
-        .single()
+        .select('id, title, description, sort_order, course_type')
+        .eq('instructor_id', user.id)
+        .eq('company_id', user.company_id)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true })
+      
+      if (isNoTheme) {
+        programsQuery = programsQuery.is('theme_id', null)
+      } else {
+        programsQuery = programsQuery.eq('theme_id', themeId)
+      }
 
-      if (courseError) throw courseError
+      const { data: programsData, error: programsError } = await programsQuery
 
-      const course = courseData as Course
+      if (programsError) {
+        throw programsError
+      }
 
-      // Hent moduler for kurset
+      const programs = (programsData as ThemeProgram[] | null) || []
+
+      if (programs.length === 0) {
+        setProgressState(prev => ({
+          ...prev,
+          [themeId]: {
+            loading: false,
+            data: {
+              programs: [],
+              userRows: [],
+              summary: {
+                totalAssignments: 0,
+                completedCount: 0,
+                overdueCount: 0,
+                inProgressCount: 0
+              }
+            }
+          }
+        }))
+        return
+      }
+
+      const programIds = programs.map(program => program.id)
+
+      // Hent moduler
       const { data: moduleRows, error: modulesError } = await supabase
         .from('modules')
         .select('id, program_id')
-        .eq('program_id', courseId)
+        .in('program_id', programIds)
 
-      if (modulesError) throw modulesError
+      if (modulesError) {
+        throw modulesError
+      }
 
-      const totalModules = (moduleRows || []).length
+      const modulesByProgram = ((moduleRows as { id: string; program_id: string }[] | null) || []).reduce<
+        Record<string, string[]>
+      >((acc, module) => {
+        if (!acc[module.program_id]) {
+          acc[module.program_id] = []
+        }
+        acc[module.program_id].push(module.id)
+        return acc
+      }, {})
 
-      // Hent assignments for dette kurset
+      // Hent assignments
       const { data: assignmentRows, error: assignmentError } = await supabase
         .from('program_assignments')
         .select(
           'id, program_id, assigned_to_user_id, due_date, status, completed_at, assigned_at, notes, is_auto_assigned'
         )
-        .eq('program_id', courseId)
+        .in('program_id', programIds)
         .not('assigned_to_user_id', 'is', null)
 
-      if (assignmentError) throw assignmentError
-
+      if (assignmentError) {
+         throw assignmentError
+      }
+      
       const assignments: UserAssignmentView[] = (assignmentRows as any[]).map(row => ({
-        ...row,
-        user_id: row.assigned_to_user_id,
-        calculated_status: row.status as any,
-        is_auto_assigned: row.is_auto_assigned || false
+          ...row,
+          user_id: row.assigned_to_user_id,
+          calculated_status: row.status as any,
+          is_auto_assigned: row.is_auto_assigned || false
       }))
 
       const userIds = Array.from(
@@ -251,7 +349,9 @@ export default function InstructorProgramsPage() {
           .select('id, full_name, department_id, email')
           .in('id', userIds)
 
-        if (profilesError) throw profilesError
+        if (profilesError) {
+          throw profilesError
+        }
 
         profileMap = new Map(
           ((profileRows as ProfileRecord[] | null) || []).map((profile) => [profile.id, profile])
@@ -264,10 +364,12 @@ export default function InstructorProgramsPage() {
         const { data: progressData, error: progressError } = await supabase
           .from('user_progress')
           .select('user_id, program_id, module_id, status')
-          .eq('program_id', courseId)
+          .in('program_id', programIds)
           .in('user_id', userIds)
 
-        if (progressError) throw progressError
+        if (progressError) {
+          throw progressError
+        }
 
         progressRows = (progressData as UserProgressRow[] | null) || []
       }
@@ -304,7 +406,9 @@ export default function InstructorProgramsPage() {
         .select('id, name')
         .eq('company_id', user.company_id)
 
-      if (departmentsError) throw departmentsError
+      if (departmentsError) {
+        throw departmentsError
+      }
 
       const departmentMap = (departmentsData as { id: string; name: string }[] | null)?.reduce<
         Record<string, string>
@@ -313,11 +417,11 @@ export default function InstructorProgramsPage() {
         return acc
       }, {}) || {}
 
-      // Finn hvilke avdelinger som tildelte kurset til hver bruker
+      // Finn hvilke avdelinger som tildelte kurs til hver bruker
       const { data: deptAssignmentsData } = await supabase
         .from('program_assignments')
         .select('program_id, assigned_to_department_id')
-        .eq('program_id', courseId)
+        .in('program_id', programIds)
         .not('assigned_to_department_id', 'is', null)
 
       const deptIds = Array.from(new Set(
@@ -346,25 +450,48 @@ export default function InstructorProgramsPage() {
         })
       }
 
-      // Bygg user rows
-      const userRows: CourseUserRow[] = assignments.map(assignment => {
-        if (!assignment.user_id) return null
+      const userMap = new Map<string, ThemeUserRow>()
+      let completedCount = 0
+      let overdueCount = 0
+      let inProgressCount = 0
 
-        const profile = profileMap.get(assignment.user_id)
-        if (!profile) return null
-
-        // Bestem avdeling
-        let departmentName = 'Uten avdeling'
-        if (assignment.is_auto_assigned) {
-          const assignedDepts = userAssignedDeptsMap.get(assignment.user_id) || []
-          if (assignedDepts.length > 0) {
-            departmentName = assignedDepts.join(', ')
-          }
-        } else {
-          departmentName = 'Direkte tildelt'
+      assignments.forEach(assignment => {
+        if (!assignment.user_id) {
+          return
         }
 
-        const progressKey = `${assignment.user_id}:${assignment.program_id}`
+        const profile = profileMap.get(assignment.user_id)
+        if (!profile) {
+          return
+        }
+
+        const userId = profile.id
+
+        if (!userMap.has(userId)) {
+          // Bestem avdeling
+          let departmentName = 'Uten avdeling'
+          if (assignment.is_auto_assigned) {
+            const assignedDepts = userAssignedDeptsMap.get(userId) || []
+            if (assignedDepts.length > 0) {
+              departmentName = assignedDepts.join(', ')
+            }
+          } else {
+            departmentName = 'Direkte tildelt'
+          }
+
+          userMap.set(userId, {
+            userId,
+            name: profile.full_name || 'Ukjent bruker',
+            email: profile.email,
+            departmentName,
+            programs: {}
+          })
+        }
+
+        const row = userMap.get(userId)!
+        const totalModules = modulesByProgram[assignment.program_id]?.length ?? 0
+
+        const progressKey = `${userId}:${assignment.program_id}`
         const progressInfo = progressMap.get(progressKey)
         const completedModules = progressInfo?.completed ?? 0
         const hasInProgress = progressInfo?.hasInProgress ?? false
@@ -393,48 +520,60 @@ export default function InstructorProgramsPage() {
           }
         }
 
-        const progressPercent =
+        if (status === 'completed') {
+          completedCount += 1
+        } else if (status === 'overdue') {
+          overdueCount += 1
+        } else if (status === 'in_progress') {
+          inProgressCount += 1
+        }
+
+        const derivedProgress =
           totalModules > 0
             ? Math.round((completedModules / totalModules) * 100)
             : status === 'completed'
             ? 100
             : 0
 
-        return {
-          userId: assignment.user_id,
-          name: profile.full_name || 'Ukjent bruker',
-          email: profile.email,
-          departmentName,
-          status: {
-            status,
-            assignmentId: assignment.id,
-            completedModules,
-            totalModules,
-            progressPercent,
-            dueDate: assignment.due_date,
-            completedAt: assignment.completed_at
-          }
+        const progressPercent =
+          typeof assignment.progress_percentage === 'number'
+            ? Math.max(0, Math.min(100, Math.round(assignment.progress_percentage)))
+            : derivedProgress
+
+        row.programs[assignment.program_id] = {
+          status,
+          assignmentId: assignment.id,
+          completedModules,
+          totalModules,
+          progressPercent,
+          dueDate: assignment.due_date,
+          completedAt: assignment.completed_at
         }
-      }).filter((row): row is CourseUserRow => row !== null)
-        .sort((a, b) => a.name.localeCompare(b.name))
+      })
 
       setProgressState(prev => ({
         ...prev,
-        [courseId]: {
+        [themeId]: {
           loading: false,
           data: {
-            course,
-            userRows
+            programs,
+            userRows: Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
+            summary: {
+              totalAssignments: assignments.length,
+              completedCount,
+              overdueCount,
+              inProgressCount
+            }
           }
         }
       }))
     } catch (error: any) {
-      console.error('Error fetching course progress:', error)
-      toast.error('Kunne ikke hente progresjon for kurset')
+      console.error('Error fetching theme progress:', error)
+      toast.error('Kunne ikke hente progresjon for programmet')
 
       setProgressState(prev => ({
         ...prev,
-        [courseId]: {
+        [themeId]: {
           loading: false,
           error: 'Kunne ikke hente progresjon'
         }
@@ -442,7 +581,7 @@ export default function InstructorProgramsPage() {
     }
   }
 
-  const handleStatusChange = async (courseId: string, assignmentId: string, newStatus: string) => {
+  const handleStatusChange = async (themeId: string, assignmentId: string, newStatus: string) => {
     try {
       const updateData: any = {
         status: newStatus === 'completed' ? 'completed' : newStatus === 'in_progress' ? 'started' : 'assigned'
@@ -462,7 +601,7 @@ export default function InstructorProgramsPage() {
       if (error) throw error
       
       toast.success('Status oppdatert!')
-      fetchCourseProgress(courseId)
+      fetchThemeProgress(themeId)
       router.refresh()
     } catch (error: any) {
       toast.error('Kunne ikke oppdatere status: ' + error.message)
@@ -485,53 +624,8 @@ export default function InstructorProgramsPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Mine kurs</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{courses.length}</p>
-              </div>
-              <GraduationCap className="h-8 w-8 text-primary-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totale deltakere</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {Object.values(progressState).reduce((sum, state) => 
-                    sum + (state.data?.userRows.length || 0), 0
-                  )}
-                </p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Fysiske kurs</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {courses.filter(c => c.course_type === 'physical-course').length}
-                </p>
-              </div>
-              <GraduationCap className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Courses List */}
-      {courses.length === 0 ? (
+      {/* Programs List */}
+      {themes.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
             <GraduationCap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -545,18 +639,17 @@ export default function InstructorProgramsPage() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {courses.map((course) => {
-            const isExpanded = expandedCourseId === course.id
-            const progress = progressState[course.id]
-            const isPhysicalCourse = course.course_type === 'physical-course'
+          {themes.map((theme) => {
+            const isExpanded = expandedThemeId === theme.id
+            const progress = progressState[theme.id]
 
             return (
-              <Card key={course.id}>
+              <Card key={theme.id}>
                 <CardContent className="p-0">
                   <div className="flex items-center justify-between px-4 py-3">
                     <button
                       type="button"
-                      onClick={() => handleToggleCourse(course.id)}
+                      onClick={() => handleToggleTheme(theme.id)}
                       className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none flex-grow"
                     >
                       {isExpanded ? (
@@ -566,16 +659,20 @@ export default function InstructorProgramsPage() {
                       )}
                       <div className="flex flex-col">
                         <span className="flex items-center gap-2">
-                          <GraduationCap className="h-4 w-4 text-primary-600" />
-                          {course.title}
-                          {isPhysicalCourse && (
+                          {theme.name}
+                          {theme.progression_type === 'sequential_auto' && (
                             <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                              Fysisk kurs
+                              Sekvensiell (Auto)
+                            </span>
+                          )}
+                          {theme.progression_type === 'sequential_manual' && (
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
+                              Sekvensiell (Manuell)
                             </span>
                           )}
                         </span>
-                        {course.description && (
-                          <span className="text-xs text-gray-500 font-normal">{course.description}</span>
+                        {theme.description && (
+                          <span className="text-xs text-gray-500 font-normal">{theme.description}</span>
                         )}
                       </div>
                     </button>
@@ -593,88 +690,99 @@ export default function InstructorProgramsPage() {
                         </div>
                       ) : progress?.data ? (() => {
                         const data = progress.data
-                        return data.userRows.length === 0 ? (
+                        return data.programs.length === 0 ? (
                           <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                            Ingen brukere er tildelt dette kurset ennå.
+                            Ingen kurs er knyttet til dette programmet.
+                          </div>
+                        ) : data.userRows.length === 0 ? (
+                          <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                            Ingen brukere er tildelt kurs i dette programmet ennå.
                           </div>
                         ) : (
                           <div className="space-y-6">
                             <div className="overflow-x-auto">
-                              <table className="w-full divide-y divide-gray-200 dark:divide-gray-800">
+                              <table className="inline-table w-auto divide-y divide-gray-200">
                                 <thead className="bg-gray-50 dark:bg-gray-900/50">
                                   <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+                                    <th className="w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-900 z-10">
                                       Bruker
                                     </th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
-                                      Status
-                                    </th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
-                                      Fremdrift
-                                    </th>
+                                    {data.programs.map((program, index) => (
+                                      <th
+                                        key={program.id}
+                                        className="w-0 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[130px]"
+                                      >
+                                        <div className="flex flex-col items-center gap-1">
+                                          <span>{index + 1}. {program.title}</span>
+                                        </div>
+                                      </th>
+                                    ))}
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
-                                  {data.userRows.map((row) => {
-                                    const config = statusConfig[row.status.status]
-                                    const currentStatus = row.status.status === 'completed' ? 'completed' 
-                                      : row.status.status === 'in_progress' ? 'in_progress'
-                                      : 'not_started'
+                                  {data.userRows.map((row) => (
+                                    <tr key={row.userId}>
+                                      <td className="w-40 px-2 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-900 z-10">
+                                        <div className="flex flex-col">
+                                          <span>{row.name}</span>
+                                          <span className="text-xs text-gray-500 font-normal">{row.departmentName}</span>
+                                        </div>
+                                      </td>
+                                      {data.programs.map((program) => {
+                                        const status = row.programs[program.id]
+                                        const isPhysicalCourse = program.course_type === 'physical-course'
 
-                                    return (
-                                      <tr key={row.userId}>
-                                        <td className="px-4 py-3 text-sm">
-                                          <div className="flex flex-col">
-                                            <span className="font-medium text-gray-900 dark:text-gray-100">
-                                              {row.name}
-                                            </span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                                              {row.email}
-                                            </span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                              {row.departmentName}
-                                            </span>
-                                          </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                          {isPhysicalCourse ? (
-                                            <select
-                                              value={currentStatus}
-                                              onChange={(e) => handleStatusChange(course.id, row.status.assignmentId, e.target.value)}
-                                              className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer"
-                                              onClick={(e) => e.stopPropagation()}
-                                            >
-                                              <option value="not_started">Ikke startet</option>
-                                              <option value="in_progress">I gang</option>
-                                              <option value="completed">Fullført</option>
-                                            </select>
-                                          ) : (
-                                            <span
-                                              className={`inline-flex items-center justify-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}
-                                            >
-                                              {config.icon}
-                                              <span>{config.label}</span>
-                                            </span>
-                                          )}
-                                        </td>
-                                        <td className="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-400">
-                                          {row.status.totalModules > 0 ? (
-                                            <div className="flex flex-col items-center gap-1">
-                                              <span>{row.status.completedModules} / {row.status.totalModules}</span>
-                                              <div className="w-24 bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-                                                <div
-                                                  className="bg-primary-600 h-2 rounded-full dark:bg-primary-500"
-                                                  style={{ width: `${row.status.progressPercent}%` }}
-                                                />
-                                              </div>
+                                        if (!status) {
+                                          return (
+                                            <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
+                                              <span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">
+                                                Ikke tildelt
+                                              </span>
+                                            </td>
+                                          )
+                                        }
+
+                                        const config = statusConfig[status.status]
+                                        const isPending = status.status === 'pending'
+
+                                        // For fysiske kurs, vis dropdown for å oppdatere status
+                                        if (isPhysicalCourse) {
+                                          const currentStatus = status.status === 'completed' ? 'completed' 
+                                            : status.status === 'in_progress' ? 'in_progress'
+                                            : 'not_started'
+
+                                          return (
+                                            <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-center align-middle min-w-[130px]">
+                                              <select
+                                                value={currentStatus}
+                                                onChange={(e) => handleStatusChange(theme.id, status.assignmentId, e.target.value)}
+                                                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                <option value="not_started">Ikke startet</option>
+                                                <option value="in_progress">I gang</option>
+                                                <option value="completed">Fullført</option>
+                                              </select>
+                                            </td>
+                                          )
+                                        }
+
+                                        // For e-kurs, vis badge
+                                        return (
+                                          <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
+                                            <div className="flex items-center gap-2 justify-center">
+                                              <span
+                                                className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}
+                                              >
+                                                {config.icon}
+                                                <span>{config.label}</span>
+                                              </span>
                                             </div>
-                                          ) : (
-                                            <span className="text-gray-400">-</span>
-                                          )}
-                                        </td>
-                                      </tr>
-                                    )
-                                  })}
+                                          </td>
+                                        )
+                                      })}
+                                    </tr>
+                                  ))}
                                 </tbody>
                               </table>
                             </div>
