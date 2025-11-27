@@ -66,31 +66,30 @@ export function Sidebar({ user, isInstructor = false }: SidebarProps) {
 
   const handleSignOut = async () => {
     try {
-      // Sign out and wait for it to complete
-      const { error } = await supabase.auth.signOut()
+      // Clear all Supabase session data
+      const { error } = await supabase.auth.signOut({ scope: 'global' })
       if (error) throw error
       
-      // Wait a bit to ensure cookies are cleared
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Verify session is actually cleared
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        // Session still exists, try again with a longer wait
-        await new Promise(resolve => setTimeout(resolve, 500))
-        await supabase.auth.signOut()
+      // Clear any local storage/cache
+      if (typeof window !== 'undefined') {
+        localStorage.clear()
+        sessionStorage.clear()
       }
       
-      toast.success('Logget ut')
+      // Wait to ensure cookies are cleared
+      await new Promise(resolve => setTimeout(resolve, 200))
       
-      // Use window.location for a full page reload to clear all state
-      // Add a timestamp to prevent caching
-      window.location.href = `/login?logout=true&t=${Date.now()}`
+      // Force a hard redirect to login with cache busting
+      // This ensures all cached data is cleared
+      window.location.href = `/login?logout=true&t=${Date.now()}&nocache=1`
     } catch (error) {
       console.error('Logout error:', error)
-      toast.error('Kunne ikke logge ut')
-      // Still try to redirect to login even if logout failed
-      window.location.href = `/login?logout=true&t=${Date.now()}`
+      // Even if logout fails, clear storage and redirect
+      if (typeof window !== 'undefined') {
+        localStorage.clear()
+        sessionStorage.clear()
+        window.location.href = `/login?logout=true&t=${Date.now()}&nocache=1`
+      }
     }
   }
 

@@ -18,7 +18,15 @@ function LoginForm() {
   })
 
   useEffect(() => {
-    // Check if user is already logged in
+    const logout = searchParams.get('logout')
+    
+    // If logout parameter is set, don't check session (user just logged out)
+    if (logout === 'true') {
+      toast.success('Du er nå logget ut')
+      return
+    }
+
+    // Check if user is already logged in (only if not logging out)
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
@@ -33,11 +41,6 @@ function LoginForm() {
     const message = searchParams.get('message')
     if (message) {
       toast.info(message)
-    }
-    
-    const logout = searchParams.get('logout')
-    if (logout === 'true') {
-      toast.success('Du er nå logget ut')
     }
     
     const error = searchParams.get('error')
@@ -81,11 +84,12 @@ function LoginForm() {
         toast.success('Logget inn!')
         const redirectTo = searchParams.get('redirectTo') || '/dashboard'
         
-        // Use window.location for a full page reload to ensure session is set
-        // This ensures middleware can properly read the session cookie
-        setTimeout(() => {
-          window.location.href = redirectTo
-        }, 500)
+        // Clear any old cached data before redirecting
+        if (typeof window !== 'undefined') {
+          // Clear React Query cache if it exists
+          // Force a hard reload to ensure fresh data
+          window.location.href = `${redirectTo}?t=${Date.now()}&nocache=1`
+        }
       }
       
     } catch (error: any) {

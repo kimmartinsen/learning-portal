@@ -13,10 +13,21 @@
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- 2. OPPRETT HELPER FUNKSJONER FOR Å UNNGÅ REKURSJON
+-- 2. FJERN ALLE EKSISTERENDE POLICIES FØRST (før vi dropper funksjoner)
 -- ============================================================================
 
--- Drop eksisterende funksjoner hvis de finnes
+-- Drop policies først fordi de avhenger av funksjonene
+DROP POLICY IF EXISTS "Users view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users view company profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Admins manage profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Users view own company" ON public.companies;
+DROP POLICY IF EXISTS "Admins update company" ON public.companies;
+
+-- ============================================================================
+-- 3. OPPRETT HELPER FUNKSJONER FOR Å UNNGÅ REKURSJON
+-- ============================================================================
+
+-- Drop eksisterende funksjoner hvis de finnes (nå kan vi droppe dem siden policies er borte)
 DROP FUNCTION IF EXISTS public.get_user_company_id(UUID);
 DROP FUNCTION IF EXISTS public.is_user_admin_for_company(UUID, UUID);
 
@@ -60,14 +71,6 @@ END;
 $$;
 
 -- ============================================================================
--- 3. FJERN ALLE EKSISTERENDE POLICIES FOR Å STARTE PÅ NYTT
--- ============================================================================
-
-DROP POLICY IF EXISTS "Users view own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Users view company profiles" ON public.profiles;
-DROP POLICY IF EXISTS "Admins manage profiles" ON public.profiles;
-
--- ============================================================================
 -- 4. OPPRETT POLICIES UTEN REKURSJON
 -- ============================================================================
 
@@ -96,9 +99,7 @@ CREATE POLICY "Admins manage profiles" ON public.profiles FOR ALL
 
 ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
 
--- Drop eksisterende policies
-DROP POLICY IF EXISTS "Users view own company" ON public.companies;
-DROP POLICY IF EXISTS "Admins update company" ON public.companies;
+-- Policies er allerede droppet i steg 2, så vi trenger bare å opprette dem
 
 -- Users view own company (bruker funksjon for å unngå rekursjon)
 CREATE POLICY "Users view own company" ON public.companies FOR SELECT 
