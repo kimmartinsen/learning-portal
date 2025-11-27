@@ -19,36 +19,28 @@ function LoginForm() {
 
   useEffect(() => {
     const logout = searchParams.get('logout')
+    const message = searchParams.get('message')
+    const error = searchParams.get('error')
     
-    // If logout parameter is set, don't check session (user just logged out)
+    // If logout parameter is set, show success message and don't check session
     if (logout === 'true') {
       toast.success('Du er nå logget ut')
       return
     }
 
-    // Check if user is already logged in (only if not logging out)
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        // User is already logged in, offer to go to dashboard or log out
-        toast.info('Du er allerede logget inn. Gå til dashboard eller logg ut først.', {
-          duration: 5000,
-        })
-      }
-    }
-    checkSession()
-
-    const message = searchParams.get('message')
+    // Show other messages/errors
     if (message) {
       toast.info(message)
     }
     
-    const error = searchParams.get('error')
     if (error === 'profile_access') {
       toast.error('Kunne ikke hente brukerprofil. Vennligst prøv igjen.')
     } else if (error === 'no_profile') {
       toast.error('Brukerprofil ikke funnet. Kontakt administrator.')
     }
+    
+    // Don't check session on initial load - only check when user tries to submit
+    // This prevents showing "already logged in" message when user first visits the page
   }, [searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,16 +55,32 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      // Check if user is already logged in
+      // Always sign out any existing session first to ensure clean login
+      // This prevents issues when trying to log in with a different user
       const { data: { session: existingSession } } = await supabase.auth.getSession()
       if (existingSession) {
-        // User is already logged in, redirect to dashboard
-        toast.info('Du er allerede logget inn. Omdirigerer til dashboard...')
-        const redirectTo = searchParams.get('redirectTo') || '/dashboard'
-        window.location.href = redirectTo
-        return
+        // Check if the email matches the existing user
+        if (existingSession.user.email?.toLowerCase() === formData.email.toLowerCase()) {
+          // Same user, just redirect to dashboard
+          toast.info('Du er allerede logget inn. Omdirigerer til dashboard...')
+          const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+          window.location.href = `${redirectTo}?t=${Date.now()}&nocache=1`
+          return
+        } else {
+          // Different user - sign out the existing user first
+          console.log('Different user detected, signing out existing session first')
+          await supabase.auth.signOut({ scope: 'global' })
+          // Clear storage
+          if (typeof window !== 'undefined') {
+            localStorage.clear()
+            sessionStorage.clear()
+          }
+          // Wait a bit for session to clear
+          await new Promise(resolve => setTimeout(resolve, 300))
+        }
       }
 
+      // Now sign in with the new credentials
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
@@ -86,7 +94,6 @@ function LoginForm() {
         
         // Clear any old cached data before redirecting
         if (typeof window !== 'undefined') {
-          // Clear React Query cache if it exists
           // Force a hard reload to ensure fresh data
           window.location.href = `${redirectTo}?t=${Date.now()}&nocache=1`
         }
