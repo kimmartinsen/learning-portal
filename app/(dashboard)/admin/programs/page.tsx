@@ -78,6 +78,7 @@ export default function AdminProgramsPage() {
     description: '',
     themeId: '',
     instructorId: '',
+    courseType: 'e-course' as 'e-course' | 'physical-course',
     deadlineDays: 14,
     repetitionEnabled: false,
     repetitionInterval: 12,
@@ -158,7 +159,11 @@ export default function AdminProgramsPage() {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    setPrograms(data || [])
+    // Ensure course_type defaults to 'e-course' for existing courses
+    setPrograms((data || []).map(p => ({
+      ...p,
+      course_type: p.course_type || 'e-course'
+    })))
   }
 
   const fetchThemes = async (companyId: string) => {
@@ -213,6 +218,7 @@ export default function AdminProgramsPage() {
         description: formData.description || null,
         theme_id: formData.themeId || null,
         instructor_id: formData.instructorId || null,
+        course_type: formData.courseType,
         deadline_days: formData.deadlineDays,
         repetition_enabled: formData.repetitionEnabled,
         repetition_interval_months: formData.repetitionEnabled ? formData.repetitionInterval : null,
@@ -468,6 +474,7 @@ export default function AdminProgramsPage() {
       description: program.description || '',
       themeId: program.theme_id || '',
       instructorId: program.instructor_id || '',
+      courseType: (program.course_type as 'e-course' | 'physical-course') || 'e-course',
       deadlineDays: program.deadline_days || 14,
       repetitionEnabled: program.repetition_enabled || false,
       repetitionInterval: program.repetition_interval_months || 12,
@@ -546,6 +553,7 @@ export default function AdminProgramsPage() {
       description: '',
       themeId: '',
       instructorId: '',
+      courseType: 'e-course',
       deadlineDays: 14,
       repetitionEnabled: false,
       repetitionInterval: 12,
@@ -992,6 +1000,25 @@ export default function AdminProgramsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Kurs type
+                </label>
+                <select
+                  value={formData.courseType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, courseType: e.target.value as 'e-course' | 'physical-course' }))}
+                  className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                >
+                  <option value="e-course">E-kurs (nettbasert)</option>
+                  <option value="physical-course">Fysisk kurs (sjekkliste)</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {formData.courseType === 'e-course' 
+                    ? 'E-kurs fungerer som vanlige nettbaserte kurs med moduler.'
+                    : 'Fysiske kurs fungerer som sjekklister med punkter som kan sjekkes av instruktører eller admin.'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Instruktør
                 </label>
                 <select
@@ -1006,6 +1033,11 @@ export default function AdminProgramsPage() {
                     </option>
                   ))}
                 </select>
+                {formData.courseType === 'physical-course' && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Instruktører kan bekrefte at fysiske kurs er gjennomført.
+                  </p>
+                )}
               </div>
 
               <Input
@@ -1161,14 +1193,25 @@ export default function AdminProgramsPage() {
                           </div>
 
                           <div className="flex space-x-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditModules(program)}
-                              title="Rediger moduler"
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
+                            {program.course_type === 'physical-course' ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => router.push(`/admin/programs/${program.id}/items`)}
+                                title="Administrer punkter"
+                              >
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditModules(program)}
+                                title="Rediger moduler"
+                              >
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1244,14 +1287,25 @@ export default function AdminProgramsPage() {
                         </div>
 
                         <div className="flex space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditModules(program)}
-                            title="Rediger moduler"
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
+                          {program.course_type === 'physical-course' ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => router.push(`/admin/programs/${program.id}/items`)}
+                              title="Administrer punkter"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditModules(program)}
+                              title="Rediger moduler"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
