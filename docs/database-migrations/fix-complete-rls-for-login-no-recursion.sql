@@ -1,9 +1,9 @@
 -- ============================================================================
--- FIX: Complete RLS Fix for Login Flow
+-- FIX: Complete RLS Fix for Login Flow (No Recursion)
 -- ============================================================================
--- Dette skriptet sikrer at RLS-policies er riktig satt opp slik at brukere
--- kan hente sin egen profil etter innlogging. Dette er kritisk for at
--- applikasjonen skal fungere.
+-- Dette skriptet sikrer at RLS-policies er riktig satt opp uten sirkulære
+-- avhengigheter. Vi bruker en SECURITY DEFINER funksjon for å unngå
+-- infinite recursion i policies.
 -- ============================================================================
 
 -- ============================================================================
@@ -13,12 +13,11 @@
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- 2. OPPRETT HELPER FUNKSJONER FOR Å UNNGÅ REKURSJON
+-- 2. OPPRETT EN HELPER FUNKSJON FOR Å HENTE COMPANY_ID UTEN REKURSJON
 -- ============================================================================
 
--- Drop eksisterende funksjoner hvis de finnes
+-- Drop eksisterende funksjon hvis den finnes
 DROP FUNCTION IF EXISTS public.get_user_company_id(UUID);
-DROP FUNCTION IF EXISTS public.is_user_admin_for_company(UUID, UUID);
 
 -- Opprett en SECURITY DEFINER funksjon som kan lese profiles uten RLS
 -- Dette unngår infinite recursion i policies
@@ -37,25 +36,6 @@ BEGIN
   WHERE id = p_user_id;
   
   RETURN v_company_id;
-END;
-$$;
-
--- Opprett funksjon for å sjekke admin-status
-CREATE OR REPLACE FUNCTION public.is_user_admin_for_company(p_user_id UUID, p_company_id UUID)
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-STABLE
-AS $$
-DECLARE
-  v_is_admin BOOLEAN := false;
-BEGIN
-  SELECT (role = 'admin' AND company_id = p_company_id) INTO v_is_admin
-  FROM public.profiles
-  WHERE id = p_user_id;
-  
-  RETURN COALESCE(v_is_admin, false);
 END;
 $$;
 
@@ -85,6 +65,39 @@ CREATE POLICY "Users view company profiles" ON public.profiles FOR SELECT
 
 -- Policy 3: Admins manage profiles (INSERT, UPDATE, DELETE)
 -- Bruker SECURITY DEFINER funksjon for å unngå rekursjon
+CREATE POLICY "Admins manage profiles" ON public.profiles FOR ALL 
+  USING (
+    EXISTS (
+      SELECT 1 
+      FROM public.profiles p
+      WHERE p.id = auth.uid() 
+      AND p.role = 'admin'
+      AND p.company_id = profiles.company_id
+    )
+  );
+
+-- Men vent, policy 3 har fortsatt rekursjon. La oss fikse det:
+DROP POLICY IF EXISTS "Admins manage profiles" ON public.profiles;
+
+-- Bruk funksjon for å sjekke admin-status også
+CREATE OR REPLACE FUNCTION public.is_user_admin_for_company(p_user_id UUID, p_company_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+STABLE
+AS $$
+DECLARE
+  v_is_admin BOOLEAN := false;
+BEGIN
+  SELECT (role = 'admin' AND company_id = p_company_id) INTO v_is_admin
+  FROM public.profiles
+  WHERE id = p_user_id;
+  
+  RETURN COALESCE(v_is_admin, false);
+END;
+$$;
+
 CREATE POLICY "Admins manage profiles" ON public.profiles FOR ALL 
   USING (
     public.is_user_admin_for_company(auth.uid(), company_id)
@@ -145,22 +158,6 @@ BEGIN
     RAISE NOTICE 'Alle policies er opprettet på companies tabellen';
   END IF;
 END $$;
-
--- ============================================================================
--- 7. TEST QUERY FOR Å VERIFISERE AT RLS FUNGERER
--- ============================================================================
--- Dette er en test-query som kan kjøres manuelt for å verifisere at RLS fungerer
--- Kommenter ut hvis du vil teste:
-/*
--- Test som en autentisert bruker:
-SELECT 
-  p.*,
-  c.name as company_name,
-  c.logo_url
-FROM public.profiles p
-LEFT JOIN public.companies c ON p.company_id = c.id
-WHERE p.id = auth.uid();
-*/
 
 -- ============================================================================
 -- FERDIG: RLS-policies er nå riktig satt opp uten rekursjon

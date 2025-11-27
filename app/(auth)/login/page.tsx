@@ -23,6 +23,11 @@ function LoginForm() {
       toast.info(message)
     }
     
+    const logout = searchParams.get('logout')
+    if (logout === 'true') {
+      toast.success('Du er nå logget ut')
+    }
+    
     const error = searchParams.get('error')
     if (error === 'profile_access') {
       toast.error('Kunne ikke hente brukerprofil. Vennligst prøv igjen.')

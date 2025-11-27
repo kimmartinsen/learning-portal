@@ -66,10 +66,15 @@ export function Sidebar({ user, isInstructor = false }: SidebarProps) {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut()
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
       toast.success('Logget ut')
-      router.push('/login')
+      // Use window.location for a full page reload to clear all state
+      // This ensures middleware doesn't redirect back to dashboard
+      window.location.href = '/login?logout=true'
     } catch (error) {
+      console.error('Logout error:', error)
       toast.error('Kunne ikke logge ut')
     }
   }

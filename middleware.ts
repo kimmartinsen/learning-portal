@@ -92,11 +92,17 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route)
   )
 
-  // Only redirect authenticated users away from auth pages if there's no error parameter
-  // AND if we can actually fetch their profile (to avoid redirect loops)
+  // Only redirect authenticated users away from auth pages if:
+  // 1. There's no error parameter
+  // 2. There's no explicit "logout" or "force" parameter
+  // 3. We can actually fetch their profile
+  // This allows users to explicitly visit /login to log out
   if (isAuthRoute && session) {
     const hasError = request.nextUrl.searchParams.has('error')
-    if (!hasError) {
+    const isLogout = request.nextUrl.searchParams.has('logout') || request.nextUrl.searchParams.has('force')
+    
+    // Don't redirect if there's an error or explicit logout request
+    if (!hasError && !isLogout) {
       // Verify that we can actually fetch the profile before redirecting
       // This prevents redirect loops when RLS blocks profile access
       const { data: profile, error: profileError } = await supabase
