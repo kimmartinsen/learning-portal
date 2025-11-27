@@ -46,8 +46,9 @@ export default function UsersPage() {
   const [user, setUser] = useState<User | null>(null)
   
   const [formData, setFormData] = useState({
-    email: '', // Kun for redigering
+    email: '',
     fullName: '',
+    password: '',
     role: 'user' as 'admin' | 'user',
     departmentIds: [] as string[], // Flere avdelinger
   })
@@ -185,65 +186,94 @@ export default function UsersPage() {
 
         toast.success('Bruker oppdatert!')
       } else {
-        // Opprett invitasjon i stedet for å opprette bruker direkte
-        // Brukeren må opprette sin egen konto ved første innlogging
-        
-        // Generer unik token (bruk crypto API hvis tilgjengelig, ellers fallback)
-        let token: string
-        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-          const array = new Uint8Array(32)
-          crypto.getRandomValues(array)
-          token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
-        } else {
-          // Fallback for server-side
-          token = Math.random().toString(36).substring(2, 15) + 
-                  Math.random().toString(36).substring(2, 15) +
-                  Date.now().toString(36)
-        }
-        
-        // Opprett invitasjon
-        const { data: invitationData, error: invitationError } = await supabase
-          .from('invitations')
-          .insert([{
-            company_id: user.company_id,
-            email: formData.email,
+        // Opprett bruker direkte
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email: formData.email,
+          password: formData.password,
+          email_confirm: true,
+          user_metadata: {
             full_name: formData.fullName,
-            role: formData.role,
-            invited_by: user.id,
-            token: token,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 dager
-          }])
-          .select()
-          .single()
+          }
+        })
 
-        if (invitationError) throw invitationError
+        if (authError) {
+          // Fallback til client-side signup hvis admin method feiler
+          const { data: signupData, error: signupError } = await supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+              data: {
+                full_name: formData.fullName,
+              }
+            }
+          })
 
-        // Legg til avdelinger
-        if (formData.departmentIds.length > 0 && invitationData) {
-          const deptInserts = formData.departmentIds.map(deptId => ({
-            invitation_id: invitationData.id,
-            department_id: deptId,
-          }))
-          
-          const { error: deptError } = await supabase
-            .from('invitation_departments')
-            .insert(deptInserts)
-          
-          if (deptError) throw deptError
+          if (signupError) throw signupError
+          if (!signupData.user) throw new Error('Kunne ikke opprette bruker')
+
+          // Opprett profil
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([{
+              id: signupData.user.id,
+              email: formData.email,
+              full_name: formData.fullName,
+              role: formData.role,
+              company_id: user.company_id,
+            }])
+
+          if (profileError) throw profileError
+
+          // Legg til avdelinger
+          if (formData.departmentIds.length > 0) {
+            const deptInserts = formData.departmentIds.map(deptId => ({
+              user_id: signupData.user.id,
+              department_id: deptId,
+            }))
+            
+            const { error: deptError } = await supabase
+              .from('user_departments')
+              .insert(deptInserts)
+            
+            if (deptError) throw deptError
+          }
+
+          toast.success('Bruker opprettet!')
+        } else {
+          // Opprett profil
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([{
+              id: authData.user.id,
+              email: formData.email,
+              full_name: formData.fullName,
+              role: formData.role,
+              company_id: user.company_id,
+            }])
+
+          if (profileError) throw profileError
+
+          // Legg til avdelinger
+          if (formData.departmentIds.length > 0) {
+            const deptInserts = formData.departmentIds.map(deptId => ({
+              user_id: authData.user.id,
+              department_id: deptId,
+            }))
+            
+            const { error: deptError } = await supabase
+              .from('user_departments')
+              .insert(deptInserts)
+            
+            if (deptError) throw deptError
+          }
+
+          toast.success('Bruker opprettet!')
         }
-
-        // TODO: Send invitasjons-e-post her (kan implementeres senere)
-        // For nå: vis token/lenke i toast eller modal
-        const invitationLink = `${window.location.origin}/accept-invitation/${token}`
-        toast.success(
-          `Invitasjon opprettet! Lenke: ${invitationLink}`,
-          { duration: 10000 }
-        )
       }
 
       setShowForm(false)
       setEditingProfile(null)
-      setFormData({ email: '', fullName: '', role: 'user', departmentIds: [] })
+      setFormData({ email: '', fullName: '', password: '', role: 'user', departmentIds: [] })
       fetchUserAndProfiles()
     } catch (error: any) {
       toast.error(error.message)
@@ -354,7 +384,7 @@ export default function UsersPage() {
                 />
               )}
 
-              {/* E-post for ny bruker (for invitasjon) */}
+              {/* E-post for ny bruker */}
               {!editingProfile && (
                 <Input
                   label="E-post"
@@ -363,7 +393,18 @@ export default function UsersPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   required
                   placeholder="bruker@bedrift.no"
-                  helper="Brukeren vil motta en invitasjon og opprette sin egen konto"
+                />
+              )}
+
+              {/* Passord for ny bruker */}
+              {!editingProfile && (
+                <Input
+                  label="Passord"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  required
+                  placeholder="Minst 6 tegn"
                 />
               )}
 
