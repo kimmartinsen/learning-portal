@@ -43,6 +43,7 @@ BEGIN
 
       -- Kun opprett ny tildeling hvis brukeren ikke allerede har kurset
       IF v_existing_user_assignment IS NULL THEN
+        -- Bruk INSERT med ON CONFLICT for å unngå duplikater
         INSERT INTO public.program_assignments (
           program_id, 
           assigned_to_user_id, 
@@ -59,7 +60,8 @@ BEGIN
           COALESCE(NEW.notes, 'Automatisk tildelt via avdeling'),
           true,
           COALESCE(NEW.status, 'assigned')
-        );
+        )
+        ON CONFLICT (program_id, assigned_to_user_id) DO NOTHING;
       END IF;
     END LOOP;
   END IF;
