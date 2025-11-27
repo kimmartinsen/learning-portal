@@ -361,7 +361,27 @@ export default function AdminProgramsPage() {
                 p_notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs'
               })
               
-              if (funcError) throw funcError
+              if (funcError) {
+                console.error('Error in assign_program_to_department:', funcError)
+                // Hvis funksjonen feiler, prøv direkte INSERT som fallback
+                const dueDate = new Date()
+                dueDate.setDate(dueDate.getDate() + (formData.deadlineDays || 14))
+                
+                const { error: directInsertError } = await supabase
+                  .from('program_assignments')
+                  .insert({
+                    program_id: programId,
+                    assigned_to_department_id: departmentId,
+                    assigned_by: user.id,
+                    due_date: dueDate.toISOString(),
+                    notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs',
+                    status: 'assigned'
+                  })
+                
+                if (directInsertError) {
+                  throw new Error(`Kunne ikke tildele til avdeling: ${directInsertError.message || funcError.message}`)
+                }
+              }
               
               // Only add users who weren't already assigned (for notifications)
               if (deptUsers) {
@@ -393,7 +413,28 @@ export default function AdminProgramsPage() {
                 p_notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs'
               })
               
-              if (funcError) throw funcError
+              if (funcError) {
+                console.error('Error in assign_program_to_user:', funcError)
+                // Hvis funksjonen feiler, prøv direkte INSERT som fallback
+                const dueDate = new Date()
+                dueDate.setDate(dueDate.getDate() + (formData.deadlineDays || 14))
+                
+                const { error: directInsertError } = await supabase
+                  .from('program_assignments')
+                  .insert({
+                    program_id: programId,
+                    assigned_to_user_id: userId,
+                    assigned_by: user.id,
+                    due_date: dueDate.toISOString(),
+                    notes: editingProgram ? 'Oppdatert kurs' : 'Nytt kurs',
+                    status: 'assigned',
+                    is_auto_assigned: false
+                  })
+                
+                if (directInsertError) {
+                  throw new Error(`Kunne ikke tildele til bruker: ${directInsertError.message || funcError.message}`)
+                }
+              }
               newlyAssignedUserIds.push(userId)
             }
           }
@@ -462,7 +503,11 @@ export default function AdminProgramsPage() {
       // Trigger refresh for all pages (including My Learning)
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message)
+      console.error('Error creating/updating course:', error)
+      // Vis mer detaljert feilmelding
+      const errorMessage = error.message || 'Ukjent feil oppstod'
+      toast.error(`Kunne ikke opprette/oppdatere kurs: ${errorMessage}`)
+      // Lukk ikke modalen ved feil, slik at brukeren kan se feilmeldingen og prøve igjen
     }
   }
 
