@@ -54,5 +54,6 @@ export default async function DashboardPage() {
     redirect('/instructor/programs')
   }
 
+  // Vanlige brukere sendes direkte til Min opplæring
   redirect('/my-learning')
 }

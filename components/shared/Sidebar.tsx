@@ -44,14 +44,11 @@ const adminMenuItems = [
 ]
 
 const instructorMenuItems = [
-  { href: '/dashboard', label: 'Oversikt', icon: Home },
   { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
   { href: '/instructor/programs', label: 'Mine kurs', icon: GraduationCap },
-  { href: '/instructor/reports', label: 'Rapporter', icon: BarChart3 },
 ]
 
 const userMenuItems = [
-  { href: '/dashboard', label: 'Oversikt', icon: Home },
   { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
 ]
 
