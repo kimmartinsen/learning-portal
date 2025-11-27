@@ -80,6 +80,12 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route)
   )
 
+  // Instructor routes that require instructor role (user must be instructor for at least one course)
+  const instructorRoutes = ['/instructor']
+  const isInstructorRoute = instructorRoutes.some(route => 
+    request.nextUrl.pathname.startsWith(route)
+  )
+
   // Auth routes (login, signup)
   const authRoutes = ['/login', '/signup']
   const isAuthRoute = authRoutes.some(route => 
@@ -97,12 +103,37 @@ export async function middleware(request: NextRequest) {
   if (isAdminRoute && session) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, company_id')
       .eq('id', session.user.id)
       .single()
 
     if (!profile || profile.role !== 'admin') {
       // User is not admin, redirect to dashboard
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
+
+  // Check instructor role for instructor routes
+  if (isInstructorRoute && session) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, company_id')
+      .eq('id', session.user.id)
+      .single()
+
+    if (!profile) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    // Check if user is instructor for any course
+    const { count } = await supabase
+      .from('training_programs')
+      .select('id', { count: 'exact', head: true })
+      .eq('instructor_id', profile.id)
+      .eq('company_id', profile.company_id)
+
+    if ((count || 0) === 0) {
+      // User is not instructor for any course, redirect to dashboard
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }

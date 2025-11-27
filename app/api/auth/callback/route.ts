@@ -11,9 +11,14 @@ export async function GET(request: NextRequest) {
     try {
       const cookieStore = cookies()
       
-      // Use hardcoded values as fallback
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://njumqvxjaktxicxwucki.supabase.co'
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qdW1xdnhqYWt0eGljeHd1Y2tpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NDgwNzgsImV4cCI6MjA3NzEyNDA3OH0.XAiL_r-4cXWys7UcJdMmtcnnMwq5vNGlECAIVdaUKs4'
+      // Get environment variables (required, no fallback for security)
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.error('Missing Supabase environment variables')
+        return NextResponse.redirect(`${origin}/login?message=Configuration error`)
+      }
       
       const supabase = createServerClient(
         supabaseUrl,
