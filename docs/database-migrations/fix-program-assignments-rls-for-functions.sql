@@ -22,6 +22,7 @@ DROP POLICY IF EXISTS "Users update own assignments" ON public.program_assignmen
 DROP POLICY IF EXISTS "Admins view company assignments" ON public.program_assignments;
 DROP POLICY IF EXISTS "Instructors view own program assignments" ON public.program_assignments;
 DROP POLICY IF EXISTS "Instructors can update physical course assignments" ON public.program_assignments;
+DROP POLICY IF EXISTS "Allow function inserts for admins" ON public.program_assignments;
 
 -- ============================================================================
 -- 3. OPPRETT NYE POLICIES MED HELPER-FUNKSJONER
