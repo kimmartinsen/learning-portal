@@ -47,7 +47,6 @@ export interface EnhancedTrainingProgram {
   theme?: Theme
   instructor?: { full_name: string }
   modules?: Module[]
-  course_items?: CourseItem[] // For physical courses
 }
 
 export interface ProgramAssignment {
@@ -197,33 +196,4 @@ export interface BulkAssignmentResult {
     error: string
   }>
   created_assignments: ProgramAssignment[]
-}
-
-// Physical course types (similar to checklist structure)
-export interface CourseItem {
-  id: string
-  program_id: string
-  title: string
-  description: string | null
-  order_index: number
-  created_at: string
-  updated_at: string
-}
-
-export interface CourseItemStatus {
-  id: string
-  assignment_id: string
-  item_id: string
-  status: 'not_started' | 'in_progress' | 'completed' | 'cancelled'
-  completed_at: string | null
-  completed_by: string | null
-  notes: string | null
-  created_at: string
-  updated_at: string
-  // Relations
-  item?: CourseItem
-  completed_by_user?: {
-    id: string
-    full_name: string
-  }
 }

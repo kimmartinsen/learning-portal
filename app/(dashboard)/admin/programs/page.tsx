@@ -1194,14 +1194,9 @@ export default function AdminProgramsPage() {
 
                           <div className="flex space-x-1">
                             {program.course_type === 'physical-course' ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => router.push(`/admin/programs/${program.id}/items`)}
-                                title="Administrer punkter"
-                              >
-                                <Settings className="h-4 w-4" />
-                              </Button>
+                              <span className="text-xs text-gray-500 dark:text-gray-400" title="Fysisk kurs - ingen moduler">
+                                Fysisk kurs
+                              </span>
                             ) : (
                               <Button
                                 variant="ghost"
@@ -1288,14 +1283,9 @@ export default function AdminProgramsPage() {
 
                         <div className="flex space-x-1">
                           {program.course_type === 'physical-course' ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => router.push(`/admin/programs/${program.id}/items`)}
-                              title="Administrer punkter"
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
+                            <span className="text-xs text-gray-500 dark:text-gray-400" title="Fysisk kurs - ingen moduler">
+                              Fysisk kurs
+                            </span>
                           ) : (
                             <Button
                               variant="ghost"
