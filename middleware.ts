@@ -92,9 +92,14 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route)
   )
 
-  // Redirect authenticated users away from auth pages
+  // Only redirect authenticated users away from auth pages if there's no error parameter
+  // This allows error messages to be displayed
   if (isAuthRoute && session) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const hasError = request.nextUrl.searchParams.has('error')
+    if (!hasError) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    // If there's an error, let them see it (but they'll likely be redirected back due to layout error)
   }
 
   // Redirect to login if trying to access protected route without session
