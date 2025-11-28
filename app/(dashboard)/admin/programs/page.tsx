@@ -1254,7 +1254,6 @@ export default function AdminProgramsPage() {
       <div className="space-y-4">
         {themes.map(theme => {
           const themePrograms = programsByTheme[theme.id] || []
-          if (themePrograms.length === 0) return null
 
           return (
             <details
@@ -1308,6 +1307,11 @@ export default function AdminProgramsPage() {
               </summary>
 
               <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                {themePrograms.length === 0 ? (
+                  <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                    Ingen kurs i dette programmet ennå. Klikk på "Nytt kurs" for å legge til kurs.
+                  </div>
+                ) : (
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {themePrograms.map((program, index) => (
                     <Card key={program.id}>
@@ -1382,6 +1386,7 @@ export default function AdminProgramsPage() {
                     </Card>
                   ))}
                 </div>
+                )}
               </div>
             </details>
           )
