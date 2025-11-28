@@ -1160,12 +1160,13 @@ export default function ThemesPage() {
                           <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                             Ingen kurs er knyttet til dette programmet.
                           </div>
-                        ) : data.userRows.length === 0 ? (
-                          <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                            Ingen brukere er tildelt kurs i dette programmet ennå.
-                          </div>
                         ) : (
                           <div className="space-y-6">
+                            {data.userRows.length === 0 ? (
+                              <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                                Ingen brukere er tildelt kurs i dette programmet ennå.
+                              </div>
+                            ) : null}
                             <div className="overflow-x-auto">
                               <table className="inline-table w-auto divide-y divide-gray-200">
                                 <thead className="bg-gray-50 dark:bg-gray-900/50">
@@ -1186,6 +1187,7 @@ export default function ThemesPage() {
                                     ))}
                                   </tr>
                                 </thead>
+                                {data.userRows.length > 0 && (
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
                                   {data.userRows.map((row) => (
                                     <tr key={row.userId}>
@@ -1293,6 +1295,7 @@ export default function ThemesPage() {
                                     </tr>
                                   ))}
                                 </tbody>
+                                )}
                               </table>
                             </div>
                           </div>
