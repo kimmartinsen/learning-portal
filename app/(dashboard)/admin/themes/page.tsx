@@ -1162,11 +1162,6 @@ export default function ThemesPage() {
                           </div>
                         ) : (
                           <div className="space-y-6">
-                            {data.userRows.length === 0 ? (
-                              <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                                Ingen brukere er tildelt kurs i dette programmet ennå.
-                              </div>
-                            ) : null}
                             <div className="overflow-x-auto">
                               <table className="inline-table w-auto divide-y divide-gray-200">
                                 <thead className="bg-gray-50 dark:bg-gray-900/50">
@@ -1187,9 +1182,9 @@ export default function ThemesPage() {
                                     ))}
                                   </tr>
                                 </thead>
-                                {data.userRows.length > 0 && (
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
-                                  {data.userRows.map((row) => (
+                                  {data.userRows.length > 0 ? (
+                                    data.userRows.map((row) => (
                                     <tr key={row.userId}>
                                       <td className="w-40 px-2 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-900 z-10">
                                         <div className="flex flex-col">
@@ -1293,9 +1288,18 @@ export default function ThemesPage() {
                                         )
                                       })}
                                     </tr>
-                                  ))}
+                                    ))
+                                  ) : (
+                                    <tr>
+                                      <td 
+                                        colSpan={data.programs.length + 1} 
+                                        className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                                      >
+                                        Ingen brukere er tildelt kurs i dette programmet ennå.
+                                      </td>
+                                    </tr>
+                                  )}
                                 </tbody>
-                                )}
                               </table>
                             </div>
                           </div>
