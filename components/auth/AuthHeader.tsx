@@ -8,7 +8,7 @@ export function AuthHeader() {
     <header className="px-6 py-6 sm:px-10">
       <nav className="flex items-center justify-between">
         <Link href="/" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Opplæringsportal
+          Kompetanseportalen
         </Link>
         <div className="flex items-center gap-3">
           <ThemeToggle />

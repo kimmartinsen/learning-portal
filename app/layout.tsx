@@ -17,7 +17,7 @@ const themeScript = `
 `
 
 export const metadata = {
-  title: 'Opplæringsportal',
+  title: 'Kompetanseportalen',
   description: 'Komplett opplæringsportal for bedrifter',
 }
 

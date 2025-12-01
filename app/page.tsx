@@ -41,7 +41,7 @@ export default async function HomePage() {
         <header className="px-6 py-6 sm:px-10">
           <nav className="flex items-center justify-between">
             <Link href="/" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Opplæringsportal
+              Kompetanseportalen
             </Link>
             <div className="flex items-center gap-3">
               <ThemeToggle />
@@ -70,7 +70,7 @@ export default async function HomePage() {
               Gjør opplæring enkelt å planlegge, levere og dokumentere
             </h1>
             <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
-              Med Opplæringsportalen får du et helhetlig verktøy for å lage kurs, tildele oppgaver, følge
+              Med Kompetanseportalen får du et helhetlig verktøy for å lage kurs, tildele oppgaver, følge
               opp status og dokumentere gjennomføringen. Alt i én løsning — tilpasset norske bedrifter.
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
@@ -134,7 +134,7 @@ export default async function HomePage() {
 
       <footer className="border-t border-gray-200 bg-white px-6 py-8 text-sm text-gray-500 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400 sm:px-10">
         <div className="mx-auto flex max-w-5xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <p>© {new Date().getFullYear()} Opplæringsportal. Alle rettigheter forbeholdt.</p>
+          <p>© {new Date().getFullYear()} Kompetanseportalen. Alle rettigheter forbeholdt.</p>
           <div className="flex items-center gap-6">
             <Link href="/login" className="hover:text-gray-900 dark:hover:text-gray-200">
               Logg inn

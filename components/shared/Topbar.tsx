@@ -67,7 +67,7 @@ export function Topbar({ user, className }: TopbarProps) {
               O
             </div>
             <div className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              Opplæringsportal
+              Kompetanseportalen
             </div>
           </div>
         </div>
