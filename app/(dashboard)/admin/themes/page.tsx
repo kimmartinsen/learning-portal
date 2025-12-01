@@ -345,33 +345,74 @@ export default function ThemesPage() {
         return
       }
 
-      // Fetch assignments (only user assignments, not department assignments)
-      // Department assignments automatically create user assignments via trigger
-      const { data: assignmentsData, error: assignmentsError } = await supabase
+      // Get all departments for the company
+      const { data: departmentsData, error: departmentsError } = await supabase
+        .from('departments')
+        .select('id, name')
+        .eq('company_id', user.company_id)
+
+      if (departmentsError) throw departmentsError
+
+      const departmentMap = (departmentsData || []).reduce<Record<string, string>>((acc, dept) => {
+        acc[dept.id] = dept.name
+        return acc
+      }, {})
+
+      // Fetch ALL assignments (both user and department)
+      const { data: allAssignmentsData, error: allAssignmentsError } = await supabase
         .from('checklist_assignments')
         .select(`
           id,
           checklist_id,
           assigned_to_user_id,
+          assigned_to_department_id,
           assigned_by,
           assigned_at,
           status,
           completed_at,
           notes,
-          is_auto_assigned,
-          assigned_to_user:profiles!checklist_assignments_assigned_to_user_id_fkey(id, full_name, email)
+          is_auto_assigned
         `)
         .eq('checklist_id', checklistId)
-        .not('assigned_to_user_id', 'is', null) // Only get user assignments
 
-      if (assignmentsError) throw assignmentsError
+      if (allAssignmentsError) throw allAssignmentsError
 
-      const assignments = (assignmentsData || []).map(a => ({
-        ...a,
-        assigned_to_user: Array.isArray(a.assigned_to_user) ? a.assigned_to_user[0] : a.assigned_to_user
-      })).filter(a => a.assigned_to_user_id !== null) // Extra safety filter
+      // Separate user assignments and department assignments
+      const userAssignments = (allAssignmentsData || []).filter(a => a.assigned_to_user_id !== null)
+      const departmentAssignments = (allAssignmentsData || []).filter(a => a.assigned_to_department_id !== null)
 
-      if (assignments.length === 0) {
+      // Get users from department assignments
+      let departmentUserIds: string[] = []
+      const userDepartmentMap = new Map<string, string[]>() // userId -> departmentNames[]
+
+      if (departmentAssignments.length > 0) {
+        const deptIds = departmentAssignments.map(a => a.assigned_to_department_id).filter((id): id is string => id !== null)
+        
+        const { data: userDeptsData } = await supabase
+          .from('user_departments')
+          .select('user_id, department_id')
+          .in('department_id', deptIds)
+
+        if (userDeptsData) {
+          userDeptsData.forEach(ud => {
+            departmentUserIds.push(ud.user_id)
+            const deptName = departmentMap[ud.department_id]
+            if (deptName) {
+              const existing = userDepartmentMap.get(ud.user_id) || []
+              if (existing.indexOf(deptName) === -1) {
+                existing.push(deptName)
+              }
+              userDepartmentMap.set(ud.user_id, existing)
+            }
+          })
+        }
+      }
+
+      // Combine all user IDs
+      const directUserIds = userAssignments.map(a => a.assigned_to_user_id).filter((id): id is string => id !== null)
+      const allUserIds = Array.from(new Set([...directUserIds, ...departmentUserIds]))
+
+      if (allUserIds.length === 0) {
         setChecklistProgressState(prev => ({
           ...prev,
           [checklistId]: {
@@ -385,105 +426,81 @@ export default function ThemesPage() {
         return
       }
 
-      // Fetch item statuses for all assignments
-      const assignmentIds = assignments.map(a => a.id)
-      const { data: itemStatusesData, error: itemStatusesError } = await supabase
-        .from('checklist_item_status')
-        .select('*')
-        .in('assignment_id', assignmentIds)
+      // Fetch user profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', allUserIds)
 
-      if (itemStatusesError) throw itemStatusesError
-      const itemStatuses = (itemStatusesData as ChecklistItemStatus[] | null) || []
+      if (profilesError) throw profilesError
 
-      // Find which departments assigned this checklist to each user
-      // Same logic as for courses
-      const userIds = assignments.map(a => a.assigned_to_user_id).filter((id): id is string => id !== null)
-      
-      // Get all departments for the company
-      const { data: departmentsData, error: departmentsError } = await supabase
-        .from('departments')
-        .select('id, name')
-        .eq('company_id', user.company_id)
-
-      if (departmentsError) {
-        throw departmentsError
-      }
-
-      const departmentMap = (departmentsData as { id: string; name: string }[] | null)?.reduce<
-        Record<string, string>
-      >((acc, department) => {
-        acc[department.id] = department.name
+      const profilesMap = (profilesData || []).reduce<Record<string, { full_name: string; email: string }>>((acc, p) => {
+        acc[p.id] = { full_name: p.full_name, email: p.email }
         return acc
-      }, {}) || {}
+      }, {})
 
-      // Get all department assignments for this checklist
-      const { data: deptAssignmentsData } = await supabase
-        .from('checklist_assignments')
-        .select('assigned_to_department_id')
-        .eq('checklist_id', checklistId)
-        .not('assigned_to_department_id', 'is', null)
+      // Fetch item statuses for user assignments only
+      const userAssignmentIds = userAssignments.map(a => a.id)
+      let itemStatuses: ChecklistItemStatus[] = []
+      
+      if (userAssignmentIds.length > 0) {
+        const { data: itemStatusesData, error: itemStatusesError } = await supabase
+          .from('checklist_item_status')
+          .select('*')
+          .in('assignment_id', userAssignmentIds)
 
-      const deptIds = Array.from(new Set(
-        (deptAssignmentsData || [])
-          .map(a => a.assigned_to_department_id)
-          .filter((id): id is string => id !== null)
-      ))
-
-      // Get user-department mappings for users in these departments
-      const { data: userDeptsData } = await supabase
-        .from('user_departments')
-        .select('user_id, department_id')
-        .in('user_id', userIds)
-        .in('department_id', deptIds)
-
-      // Build map: user_id -> array of department names that assigned this checklist
-      const userAssignedDeptsMap = new Map<string, string[]>()
-      if (userDeptsData) {
-        userDeptsData.forEach(ud => {
-          const deptName = departmentMap[ud.department_id]
-          if (deptName) {
-            const existing = userAssignedDeptsMap.get(ud.user_id) || []
-            if (existing.indexOf(deptName) === -1) {
-              existing.push(deptName)
-            }
-            userAssignedDeptsMap.set(ud.user_id, existing)
-          }
-        })
+        if (itemStatusesError) throw itemStatusesError
+        itemStatuses = (itemStatusesData as ChecklistItemStatus[] | null) || []
       }
 
-      // Build user rows
-      const userRows = assignments.map(assignment => {
-        const user = assignment.assigned_to_user
+      // Build user assignment map for quick lookup
+      const userAssignmentMap = new Map<string, typeof userAssignments[0]>()
+      userAssignments.forEach(a => {
+        if (a.assigned_to_user_id) {
+          userAssignmentMap.set(a.assigned_to_user_id, a)
+        }
+      })
+
+      // Build user rows for ALL users (both direct and via department)
+      const userRows = allUserIds.map(userId => {
+        const profile = profilesMap[userId]
+        const assignment = userAssignmentMap.get(userId)
         const itemsMap: Record<string, { status: string; itemStatusId?: string; assignmentId: string }> = {}
 
         items.forEach(item => {
-          const status = itemStatuses.find(
-            s => s.assignment_id === assignment.id && s.item_id === item.id
-          )
-          itemsMap[item.id] = {
-            status: status?.status || 'not_started',
-            itemStatusId: status?.id,
-            assignmentId: assignment.id
+          if (assignment) {
+            // User has direct assignment - use their status
+            const status = itemStatuses.find(
+              s => s.assignment_id === assignment.id && s.item_id === item.id
+            )
+            itemsMap[item.id] = {
+              status: status?.status || 'not_started',
+              itemStatusId: status?.id,
+              assignmentId: assignment.id
+            }
+          } else {
+            // User is from department assignment - no individual status yet
+            itemsMap[item.id] = {
+              status: 'not_started',
+              itemStatusId: undefined,
+              assignmentId: '' // No assignment ID for department-only users
+            }
           }
         })
 
-        // Determine department name(s) to display (same logic as courses)
+        // Determine department name(s) to display
         let departmentName = 'Ingen avdeling'
-        if (assignment.is_auto_assigned) {
-          // Auto-assigned: show departments that assigned it
-          const assignedDepts = userAssignedDeptsMap.get(assignment.assigned_to_user_id) || []
-          if (assignedDepts.length > 0) {
-            departmentName = assignedDepts.join(', ')
-          }
-        } else {
-          // Direct assignment
+        const deptNames = userDepartmentMap.get(userId)
+        if (deptNames && deptNames.length > 0) {
+          departmentName = deptNames.join(', ')
+        } else if (assignment && !assignment.is_auto_assigned) {
           departmentName = 'Direkte tildelt'
         }
 
         return {
-          userId: assignment.assigned_to_user_id,
-          name: user?.full_name || 'Ukjent bruker',
-          email: user?.email || null,
+          userId,
+          name: profile?.full_name || 'Ukjent bruker',
+          email: profile?.email || null,
           departmentName,
           items: itemsMap
         }
