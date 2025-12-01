@@ -108,63 +108,98 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
-          <div className="mt-12 hidden h-full w-full max-w-xl shrink-0 rounded-3xl border border-gray-200 bg-white p-6 shadow-xl shadow-blue-500/10 dark:border-gray-800 dark:bg-gray-900 dark:shadow-blue-900/20 lg:block">
-            <div className="space-y-5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-300">
-                <FolderTree className="h-4 w-4" />
-                Kursstruktur
-              </div>
-              
-              {/* Tema level */}
-              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/50">
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Tema</p>
-                <p className="mt-1 text-sm font-medium text-gray-800 dark:text-gray-200">HMS og Sikkerhet</p>
+          <div className="mt-12 hidden h-full w-full max-w-xl shrink-0 rounded-3xl border border-gray-200 bg-white p-5 shadow-xl shadow-blue-500/10 dark:border-gray-800 dark:bg-gray-900 dark:shadow-blue-900/20 lg:block">
+            <div className="space-y-4">
+              {/* Kursprogram eksempel */}
+              <div className="rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                {/* Tema header */}
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <FolderTree className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">HMS</span>
+                  <span className="text-xs text-gray-500">1 program</span>
+                </div>
                 
-                {/* Program level */}
-                <div className="mt-3 ml-3 space-y-2">
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2 dark:border-emerald-800 dark:bg-emerald-950/50">
-                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Program</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">Grunnleggende HMS</p>
-                    
-                    {/* Kurs level */}
-                    <div className="mt-2 ml-2 space-y-1">
-                      <div className="flex items-center gap-2 rounded bg-white p-1.5 text-xs dark:bg-gray-800">
-                        <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                        <span className="text-gray-600 dark:text-gray-400">Brannvern</span>
-                        <span className="ml-auto text-green-600 dark:text-green-400">Fullført</span>
-                      </div>
-                      <div className="flex items-center gap-2 rounded bg-white p-1.5 text-xs dark:bg-gray-800">
-                        <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
-                        <span className="text-gray-600 dark:text-gray-400">Førstehjelp</span>
-                        <span className="ml-auto text-yellow-600 dark:text-yellow-400">I gang</span>
-                      </div>
-                      <div className="flex items-center gap-2 rounded bg-white p-1.5 text-xs dark:bg-gray-800">
-                        <span className="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600"></span>
-                        <span className="text-gray-600 dark:text-gray-400">Ergonomi</span>
-                        <span className="ml-auto text-gray-500">Ikke startet</span>
-                      </div>
-                    </div>
+                {/* Program header */}
+                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Grunnkurs</span>
                   </div>
+                </div>
+
+                {/* Tabell */}
+                <div className="overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-100 dark:bg-gray-800">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Bruker</th>
+                        <th className="px-2 py-2 text-center font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">1. Intro</th>
+                        <th className="px-2 py-2 text-center font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">2. Quiz</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+                      <tr>
+                        <td className="px-3 py-2">
+                          <div className="font-medium text-gray-900 dark:text-gray-100">Ola Nordmann</div>
+                          <div className="text-gray-500 text-[10px]">Salg</div>
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <span className="inline-flex items-center rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/30 dark:text-green-400">Fullført</span>
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <span className="inline-flex items-center rounded bg-yellow-100 px-2 py-0.5 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">I gang</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-3 py-2">
+                          <div className="font-medium text-gray-900 dark:text-gray-100">Kari Hansen</div>
+                          <div className="text-gray-500 text-[10px]">Drift</div>
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-gray-600 dark:bg-gray-700 dark:text-gray-400">Ikke startet</span>
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-gray-600 dark:bg-gray-700 dark:text-gray-400">Ikke startet</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
               {/* Sjekkliste eksempel */}
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/50">
-                <div className="flex items-center gap-2">
-                  <ClipboardCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">Sjekkliste</p>
+              <div className="rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                {/* Sjekkliste header */}
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <ClipboardCheck className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Onboarding</span>
                 </div>
-                <p className="mt-1 text-sm font-medium text-gray-800 dark:text-gray-200">Onboarding ny ansatt</p>
-                <div className="mt-2 space-y-1 text-xs">
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <span className="text-green-500">✓</span> Signert arbeidskontrakt
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <span className="text-green-500">✓</span> IT-utstyr utlevert
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <span className="text-gray-400">○</span> Gjennomført HMS-opplæring
-                  </div>
+
+                {/* Tabell */}
+                <div className="overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-100 dark:bg-gray-800">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Bruker</th>
+                        <th className="px-2 py-2 text-center font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">1. Kontrakt</th>
+                        <th className="px-2 py-2 text-center font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">2. IT-utstyr</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+                      <tr>
+                        <td className="px-3 py-2">
+                          <div className="font-medium text-gray-900 dark:text-gray-100">Per Olsen</div>
+                          <div className="text-gray-500 text-[10px]">IT</div>
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <span className="inline-flex items-center rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/30 dark:text-green-400">Fullført</span>
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <span className="inline-flex items-center rounded bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/30 dark:text-green-400">Fullført</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
