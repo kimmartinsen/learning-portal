@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Lock, PauseCircle, Unlock, ClipboardCheck, GraduationCap, Plus } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronRight, Lock, PauseCircle, Unlock, ClipboardCheck, GraduationCap, Plus, Folder, Tag } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import type { Theme } from '@/types/enhanced-database.types'
+import type { Theme, Topic } from '@/types/enhanced-database.types'
 import type { Checklist, ChecklistItem, ChecklistItemStatus } from '@/types/checklist.types'
 import Link from 'next/link'
 
@@ -127,10 +127,12 @@ const statusConfig: Record<
 export default function ThemesPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'programs' | 'checklists'>('programs')
+  const [topics, setTopics] = useState<Topic[]>([])
   const [themes, setThemes] = useState<Theme[]>([])
   const [checklists, setChecklists] = useState<Checklist[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<User | null>(null)
+  const [expandedTopicId, setExpandedTopicId] = useState<string | null>(null)
   const [expandedThemeId, setExpandedThemeId] = useState<string | null>(null)
   const [expandedChecklistId, setExpandedChecklistId] = useState<string | null>(null)
   const [progressState, setProgressState] = useState<Record<string, ThemeProgressState>>({})
@@ -172,6 +174,7 @@ export default function ThemesPage() {
 
       setUser(profile)
       await Promise.all([
+        fetchTopics(profile.company_id),
         fetchThemes(profile.company_id),
         fetchChecklists(profile.company_id)
       ])
@@ -182,11 +185,31 @@ export default function ThemesPage() {
     }
   }
 
+  const fetchTopics = async (companyId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('topics')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('order_index', { ascending: true })
+
+      if (error) {
+        console.log('Topics not available:', error.message)
+        setTopics([])
+        return
+      }
+      setTopics(data || [])
+    } catch (error: any) {
+      console.error('Error fetching topics:', error)
+      setTopics([])
+    }
+  }
+
   const fetchThemes = async (companyId: string) => {
     try {
       const { data: themesData, error } = await supabase
         .from('themes')
-        .select('*')
+        .select('*, topic:topics(id, name)')
         .eq('company_id', companyId)
         .order('created_at', { ascending: true })
 
@@ -1104,218 +1127,367 @@ export default function ThemesPage() {
           )}
         </div>
       ) : (
-        /* Programs View */
+        /* Programs View - Three levels: Topics → Themes → Courses */
         <div className="grid gap-4">
-        {themes.length > 0 ? (
-          themes.map((theme) => {
-            const isExpanded = expandedThemeId === theme.id
-            const progress = progressState[theme.id]
+        {/* Topics level */}
+        {topics.length > 0 && topics.map((topic) => {
+          const topicThemes = themes.filter(t => t.topic_id === topic.id)
+          const isTopicExpanded = expandedTopicId === topic.id
 
-            return (
-              <Card key={theme.id}>
-                <CardContent className="p-0">
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleTheme(theme.id)}
-                      className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none flex-grow"
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="h-4 w-4 text-gray-500" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-gray-500" />
-                      )}
-                      <div className="flex flex-col">
-                        <span className="flex items-center gap-2">
-                          {theme.name}
-                          {theme.progression_type === 'sequential_auto' && (
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                              Sekvensiell (Auto)
-                            </span>
-                          )}
-                          {theme.progression_type === 'sequential_manual' && (
-                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
-                              Sekvensiell (Manuell)
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-xs text-gray-500 font-normal">{theme.description}</span>
-                      </div>
-                    </button>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
-                      {progress?.loading ? (
-                        <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                          Laster progresjon...
-                        </div>
-                      ) : progress?.error ? (
-                        <div className="py-6 text-center text-sm text-red-600">
-                          {progress.error}
-                        </div>
-                      ) : progress?.data ? (() => {
-                        const data = progress.data
-                        return data.programs.length === 0 ? (
-                          <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                            Ingen kurs er knyttet til dette programmet.
-                          </div>
-                        ) : (
-                          <div className="space-y-6">
-                            <div className="overflow-x-auto">
-                              <table className="inline-table w-auto divide-y divide-gray-200">
-                                <thead className="bg-gray-50 dark:bg-gray-900/50">
-                                  <tr>
-                                    <th className="w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-900 z-10">
-                                      Bruker
-                                    </th>
-                                    {data.programs.map((program, index) => (
-                                      <th
-                                        key={program.id}
-                                        className="w-0 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[130px]"
-                                      >
-                                        <div className="flex flex-col items-center gap-1">
-                                          <span>{index + 1}. {program.title}</span>
-                                          {/* Kan vise sorting index her hvis aktuelt */}
-                                        </div>
-                                      </th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
-                                  {data.userRows.length > 0 ? (
-                                    data.userRows.map((row) => (
-                                    <tr key={row.userId}>
-                                      <td className="w-40 px-2 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-900 z-10">
-                                        <div className="flex flex-col">
-                                          <span>{row.name}</span>
-                                          <span className="text-xs text-gray-500 font-normal">{row.departmentName}</span>
-                                        </div>
-                                      </td>
-                                      {data.programs.map((program) => {
-                                        const status = row.programs[program.id]
-                                        const isPhysicalCourse = program.course_type === 'physical-course'
-
-                                        if (!status) {
-                                          return (
-                                            <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
-                                              <span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">
-                                                Ikke tildelt
-                                              </span>
-                                            </td>
-                                          )
-                                        }
-
-                                        const config = statusConfig[status.status]
-                                        const isPending = status.status === 'pending'
-
-                                        // For fysiske kurs, vis dropdown for å oppdatere status
-                                        if (isPhysicalCourse) {
-                                          const handleStatusChange = async (newStatus: string) => {
-                                            try {
-                                              const { data: { session } } = await supabase.auth.getSession()
-                                              
-                                              const updateData: any = {
-                                                status: newStatus === 'completed' ? 'completed' : newStatus === 'in_progress' ? 'started' : 'assigned'
-                                              }
-
-                                              if (newStatus === 'completed') {
-                                                updateData.completed_at = new Date().toISOString()
-                                              } else {
-                                                updateData.completed_at = null
-                                              }
-
-                                              const { error } = await supabase
-                                                .from('program_assignments')
-                                                .update(updateData)
-                                                .eq('id', status.assignmentId)
-
-                                              if (error) throw error
-                                              
-                                              toast.success('Status oppdatert!')
-                                              fetchThemeProgress(theme.id)
-                                              router.refresh()
-                                            } catch (error: any) {
-                                              toast.error('Kunne ikke oppdatere status: ' + error.message)
-                                            }
-                                          }
-
-                                          // Map status for dropdown
-                                          const currentStatus = status.status === 'completed' ? 'completed' 
-                                            : status.status === 'in_progress' ? 'in_progress'
-                                            : 'not_started'
-
-                                          return (
-                                            <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-center align-middle min-w-[130px]">
-                                              <select
-                                                value={currentStatus}
-                                                onChange={(e) => handleStatusChange(e.target.value)}
-                                                className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer"
-                                                onClick={(e) => e.stopPropagation()}
-                                              >
-                                                <option value="not_started">Ikke startet</option>
-                                                <option value="in_progress">I gang</option>
-                                                <option value="completed">Fullført</option>
-                                              </select>
-                                            </td>
-                                          )
-                                        }
-
-                                        // For e-kurs, vis badge som før
-                                        return (
-                                          <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
-                                            <div className="flex items-center gap-2 justify-center">
-                                              <span
-                                                className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}
-                                              >
-                                                {config.icon}
-                                                <span>{config.label}</span>
-                                              </span>
-                                              
-                                              {isPending && (
-                                                <Button 
-                                                  size="sm" 
-                                                  variant="ghost"
-                                                  className="h-6 w-6 p-0 text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300"
-                                                  title="Godkjenn og lås opp kurs"
-                                                  onClick={() => handleUnlock(status.assignmentId, theme.id)}
-                                                >
-                                                  <Unlock className="h-3 w-3" />
-                                                </Button>
-                                              )}
-                                            </div>
-                                          </td>
-                                        )
-                                      })}
-                                    </tr>
-                                    ))
-                                  ) : (
-                                    <tr>
-                                      <td 
-                                        colSpan={data.programs.length + 1} 
-                                        className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-                                      >
-                                        Ingen brukere er tildelt kurs i dette programmet ennå.
-                                      </td>
-                                    </tr>
-                                  )}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        )
-                      })() : (
-                        <div className="py-6 text-center text-sm text-gray-500">
-                          Ingen data å vise ennå.
-                        </div>
-                      )}
+          return (
+            <Card key={topic.id} className="border-2 border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/10">
+              <CardContent className="p-0">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedTopicId(isTopicExpanded ? null : topic.id)}
+                    className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none flex-grow"
+                  >
+                    {isTopicExpanded ? (
+                      <ChevronDown className="h-5 w-5 text-primary-600" />
+                    ) : (
+                      <ChevronRight className="h-5 w-5 text-primary-600" />
+                    )}
+                    <Folder className="h-5 w-5 text-primary-600" />
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold text-primary-700 dark:text-primary-400">{topic.name}</span>
+                      <span className="text-xs text-gray-500 font-normal">{topicThemes.length} programmer</span>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })
-        ) : (
+                  </button>
+                </div>
+
+                {isTopicExpanded && (
+                  <div className="border-t border-primary-200 dark:border-primary-800 px-4 py-4 space-y-3">
+                    {topicThemes.length === 0 ? (
+                      <div className="py-4 text-center text-sm text-gray-500">Ingen programmer i dette temaet.</div>
+                    ) : (
+                      topicThemes.map((theme) => {
+                        const isExpanded = expandedThemeId === theme.id
+                        const progress = progressState[theme.id]
+
+                        return (
+                          <Card key={theme.id}>
+                            <CardContent className="p-0">
+                              <div className="flex items-center justify-between px-4 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleTheme(theme.id)}
+                                  className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none flex-grow"
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 text-gray-500" />
+                                  )}
+                                  <Tag className="h-4 w-4 text-primary-600" />
+                                  <div className="flex flex-col">
+                                    <span className="flex items-center gap-2">
+                                      {theme.name}
+                                      {theme.progression_type === 'sequential_auto' && (
+                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                                          Sekvensiell (Auto)
+                                        </span>
+                                      )}
+                                      {theme.progression_type === 'sequential_manual' && (
+                                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
+                                          Sekvensiell (Manuell)
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className="text-xs text-gray-500 font-normal">{theme.description}</span>
+                                  </div>
+                                </button>
+                              </div>
+
+                              {isExpanded && (
+                                <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                                  {progress?.loading ? (
+                                    <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">Laster progresjon...</div>
+                                  ) : progress?.error ? (
+                                    <div className="py-6 text-center text-sm text-red-600">{progress.error}</div>
+                                  ) : progress?.data ? (() => {
+                                    const data = progress.data
+                                    return data.programs.length === 0 ? (
+                                      <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette programmet.</div>
+                                    ) : (
+                                      <div className="space-y-6">
+                                        <div className="overflow-x-auto">
+                                          <table className="inline-table w-auto divide-y divide-gray-200">
+                                            <thead className="bg-gray-50 dark:bg-gray-900/50">
+                                              <tr>
+                                                <th className="w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-900 z-10">Bruker</th>
+                                                {data.programs.map((program, index) => (
+                                                  <th key={program.id} className="w-0 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[130px]">
+                                                    <div className="flex flex-col items-center gap-1">
+                                                      <span>{index + 1}. {program.title}</span>
+                                                    </div>
+                                                  </th>
+                                                ))}
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+                                              {data.userRows.length > 0 ? (
+                                                data.userRows.map((row) => (
+                                                  <tr key={row.userId}>
+                                                    <td className="w-40 px-2 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-900 z-10">
+                                                      <div className="flex flex-col">
+                                                        <span>{row.name}</span>
+                                                        <span className="text-xs text-gray-500 font-normal">{row.departmentName}</span>
+                                                      </div>
+                                                    </td>
+                                                    {data.programs.map((program) => {
+                                                      const status = row.programs[program.id]
+                                                      const isPhysicalCourse = program.course_type === 'physical-course'
+                                                      if (!status) {
+                                                        return (
+                                                          <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
+                                                            <span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">Ikke tildelt</span>
+                                                          </td>
+                                                        )
+                                                      }
+                                                      const config = statusConfig[status.status]
+                                                      const isPending = status.status === 'pending'
+                                                      if (isPhysicalCourse) {
+                                                        const handleStatusChange = async (newStatus: string) => {
+                                                          try {
+                                                            const updateData: any = { status: newStatus === 'completed' ? 'completed' : newStatus === 'in_progress' ? 'started' : 'assigned' }
+                                                            if (newStatus === 'completed') updateData.completed_at = new Date().toISOString()
+                                                            else updateData.completed_at = null
+                                                            const { error } = await supabase.from('program_assignments').update(updateData).eq('id', status.assignmentId)
+                                                            if (error) throw error
+                                                            toast.success('Status oppdatert!')
+                                                            fetchThemeProgress(theme.id)
+                                                            router.refresh()
+                                                          } catch (error: any) { toast.error('Kunne ikke oppdatere status: ' + error.message) }
+                                                        }
+                                                        const currentStatus = status.status === 'completed' ? 'completed' : status.status === 'in_progress' ? 'in_progress' : 'not_started'
+                                                        return (
+                                                          <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-center align-middle min-w-[130px]">
+                                                            <select value={currentStatus} onChange={(e) => handleStatusChange(e.target.value)} className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                                              <option value="not_started">Ikke startet</option>
+                                                              <option value="in_progress">I gang</option>
+                                                              <option value="completed">Fullført</option>
+                                                            </select>
+                                                          </td>
+                                                        )
+                                                      }
+                                                      return (
+                                                        <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
+                                                          <div className="flex items-center gap-2 justify-center">
+                                                            <span className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}>
+                                                              {config.icon}
+                                                              <span>{config.label}</span>
+                                                            </span>
+                                                            {isPending && (
+                                                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300" title="Godkjenn og lås opp kurs" onClick={() => handleUnlock(status.assignmentId, theme.id)}>
+                                                                <Unlock className="h-3 w-3" />
+                                                              </Button>
+                                                            )}
+                                                          </div>
+                                                        </td>
+                                                      )
+                                                    })}
+                                                  </tr>
+                                                ))
+                                              ) : (
+                                                <tr><td colSpan={data.programs.length + 1} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Ingen brukere er tildelt kurs i dette programmet ennå.</td></tr>
+                                              )}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </div>
+                                    )
+                                  })() : (
+                                    <div className="py-6 text-center text-sm text-gray-500">Ingen data å vise ennå.</div>
+                                  )}
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
+
+        {/* Themes without topic (Uten tema) */}
+        {(() => {
+          const themesWithoutTopic = themes.filter(t => !t.topic_id && t.id !== 'no-theme')
+          const noThemeTheme = themes.find(t => t.id === 'no-theme')
+          if (themesWithoutTopic.length === 0 && !noThemeTheme) return null
+
+          return (
+            <Card className="border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+              <CardContent className="p-0">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedTopicId(expandedTopicId === 'no-topic' ? null : 'no-topic')}
+                    className="flex items-center space-x-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none flex-grow"
+                  >
+                    {expandedTopicId === 'no-topic' ? (
+                      <ChevronDown className="h-5 w-5 text-gray-500" />
+                    ) : (
+                      <ChevronRight className="h-5 w-5 text-gray-500" />
+                    )}
+                    <Folder className="h-5 w-5 text-gray-500" />
+                    <div className="flex flex-col">
+                      <span className="text-lg font-semibold">Uten tema</span>
+                      <span className="text-xs text-gray-500 font-normal">{themesWithoutTopic.length + (noThemeTheme ? 1 : 0)} programmer</span>
+                    </div>
+                  </button>
+                </div>
+
+                {expandedTopicId === 'no-topic' && (
+                  <div className="border-t border-gray-300 dark:border-gray-700 px-4 py-4 space-y-3">
+                    {[...themesWithoutTopic, ...(noThemeTheme ? [noThemeTheme] : [])].map((theme) => {
+                      const isExpanded = expandedThemeId === theme.id
+                      const progress = progressState[theme.id]
+
+                      return (
+                        <Card key={theme.id}>
+                          <CardContent className="p-0">
+                            <div className="flex items-center justify-between px-4 py-3">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleTheme(theme.id)}
+                                className="flex items-center space-x-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none flex-grow"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-gray-500" />
+                                )}
+                                <Tag className="h-4 w-4 text-gray-500" />
+                                <div className="flex flex-col">
+                                  <span className="flex items-center gap-2">
+                                    {theme.name}
+                                    {theme.progression_type === 'sequential_auto' && (
+                                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">Sekvensiell (Auto)</span>
+                                    )}
+                                    {theme.progression_type === 'sequential_manual' && (
+                                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-300">Sekvensiell (Manuell)</span>
+                                    )}
+                                  </span>
+                                  <span className="text-xs text-gray-500 font-normal">{theme.description}</span>
+                                </div>
+                              </button>
+                            </div>
+
+                            {isExpanded && (
+                              <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                                {progress?.loading ? (
+                                  <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">Laster progresjon...</div>
+                                ) : progress?.error ? (
+                                  <div className="py-6 text-center text-sm text-red-600">{progress.error}</div>
+                                ) : progress?.data ? (() => {
+                                  const data = progress.data
+                                  return data.programs.length === 0 ? (
+                                    <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette programmet.</div>
+                                  ) : (
+                                    <div className="space-y-6">
+                                      <div className="overflow-x-auto">
+                                        <table className="inline-table w-auto divide-y divide-gray-200">
+                                          <thead className="bg-gray-50 dark:bg-gray-900/50">
+                                            <tr>
+                                              <th className="w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-900 z-10">Bruker</th>
+                                              {data.programs.map((program, index) => (
+                                                <th key={program.id} className="w-0 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[130px]">
+                                                  <span>{index + 1}. {program.title}</span>
+                                                </th>
+                                              ))}
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
+                                            {data.userRows.length > 0 ? (
+                                              data.userRows.map((row) => (
+                                                <tr key={row.userId}>
+                                                  <td className="w-40 px-2 py-2 text-left text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-900 z-10">
+                                                    <div className="flex flex-col">
+                                                      <span>{row.name}</span>
+                                                      <span className="text-xs text-gray-500 font-normal">{row.departmentName}</span>
+                                                    </div>
+                                                  </td>
+                                                  {data.programs.map((program) => {
+                                                    const status = row.programs[program.id]
+                                                    const isPhysicalCourse = program.course_type === 'physical-course'
+                                                    if (!status) {
+                                                      return <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]"><span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">Ikke tildelt</span></td>
+                                                    }
+                                                    const config = statusConfig[status.status]
+                                                    const isPending = status.status === 'pending'
+                                                    if (isPhysicalCourse) {
+                                                      const handleStatusChange = async (newStatus: string) => {
+                                                        try {
+                                                          const updateData: any = { status: newStatus === 'completed' ? 'completed' : newStatus === 'in_progress' ? 'started' : 'assigned' }
+                                                          if (newStatus === 'completed') updateData.completed_at = new Date().toISOString()
+                                                          else updateData.completed_at = null
+                                                          const { error } = await supabase.from('program_assignments').update(updateData).eq('id', status.assignmentId)
+                                                          if (error) throw error
+                                                          toast.success('Status oppdatert!')
+                                                          fetchThemeProgress(theme.id)
+                                                          router.refresh()
+                                                        } catch (error: any) { toast.error('Kunne ikke oppdatere status: ' + error.message) }
+                                                      }
+                                                      const currentStatus = status.status === 'completed' ? 'completed' : status.status === 'in_progress' ? 'in_progress' : 'not_started'
+                                                      return (
+                                                        <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-center align-middle min-w-[130px]">
+                                                          <select value={currentStatus} onChange={(e) => handleStatusChange(e.target.value)} className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                                            <option value="not_started">Ikke startet</option>
+                                                            <option value="in_progress">I gang</option>
+                                                            <option value="completed">Fullført</option>
+                                                          </select>
+                                                        </td>
+                                                      )
+                                                    }
+                                                    return (
+                                                      <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
+                                                        <div className="flex items-center gap-2 justify-center">
+                                                          <span className={`inline-flex items-center justify-start gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${config.badgeClass}`}>
+                                                            {config.icon}
+                                                            <span>{config.label}</span>
+                                                          </span>
+                                                          {isPending && (
+                                                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300" title="Godkjenn og lås opp kurs" onClick={() => handleUnlock(status.assignmentId, theme.id)}>
+                                                              <Unlock className="h-3 w-3" />
+                                                            </Button>
+                                                          )}
+                                                        </div>
+                                                      </td>
+                                                    )
+                                                  })}
+                                                </tr>
+                                              ))
+                                            ) : (
+                                              <tr><td colSpan={data.programs.length + 1} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Ingen brukere er tildelt kurs i dette programmet ennå.</td></tr>
+                                            )}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  )
+                                })() : (
+                                  <div className="py-6 text-center text-sm text-gray-500">Ingen data å vise ennå.</div>
+                                )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })()}
+
+        {/* Empty state */}
+        {topics.length === 0 && themes.length === 0 && (
           <Card>
             <CardContent className="p-12 text-center space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
