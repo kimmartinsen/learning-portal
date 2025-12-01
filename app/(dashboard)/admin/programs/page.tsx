@@ -1523,7 +1523,7 @@ export default function AdminProgramsPage() {
                 {topicThemes.length === 0 ? (
                   <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                     Ingen programmer i dette temaet ennå.
-                    <Button variant="link" size="sm" onClick={() => openThemeFormForTopic(topic.id)} className="ml-1">
+                    <Button variant="ghost" size="sm" onClick={() => openThemeFormForTopic(topic.id)} className="ml-1 text-primary-600 hover:text-primary-700">
                       Opprett program
                     </Button>
                   </div>
