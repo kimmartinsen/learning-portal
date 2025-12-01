@@ -61,15 +61,10 @@ export function Topbar({ user, className }: TopbarProps) {
       )}
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white font-semibold">
-              O
-            </div>
-            <div className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              Kompetanseportalen
-            </div>
-          </div>
+        <div className="flex items-center">
+          <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Kompetanseportalen
+          </span>
         </div>
 
         {/* Right side */}

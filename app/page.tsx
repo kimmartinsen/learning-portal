@@ -58,13 +58,8 @@ export default async function HomePage() {
 
         <header className="px-6 py-6 sm:px-10">
           <nav className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white font-semibold">
-                O
-              </div>
-              <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                Kompetanseportalen
-              </span>
+            <Link href="/" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Kompetanseportalen
             </Link>
             <div className="flex items-center gap-3">
               <ThemeToggle />
