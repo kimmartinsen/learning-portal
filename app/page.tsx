@@ -1,26 +1,44 @@
 import Link from 'next/link'
-import { ArrowRight, ShieldCheck, Users, Layers } from 'lucide-react'
+import { ArrowRight, GraduationCap, ClipboardCheck, Users, Building2, BarChart3, FolderTree } from 'lucide-react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 
 const features = [
   {
-    title: 'Alt på ett sted',
+    title: 'Strukturert kursoppsett',
     description:
-      'Samle kurs, dokumentasjon og intern opplæring i én strukturert portal som er enkel å holde oppdatert.',
-    icon: Layers
+      'Organiser opplæringen i tre nivåer: Tema, Program og Kurs. Perfekt for å gruppere relaterte kurs under felles kategorier.',
+    icon: FolderTree
   },
   {
-    title: 'Trygg dokumentasjon',
+    title: 'Fleksible sjekklister',
     description:
-      'Følg opp både lovpålagte og interne krav med sporbar progresjon, sertifiseringer og revisjonslogg.',
-    icon: ShieldCheck
+      'Opprett sjekklister for onboarding, HMS-rutiner eller andre oppgaver. Følg opp status og marker punkter som fullført.',
+    icon: ClipboardCheck
   },
   {
-    title: 'Engasjer teamet',
+    title: 'Enkel tildeling',
     description:
-      'Gi ansatte og instruktører en oversiktlig opplevelse med tydelige mål, påminnelser og praktiske verktøy.',
+      'Tildel kurs og sjekklister til enkeltpersoner eller hele avdelinger med ett klikk. Automatisk oppfølging av progresjon.',
     icon: Users
+  },
+  {
+    title: 'Avdelingsbasert',
+    description:
+      'Organiser ansatte i avdelinger for enklere administrasjon. Tildel opplæring til hele grupper samtidig.',
+    icon: Building2
+  },
+  {
+    title: 'Full oversikt',
+    description:
+      'Se hvem som har fullført hva, hvem som ligger etter, og få kontroll over all opplæring i bedriften.',
+    icon: BarChart3
+  },
+  {
+    title: 'Kursbibliotek',
+    description:
+      'Bygg opp et bibliotek med kurs som kan gjenbrukes. Legg til videoer, dokumenter og quizer.',
+    icon: GraduationCap
   }
 ]
 
@@ -64,14 +82,15 @@ export default async function HomePage() {
         <section className="px-6 pb-16 pt-12 sm:px-10 lg:flex lg:items-center lg:gap-12 lg:pb-24 lg:pt-20">
           <div className="max-w-2xl">
             <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
-              For bedrifter som satser på kompetanse
+              Komplett opplæringsverktøy
             </span>
             <h1 className="mt-6 text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
-              Gjør opplæring enkelt å planlegge, levere og dokumentere
+              Kurs, sjekklister og kompetanseoversikt i én løsning
             </h1>
             <p className="mt-6 text-lg text-gray-600 dark:text-gray-300">
-              Med Kompetanseportalen får du et helhetlig verktøy for å lage kurs, tildele oppgaver, følge
-              opp status og dokumentere gjennomføringen. Alt i én løsning — tilpasset norske bedrifter.
+              Kompetanseportalen gir deg full kontroll over bedriftens opplæring. Opprett kurs organisert 
+              i temaer og programmer, lag sjekklister for onboarding og rutiner, og følg opp hvem som 
+              har fullført hva — alt på ett sted.
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -85,32 +104,67 @@ export default async function HomePage() {
                 href="/signup"
                 className="inline-flex items-center justify-center rounded-full border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:text-gray-900 dark:border-gray-700 dark:text-gray-200 dark:hover:border-gray-500"
               >
-                Registrer deg
+                Registrer din bedrift
               </Link>
             </div>
           </div>
-          <div className="mt-12 hidden h-full w-full max-w-xl shrink-0 rounded-3xl border border-gray-200 bg-white p-8 shadow-xl shadow-blue-500/10 dark:border-gray-800 dark:bg-gray-900 dark:shadow-blue-900/20 lg:block">
-            <div className="space-y-6">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
-                  Oversikt
-                </p>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Se hvordan teamet ligger an i sine kurs, og få kontroll over hvem som trenger oppfølging.
-                </p>
+          <div className="mt-12 hidden h-full w-full max-w-xl shrink-0 rounded-3xl border border-gray-200 bg-white p-6 shadow-xl shadow-blue-500/10 dark:border-gray-800 dark:bg-gray-900 dark:shadow-blue-900/20 lg:block">
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-300">
+                <FolderTree className="h-4 w-4" />
+                Kursstruktur
               </div>
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">HMS og Sikkerhet</p>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">72% fullført · 12 deltakere</p>
+              
+              {/* Tema level */}
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/50">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Tema</p>
+                <p className="mt-1 text-sm font-medium text-gray-800 dark:text-gray-200">HMS og Sikkerhet</p>
+                
+                {/* Program level */}
+                <div className="mt-3 ml-3 space-y-2">
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2 dark:border-emerald-800 dark:bg-emerald-950/50">
+                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Program</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">Grunnleggende HMS</p>
+                    
+                    {/* Kurs level */}
+                    <div className="mt-2 ml-2 space-y-1">
+                      <div className="flex items-center gap-2 rounded bg-white p-1.5 text-xs dark:bg-gray-800">
+                        <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                        <span className="text-gray-600 dark:text-gray-400">Brannvern</span>
+                        <span className="ml-auto text-green-600 dark:text-green-400">Fullført</span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded bg-white p-1.5 text-xs dark:bg-gray-800">
+                        <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                        <span className="text-gray-600 dark:text-gray-400">Førstehjelp</span>
+                        <span className="ml-auto text-yellow-600 dark:text-yellow-400">I gang</span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded bg-white p-1.5 text-xs dark:bg-gray-800">
+                        <span className="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                        <span className="text-gray-600 dark:text-gray-400">Ergonomi</span>
+                        <span className="ml-auto text-gray-500">Ikke startet</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Nye ansatte</p>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">55% fullført · 8 deltakere</p>
+              </div>
+
+              {/* Sjekkliste eksempel */}
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/50">
+                <div className="flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">Sjekkliste</p>
                 </div>
-                <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Fagbrev-oppfølging</p>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Planlagt · Oppstart 15. januar</p>
+                <p className="mt-1 text-sm font-medium text-gray-800 dark:text-gray-200">Onboarding ny ansatt</p>
+                <div className="mt-2 space-y-1 text-xs">
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                    <span className="text-green-500">✓</span> Signert arbeidskontrakt
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                    <span className="text-green-500">✓</span> IT-utstyr utlevert
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                    <span className="text-gray-400">○</span> Gjennomført HMS-opplæring
+                  </div>
                 </div>
               </div>
             </div>
@@ -118,16 +172,26 @@ export default async function HomePage() {
         </section>
 
         <section className="border-t border-gray-200 bg-white px-6 py-16 dark:border-gray-800 dark:bg-gray-950 sm:px-10">
-          <div className="mx-auto grid max-w-5xl gap-10 sm:grid-cols-3">
-            {features.map(({ title, description, icon: Icon }) => (
-              <div key={title} className="space-y-4">
-                <div className="inline-flex rounded-full bg-blue-100 p-3 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                  <Icon className="h-5 w-5" />
+          <div className="mx-auto max-w-5xl">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 sm:text-3xl">
+                Alt du trenger for effektiv opplæring
+              </h2>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">
+                Fra kursbygging til oppfølging — Kompetanseportalen dekker hele prosessen.
+              </p>
+            </div>
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {features.map(({ title, description, icon: Icon }) => (
+                <div key={title} className="rounded-2xl border border-gray-100 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-900">
+                  <div className="inline-flex rounded-xl bg-blue-100 p-3 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{description}</p>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">{description}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
       </div>

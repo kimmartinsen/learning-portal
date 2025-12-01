@@ -18,7 +18,7 @@ const themeScript = `
 
 export const metadata = {
   title: 'Kompetanseportalen',
-  description: 'Komplett opplæringsportal for bedrifter',
+  description: 'Komplett opplæringsverktøy for bedrifter. Opprett kurs, sjekklister og følg opp kompetansen til dine ansatte.',
 }
 
 export default function RootLayout({
