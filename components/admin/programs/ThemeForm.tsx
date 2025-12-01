@@ -2,10 +2,12 @@
 
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import type { Topic } from '@/types/enhanced-database.types'
 
 export interface ThemeFormData {
   name: string
   description: string
+  topic_id?: string | null
   progression_type?: 'flexible' | 'sequential_auto' | 'sequential_manual'
 }
 
@@ -16,6 +18,8 @@ interface ThemeFormProps {
   onChange: (data: Partial<ThemeFormData>) => void
   onCancel: () => void
   buttonText?: string
+  topics?: Topic[]
+  showTopicSelector?: boolean
 }
 
 export function ThemeForm({
@@ -24,10 +28,33 @@ export function ThemeForm({
   onSubmit,
   onChange,
   onCancel,
-  buttonText
+  buttonText,
+  topics = [],
+  showTopicSelector = false
 }: ThemeFormProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      {showTopicSelector && topics.length > 0 && (
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Tema
+          </label>
+          <select
+            value={formData.topic_id || ''}
+            onChange={(e) => onChange({ topic_id: e.target.value || null })}
+            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+          >
+            <option value="">Uten tema</option>
+            {topics.map(topic => (
+              <option key={topic.id} value={topic.id}>{topic.name}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Velg hvilket tema programmet skal tilhøre
+          </p>
+        </div>
+      )}
+      
       <Input
         label="Programnavn"
         value={formData.name}

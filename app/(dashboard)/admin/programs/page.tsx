@@ -59,10 +59,12 @@ export default function AdminProgramsPage() {
   const [showThemeForm, setShowThemeForm] = useState(false)
   const [themeFormData, setThemeFormData] = useState<ThemeFormData>({
     name: '',
-    description: ''
+    description: '',
+    topic_id: null
   })
   const [selectedTopicIdForTheme, setSelectedTopicIdForTheme] = useState<string | null>(null)
   const [creatingTheme, setCreatingTheme] = useState(false)
+  const [editingTheme, setEditingTheme] = useState<Theme | null>(null)
   
   // State for assigning theme to users/departments
   const [showAssignModal, setShowAssignModal] = useState(false)
@@ -766,6 +768,19 @@ export default function AdminProgramsPage() {
 
   const openThemeFormForTopic = (topicId: string | null) => {
     setSelectedTopicIdForTheme(topicId)
+    setThemeFormData({ name: '', description: '', topic_id: topicId })
+    setEditingTheme(null)
+    setShowThemeForm(true)
+  }
+
+  const handleEditTheme = (theme: Theme) => {
+    setEditingTheme(theme)
+    setThemeFormData({
+      name: theme.name,
+      description: theme.description || '',
+      topic_id: theme.topic_id || null
+    })
+    setSelectedTopicIdForTheme(theme.topic_id || null)
     setShowThemeForm(true)
   }
 
@@ -792,42 +807,59 @@ export default function AdminProgramsPage() {
 
   const resetThemeForm = () => {
     setShowThemeForm(false)
-    setThemeFormData({ name: '', description: '' })
+    setThemeFormData({ name: '', description: '', topic_id: null })
     setSelectedTopicIdForTheme(null)
+    setEditingTheme(null)
     setCreatingTheme(false)
   }
 
-  const handleCreateTheme = async (e: React.FormEvent) => {
+  const handleCreateOrUpdateTheme = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
 
     try {
       setCreatingTheme(true)
-      const { data, error } = await supabase
-        .from('themes')
-        .insert([
-          {
+      
+      if (editingTheme) {
+        // Oppdater eksisterende program
+        const { error } = await supabase
+          .from('themes')
+          .update({
             name: themeFormData.name,
             description: themeFormData.description || null,
-            company_id: user.company_id,
-            topic_id: selectedTopicIdForTheme || null, // Koble til valgt tema
-            progression_type: 'flexible' // Default til flexible, kan endres i Struktur
-          }
-        ])
-        .select()
-        .single()
+            topic_id: themeFormData.topic_id || null
+          })
+          .eq('id', editingTheme.id)
 
-      if (error) throw error
+        if (error) throw error
+        toast.success('Program oppdatert!')
+      } else {
+        // Opprett nytt program
+        const { data, error } = await supabase
+          .from('themes')
+          .insert([
+            {
+              name: themeFormData.name,
+              description: themeFormData.description || null,
+              company_id: user.company_id,
+              topic_id: themeFormData.topic_id || selectedTopicIdForTheme || null,
+              progression_type: 'flexible'
+            }
+          ])
+          .select()
+          .single()
 
-      toast.success('Program opprettet!')
+        if (error) throw error
+
+        toast.success('Program opprettet!')
+        setFormData((prev) => ({
+          ...prev,
+          themeId: data?.id || prev.themeId
+        }))
+      }
+
       await fetchThemes(user.company_id)
-      setFormData((prev) => ({
-        ...prev,
-        themeId: data?.id || prev.themeId
-      }))
       resetThemeForm()
-      
-      // VIKTIG: Trigger refresh av alle Server Components
       router.refresh()
     } catch (error: any) {
       toast.error(error.message)
@@ -1207,39 +1239,25 @@ export default function AdminProgramsPage() {
       <Modal isOpen={showThemeForm} onClose={resetThemeForm}>
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nytt program</h3>
-            {selectedTopicIdForTheme && (
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Under tema: {topics.find(t => t.id === selectedTopicIdForTheme)?.name || 'Ukjent'}
-              </p>
-            )}
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {editingTheme ? 'Rediger program' : 'Nytt program'}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {editingTheme 
+                ? 'Oppdater programnavn, beskrivelse eller tema' 
+                : 'Opprett et nytt program som kan inneholde flere kurs'}
+            </p>
           </CardHeader>
           <CardContent>
-            {/* Velg tema hvis ikke allerede valgt */}
-            {!selectedTopicIdForTheme && topics.length > 0 && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Velg tema (valgfritt)
-                </label>
-                <select
-                  value={selectedTopicIdForTheme || ''}
-                  onChange={(e) => setSelectedTopicIdForTheme(e.target.value || null)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-                >
-                  <option value="">Uten tema</option>
-                  {topics.map(topic => (
-                    <option key={topic.id} value={topic.id}>{topic.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
             <ThemeForm
               formData={themeFormData}
               isCreating={creatingTheme}
-              onSubmit={handleCreateTheme}
+              onSubmit={handleCreateOrUpdateTheme}
               onChange={(data) => setThemeFormData((prev) => ({ ...prev, ...data }))}
               onCancel={resetThemeForm}
-              buttonText="Opprett program"
+              buttonText={editingTheme ? 'Oppdater program' : 'Opprett program'}
+              topics={topics}
+              showTopicSelector={true}
             />
           </CardContent>
         </Card>
@@ -1556,6 +1574,9 @@ export default function AdminProgramsPage() {
                               <UserPlus className="h-3 w-3 mr-1" />
                               Tildel
                             </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleEditTheme(theme)} className="h-7 text-xs" title="Rediger program">
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleDeleteTheme(theme.id)} className="h-7 text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Slett program">
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -1673,6 +1694,9 @@ export default function AdminProgramsPage() {
                           <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 text-xs">
                             <UserPlus className="h-3 w-3 mr-1" />
                             Tildel
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleEditTheme(theme)} className="h-7 text-xs" title="Rediger program">
+                            <Edit2 className="h-3 w-3" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleDeleteTheme(theme.id)} className="h-7 text-xs text-red-600">
                             <Trash2 className="h-3 w-3" />

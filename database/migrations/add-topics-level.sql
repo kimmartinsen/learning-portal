@@ -23,7 +23,12 @@ CREATE INDEX IF NOT EXISTS idx_themes_topic_id ON themes(topic_id);
 -- 4. Aktiver RLS på topics
 ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
 
--- 5. RLS-policyer for topics
+-- 5. RLS-policyer for topics (dropp eksisterende først for å unngå feil)
+DROP POLICY IF EXISTS "Users can view topics in their company" ON topics;
+DROP POLICY IF EXISTS "Admins can create topics in their company" ON topics;
+DROP POLICY IF EXISTS "Admins can update topics in their company" ON topics;
+DROP POLICY IF EXISTS "Admins can delete topics in their company" ON topics;
+
 -- Brukere kan se topics i sitt eget selskap
 CREATE POLICY "Users can view topics in their company"
 ON topics FOR SELECT
