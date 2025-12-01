@@ -316,17 +316,17 @@ export default function ChecklistsPage() {
       // Assign to departments
       if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
         for (const deptId of assignSelection.departmentIds) {
-          // Check if already assigned
-          const { data: existing } = await supabase
+          // Check if department already assigned
+          const { data: existingDept } = await supabase
             .from('checklist_assignments')
             .select('id')
             .eq('checklist_id', assigningChecklist.id)
             .eq('assigned_to_department_id', deptId)
             .single()
 
-          if (!existing) {
-            // Create department assignment (trigger will handle user assignments)
-            const { error } = await supabase
+          if (!existingDept) {
+            // Create department assignment for tracking
+            await supabase
               .from('checklist_assignments')
               .insert([{
                 checklist_id: assigningChecklist.id,
@@ -334,8 +334,60 @@ export default function ChecklistsPage() {
                 assigned_by: session?.user.id || null,
                 is_auto_assigned: false
               }])
+          }
 
-            if (!error) successCount++
+          // Get all users in this department
+          const { data: deptUsers, error: deptError } = await supabase
+            .from('user_departments')
+            .select('user_id')
+            .eq('department_id', deptId)
+
+          if (deptError) {
+            console.error('Error fetching department users:', deptError)
+            continue
+          }
+
+          // Create individual user assignments for each user in department
+          for (const deptUser of (deptUsers || [])) {
+            // Check if user already assigned
+            const { data: existingUser } = await supabase
+              .from('checklist_assignments')
+              .select('id')
+              .eq('checklist_id', assigningChecklist.id)
+              .eq('assigned_to_user_id', deptUser.user_id)
+              .single()
+
+            if (!existingUser) {
+              // Create user assignment (auto-assigned via department)
+              const { data: newAssignment, error } = await supabase
+                .from('checklist_assignments')
+                .insert([{
+                  checklist_id: assigningChecklist.id,
+                  assigned_to_user_id: deptUser.user_id,
+                  assigned_by: session?.user.id || null,
+                  is_auto_assigned: true // Mark as auto-assigned from department
+                }])
+                .select()
+                .single()
+
+              if (!error && newAssignment) {
+                successCount++
+                
+                // Create item statuses for this user
+                const items = checklistItems[assigningChecklist.id] || []
+                if (items.length > 0) {
+                  const itemStatuses = items.map(item => ({
+                    assignment_id: newAssignment.id,
+                    item_id: item.id,
+                    status: 'not_started' as const
+                  }))
+
+                  await supabase
+                    .from('checklist_item_status')
+                    .insert(itemStatuses)
+                }
+              }
+            }
           }
         }
       }
