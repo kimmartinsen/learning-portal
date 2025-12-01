@@ -11,15 +11,31 @@ export interface Module {
   created_at: string
 }
 
+// Tema - høyeste nivå i hierarkiet
+export interface Topic {
+  id: string
+  company_id: string
+  name: string
+  description: string | null
+  order_index: number
+  created_at: string
+  updated_at: string
+}
+
+// Program - mellomnivå, tilhører et Tema
 export interface Theme {
   id: string
   company_id: string
+  topic_id: string | null  // Kobling til Tema
   name: string
   description: string | null
   order_index: number
   progression_type?: 'flexible' | 'sequential_auto' | 'sequential_manual'
   created_at: string
   updated_at: string
+  
+  // Relasjon
+  topic?: Topic
 }
 
 export interface EnhancedTrainingProgram {
@@ -134,6 +150,13 @@ export interface ThemeWithPrograms extends Theme {
   active_assignments: number
 }
 
+// Topic med programmer (for hierarkisk visning)
+export interface TopicWithThemes extends Topic {
+  themes: ThemeWithPrograms[]
+  total_themes: number
+  total_programs: number
+}
+
 export interface AdminDashboardStats {
   total_themes: number
   total_programs: number
@@ -158,9 +181,15 @@ export interface UserDashboardData {
 }
 
 // Form data types for UI
+export interface CreateTopicFormData {
+  name: string
+  description: string
+}
+
 export interface CreateThemeFormData {
   name: string
   description: string
+  topic_id: string | null
   progression_type: 'flexible' | 'sequential_auto' | 'sequential_manual'
 }
 

@@ -14,7 +14,9 @@ import {
   ChevronRight,
   ArrowUpDown,
   UserPlus,
-  Network
+  Network,
+  Folder,
+  FolderOpen
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -22,7 +24,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import type { EnhancedTrainingProgram, Theme } from '@/types/enhanced-database.types'
+import type { EnhancedTrainingProgram, Theme, Topic } from '@/types/enhanced-database.types'
 import { ThemeForm, type ThemeFormData } from '@/components/admin/programs/ThemeForm'
 import { AssignmentSelector } from '@/components/admin/AssignmentSelector'
 
@@ -41,16 +43,25 @@ export default function AdminProgramsPage() {
   const router = useRouter()
   const [programs, setPrograms] = useState<EnhancedTrainingProgram[]>([])
   const [themes, setThemes] = useState<Theme[]>([]) // Themes = Programmer
+  const [topics, setTopics] = useState<Topic[]>([]) // Topics = Tema (høyeste nivå)
   const [instructors, setInstructors] = useState<Instructor[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingProgram, setEditingProgram] = useState<EnhancedTrainingProgram | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  
+  // Topic (Tema) form state
+  const [showTopicForm, setShowTopicForm] = useState(false)
+  const [topicFormData, setTopicFormData] = useState({ name: '', description: '' })
+  const [creatingTopic, setCreatingTopic] = useState(false)
+  const [editingTopic, setEditingTopic] = useState<Topic | null>(null)
+  
   const [showThemeForm, setShowThemeForm] = useState(false)
   const [themeFormData, setThemeFormData] = useState<ThemeFormData>({
     name: '',
     description: ''
   })
+  const [selectedTopicIdForTheme, setSelectedTopicIdForTheme] = useState<string | null>(null)
   const [creatingTheme, setCreatingTheme] = useState(false)
   
   // State for assigning theme to users/departments
@@ -138,6 +149,7 @@ export default function AdminProgramsPage() {
       await Promise.all([
         fetchPrograms(profile.company_id),
         fetchThemes(profile.company_id),
+        fetchTopics(profile.company_id),
         fetchInstructors(profile.company_id)
       ])
     } catch (error: any) {
@@ -169,12 +181,28 @@ export default function AdminProgramsPage() {
   const fetchThemes = async (companyId: string) => {
     const { data, error } = await supabase
       .from('themes')
-      .select('*')
+      .select('*, topic:topics(id, name)')
       .eq('company_id', companyId)
       .order('created_at', { ascending: true })
 
     if (error) throw error
     setThemes(data || [])
+  }
+
+  const fetchTopics = async (companyId: string) => {
+    const { data, error } = await supabase
+      .from('topics')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('order_index', { ascending: true })
+
+    if (error) {
+      // Topics-tabellen eksisterer kanskje ikke ennå
+      console.log('Topics not available yet:', error.message)
+      setTopics([])
+      return
+    }
+    setTopics(data || [])
   }
 
 
@@ -633,6 +661,114 @@ export default function AdminProgramsPage() {
     window.location.href = `/admin/programs/${program.id}/modules`
   }
 
+  // === TOPIC (TEMA) FUNCTIONS ===
+  const handleCreateTopic = async () => {
+    if (!user || !topicFormData.name.trim()) {
+      toast.error('Navn på tema er påkrevd')
+      return
+    }
+
+    setCreatingTopic(true)
+    try {
+      const { error } = await supabase
+        .from('topics')
+        .insert([{
+          company_id: user.company_id,
+          name: topicFormData.name.trim(),
+          description: topicFormData.description.trim() || null,
+          order_index: topics.length
+        }])
+
+      if (error) throw error
+
+      toast.success('Tema opprettet!')
+      setShowTopicForm(false)
+      setTopicFormData({ name: '', description: '' })
+      fetchTopics(user.company_id)
+    } catch (error: any) {
+      toast.error('Kunne ikke opprette tema: ' + error.message)
+    } finally {
+      setCreatingTopic(false)
+    }
+  }
+
+  const handleUpdateTopic = async () => {
+    if (!user || !editingTopic || !topicFormData.name.trim()) {
+      toast.error('Navn på tema er påkrevd')
+      return
+    }
+
+    setCreatingTopic(true)
+    try {
+      const { error } = await supabase
+        .from('topics')
+        .update({
+          name: topicFormData.name.trim(),
+          description: topicFormData.description.trim() || null
+        })
+        .eq('id', editingTopic.id)
+
+      if (error) throw error
+
+      toast.success('Tema oppdatert!')
+      setShowTopicForm(false)
+      setEditingTopic(null)
+      setTopicFormData({ name: '', description: '' })
+      fetchTopics(user.company_id)
+    } catch (error: any) {
+      toast.error('Kunne ikke oppdatere tema: ' + error.message)
+    } finally {
+      setCreatingTopic(false)
+    }
+  }
+
+  const handleDeleteTopic = async (topicId: string) => {
+    // Sjekk om temaet har programmer
+    const topicThemes = themes.filter(t => t.topic_id === topicId)
+    
+    if (topicThemes.length > 0) {
+      if (!confirm(
+        `Dette temaet inneholder ${topicThemes.length} programmer. ` +
+        `Alle programmene vil bli flyttet til "Uten tema". ` +
+        `Er du sikker på at du vil slette temaet?`
+      )) return
+    } else {
+      if (!confirm('Er du sikker på at du vil slette dette temaet?')) return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('topics')
+        .delete()
+        .eq('id', topicId)
+
+      if (error) throw error
+
+      toast.success('Tema slettet!')
+      await Promise.all([
+        fetchTopics(user!.company_id),
+        fetchThemes(user!.company_id)
+      ])
+      router.refresh()
+    } catch (error: any) {
+      toast.error('Kunne ikke slette tema: ' + error.message)
+    }
+  }
+
+  const handleEditTopic = (topic: Topic) => {
+    setEditingTopic(topic)
+    setTopicFormData({
+      name: topic.name,
+      description: topic.description || ''
+    })
+    setShowTopicForm(true)
+  }
+
+  const openThemeFormForTopic = (topicId: string | null) => {
+    setSelectedTopicIdForTheme(topicId)
+    setShowThemeForm(true)
+  }
+
   const resetForm = () => {
     setShowForm(false)
     setEditingProgram(null)
@@ -657,6 +793,7 @@ export default function AdminProgramsPage() {
   const resetThemeForm = () => {
     setShowThemeForm(false)
     setThemeFormData({ name: '', description: '' })
+    setSelectedTopicIdForTheme(null)
     setCreatingTheme(false)
   }
 
@@ -673,6 +810,7 @@ export default function AdminProgramsPage() {
             name: themeFormData.name,
             description: themeFormData.description || null,
             company_id: user.company_id,
+            topic_id: selectedTopicIdForTheme || null, // Koble til valgt tema
             progression_type: 'flexible' // Default til flexible, kan endres i Struktur
           }
         ])
@@ -998,9 +1136,13 @@ export default function AdminProgramsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Kursadministrasjon</h1>
-          <p className="text-gray-600 dark:text-gray-300">Administrer kurs og programmer for bedriften</p>
+          <p className="text-gray-600 dark:text-gray-300">Administrer tema, programmer og kurs for bedriften</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => setShowTopicForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nytt tema
+          </Button>
           <Button variant="secondary" onClick={() => setShowThemeForm(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Nytt program
@@ -1012,13 +1154,85 @@ export default function AdminProgramsPage() {
         </div>
       </div>
 
-      {/* Theme Form Modal (Bruker ThemeForm komponent nå) */}
+      {/* Topic (Tema) Form Modal */}
+      <Modal isOpen={showTopicForm} onClose={() => { setShowTopicForm(false); setEditingTopic(null); setTopicFormData({ name: '', description: '' }) }}>
+        <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
+          <CardHeader>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {editingTopic ? 'Rediger tema' : 'Nytt tema'}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Tema er det høyeste nivået og kan inneholde flere programmer.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={(e) => { e.preventDefault(); editingTopic ? handleUpdateTopic() : handleCreateTopic() }} className="space-y-4">
+              <Input
+                label="Temanavn"
+                value={topicFormData.name}
+                onChange={(e) => setTopicFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="F.eks. Sikkerhet, Kvalitet, Onboarding"
+                required
+              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Beskrivelse (valgfritt)
+                </label>
+                <textarea
+                  value={topicFormData.description}
+                  onChange={(e) => setTopicFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                  rows={3}
+                  placeholder="Beskriv temaet..."
+                />
+              </div>
+              <div className="flex space-x-3 pt-2">
+                <Button type="submit" className="flex-1" disabled={creatingTopic}>
+                  {creatingTopic ? 'Lagrer...' : (editingTopic ? 'Oppdater tema' : 'Opprett tema')}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  onClick={() => { setShowTopicForm(false); setEditingTopic(null); setTopicFormData({ name: '', description: '' }) }}
+                >
+                  Avbryt
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </Modal>
+
+      {/* Theme Form Modal (Program) */}
       <Modal isOpen={showThemeForm} onClose={resetThemeForm}>
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
           <CardHeader>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nytt program</h3>
+            {selectedTopicIdForTheme && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Under tema: {topics.find(t => t.id === selectedTopicIdForTheme)?.name || 'Ukjent'}
+              </p>
+            )}
           </CardHeader>
           <CardContent>
+            {/* Velg tema hvis ikke allerede valgt */}
+            {!selectedTopicIdForTheme && topics.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Velg tema (valgfritt)
+                </label>
+                <select
+                  value={selectedTopicIdForTheme || ''}
+                  onChange={(e) => setSelectedTopicIdForTheme(e.target.value || null)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                >
+                  <option value="">Uten tema</option>
+                  {topics.map(topic => (
+                    <option key={topic.id} value={topic.id}>{topic.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <ThemeForm
               formData={themeFormData}
               isCreating={creatingTheme}
@@ -1250,257 +1464,319 @@ export default function AdminProgramsPage() {
         </Card>
       </Modal>
 
-      {/* Programs List - Grouped by Theme */}
+      {/* Three-level hierarchy: Topics → Themes (Programs) → Courses */}
       <div className="space-y-4">
-        {themes.map(theme => {
-          const themePrograms = programsByTheme[theme.id] || []
+        {/* Topics (Tema) */}
+        {topics.map(topic => {
+          const topicThemes = themes.filter(t => t.topic_id === topic.id)
+          const topicCourseCount = topicThemes.reduce((acc, t) => acc + (programsByTheme[t.id]?.length || 0), 0)
 
           return (
             <details
-              key={theme.id}
-              className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800"
+              key={topic.id}
+              className="group rounded-lg border-2 border-primary-200 bg-primary-50/30 shadow-sm dark:bg-primary-900/10 dark:border-primary-800"
+              open
             >
               <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-2">
-                  <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
-                  <Tag className="h-4 w-4 text-primary-600" />
-                  <span className="text-base font-semibold">{theme.name}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">({themePrograms.length} kurs)</span>
-                  <span className="text-xs text-gray-400">
-                    {theme.progression_type === 'sequential_auto' ? '(Sekvensiell Auto)' : 
-                     theme.progression_type === 'sequential_manual' ? '(Sekvensiell Manuell)' : ''}
+                  <ChevronRight className="h-5 w-5 text-primary-600 transition-transform duration-200 group-open:rotate-90" />
+                  <Folder className="h-5 w-5 text-primary-600" />
+                  <span className="text-lg font-bold text-primary-700 dark:text-primary-400">{topic.name}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    ({topicThemes.length} program, {topicCourseCount} kurs)
                   </span>
                 </div>
                 
-                {/* Add buttons for Theme/Program management */}
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => router.push(`/admin/programs/${theme.id}/structure`)}
+                    onClick={() => openThemeFormForTopic(topic.id)}
                     className="h-7 text-xs"
-                    title="Rediger programstruktur"
+                    title="Legg til program i tema"
                   >
-                    <Network className="h-3 w-3 mr-1" />
-                    Struktur
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleOpenAssign(theme)}
-                    className="h-7 text-xs"
-                  >
-                    <UserPlus className="h-3 w-3 mr-1" />
-                    Tildel program
+                    <Plus className="h-3 w-3 mr-1" />
+                    Program
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDeleteTheme(theme.id)}
-                    className="h-7 text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                    title="Slett program"
+                    onClick={() => handleEditTopic(topic)}
+                    className="h-7 text-xs"
+                    title="Rediger tema"
                   >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Slett
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteTopic(topic.id)}
+                    className="h-7 text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                    title="Slett tema"
+                  >
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </summary>
 
-              <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
-                {themePrograms.length === 0 ? (
+              <div className="border-t border-primary-200 dark:border-primary-800 px-4 py-4 space-y-3">
+                {topicThemes.length === 0 ? (
                   <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                    Ingen kurs i dette programmet ennå. Klikk på "Nytt kurs" for å legge til kurs.
+                    Ingen programmer i dette temaet ennå.
+                    <Button variant="link" size="sm" onClick={() => openThemeFormForTopic(topic.id)} className="ml-1">
+                      Opprett program
+                    </Button>
                   </div>
                 ) : (
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {themePrograms.map((program, index) => (
-                    <Card key={program.id}>
-                      <CardContent className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                                {(program.sort_order != null && program.sort_order >= 0) ? program.sort_order + 1 : index + 1}
-                              </span>
-                              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
-                                {program.title}
-                              </h3>
-                            </div>
-
-                            {program.description && (
-                              <p className="text-sm text-gray-600 dark:text-gray-300">{program.description}</p>
-                            )}
-
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                              {program.instructor && (
-                                <span className="inline-flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  {program.instructor.full_name}
-                                </span>
-                              )}
-                              <span className="inline-flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {program.deadline_days} dager frist
-                              </span>
-                              <span>
-                                Opprettet: {new Date(program.created_at).toLocaleDateString('no-NO')}
-                              </span>
-                            </div>
+                  topicThemes.map(theme => {
+                    const themePrograms = programsByTheme[theme.id] || []
+                    return (
+                      <details
+                        key={theme.id}
+                        className="group/theme rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800"
+                      >
+                        <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                          <div className="flex items-center gap-2">
+                            <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open/theme:rotate-90" />
+                            <Tag className="h-4 w-4 text-primary-600" />
+                            <span className="text-base font-semibold">{theme.name}</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">({themePrograms.length} kurs)</span>
+                            <span className="text-xs text-gray-400">
+                              {theme.progression_type === 'sequential_auto' ? '(Sekvensiell Auto)' : 
+                               theme.progression_type === 'sequential_manual' ? '(Sekvensiell Manuell)' : ''}
+                            </span>
                           </div>
-
-                          <div className="flex space-x-1">
-                            {program.course_type === 'physical-course' ? (
-                              <span className="text-xs text-gray-500 dark:text-gray-400" title="Fysisk kurs - ingen moduler">
-                                Fysisk kurs
-                              </span>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditModules(program)}
-                                title="Rediger moduler"
-                              >
-                                <Settings className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(program)}
-                              title="Rediger kurs"
-                            >
-                              <Edit2 className="h-4 w-4" />
+                          
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/programs/${theme.id}/structure`)} className="h-7 text-xs" title="Rediger programstruktur">
+                              <Network className="h-3 w-3 mr-1" />
+                              Struktur
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(program.id)}
-                              className="text-red-600 hover:text-red-700 dark:hover:text-red-400"
-                              title="Slett kurs"
-                            >
-                              <Trash2 className="h-4 w-4" />
+                            <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 text-xs">
+                              <UserPlus className="h-3 w-3 mr-1" />
+                              Tildel
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteTheme(theme.id)} className="h-7 text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Slett program">
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
+                        </summary>
+
+                        <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                          {themePrograms.length === 0 ? (
+                            <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                              Ingen kurs i dette programmet.
+                            </div>
+                          ) : (
+                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                              {themePrograms.map((program, index) => (
+                                <Card key={program.id}>
+                                  <CardContent className="p-4 space-y-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex-1 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                            {(program.sort_order != null && program.sort_order >= 0) ? program.sort_order + 1 : index + 1}
+                                          </span>
+                                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+                                            {program.title}
+                                          </h3>
+                                        </div>
+                                        {program.description && (
+                                          <p className="text-sm text-gray-600 dark:text-gray-300">{program.description}</p>
+                                        )}
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                                          {program.instructor && (
+                                            <span className="inline-flex items-center gap-1">
+                                              <Users className="h-3 w-3" />
+                                              {program.instructor.full_name}
+                                            </span>
+                                          )}
+                                          <span className="inline-flex items-center gap-1">
+                                            <Clock className="h-3 w-3" />
+                                            {program.deadline_days} dager frist
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="flex space-x-1">
+                                        {program.course_type === 'physical-course' ? (
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">Fysisk</span>
+                                        ) : (
+                                          <Button variant="ghost" size="sm" onClick={() => handleEditModules(program)} title="Moduler">
+                                            <Settings className="h-4 w-4" />
+                                          </Button>
+                                        )}
+                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(program)} title="Rediger">
+                                          <Edit2 className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={() => handleDelete(program.id)} className="text-red-600 hover:text-red-700" title="Slett">
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                      </details>
+                    )
+                  })
                 )}
               </div>
             </details>
           )
         })}
 
-        {/* Programs without theme */}
-        {programsByTheme['no-theme'] && programsByTheme['no-theme'].length > 0 && (
-          <details className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800">
-            <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
-              <div className="flex items-center gap-2">
-                <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
-                <BookOpen className="h-4 w-4 text-gray-400" />
-                <span className="text-base font-semibold text-gray-600 dark:text-gray-300">Uten program</span>
-                <span className="text-sm text-gray-400 dark:text-gray-500">
-                  ({programsByTheme['no-theme'].length} kurs)
-                </span>
-              </div>
-            </summary>
+        {/* Themes without topic (Uten tema) */}
+        {(() => {
+          const themesWithoutTopic = themes.filter(t => !t.topic_id)
+          if (themesWithoutTopic.length === 0 && !programsByTheme['no-theme']?.length) return null
 
-            <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {programsByTheme['no-theme'].map((program) => (
-                  <Card key={program.id}>
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 space-y-2">
-                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
-                            {program.title}
-                          </h3>
+          return (
+            <details className="group rounded-lg border border-gray-300 bg-gray-50 shadow-sm dark:bg-gray-900/50 dark:border-gray-700" open>
+              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 list-none [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center gap-2">
+                  <ChevronRight className="h-5 w-5 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
+                  <FolderOpen className="h-5 w-5 text-gray-500" />
+                  <span className="text-lg font-semibold">Uten tema</span>
+                  <span className="text-sm text-gray-500">
+                    ({themesWithoutTopic.length} program, {themesWithoutTopic.reduce((acc, t) => acc + (programsByTheme[t.id]?.length || 0), 0) + (programsByTheme['no-theme']?.length || 0)} kurs)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="sm" onClick={() => openThemeFormForTopic(null)} className="h-7 text-xs">
+                    <Plus className="h-3 w-3 mr-1" />
+                    Program
+                  </Button>
+                </div>
+              </summary>
 
-                          {program.description && (
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{program.description}</p>
-                          )}
-
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                            {program.instructor && (
-                              <span className="inline-flex items-center gap-1">
-                                <Users className="h-3 w-3" />
-                                {program.instructor.full_name}
-                              </span>
-                            )}
-                            <span className="inline-flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {program.deadline_days} dager frist
-                            </span>
-                            <span>
-                              Opprettet: {new Date(program.created_at).toLocaleDateString('no-NO')}
-                            </span>
+              <div className="border-t border-gray-300 dark:border-gray-700 px-4 py-4 space-y-3">
+                {themesWithoutTopic.map(theme => {
+                  const themePrograms = programsByTheme[theme.id] || []
+                  return (
+                    <details key={theme.id} className="group/theme rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800">
+                      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                        <div className="flex items-center gap-2">
+                          <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open/theme:rotate-90" />
+                          <Tag className="h-4 w-4 text-gray-500" />
+                          <span className="text-base font-semibold">{theme.name}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">({themePrograms.length} kurs)</span>
+                        </div>
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/programs/${theme.id}/structure`)} className="h-7 text-xs">
+                            <Network className="h-3 w-3 mr-1" />
+                            Struktur
+                          </Button>
+                          <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 text-xs">
+                            <UserPlus className="h-3 w-3 mr-1" />
+                            Tildel
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteTheme(theme.id)} className="h-7 text-xs text-red-600">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </summary>
+                      <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                        {themePrograms.length === 0 ? (
+                          <div className="py-4 text-center text-sm text-gray-500">Ingen kurs i dette programmet.</div>
+                        ) : (
+                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            {themePrograms.map((program, index) => (
+                              <Card key={program.id}>
+                                <CardContent className="p-4 space-y-3">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                          {(program.sort_order != null && program.sort_order >= 0) ? program.sort_order + 1 : index + 1}
+                                        </span>
+                                        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{program.title}</h3>
+                                      </div>
+                                      {program.description && <p className="text-sm text-gray-600 dark:text-gray-300">{program.description}</p>}
+                                    </div>
+                                    <div className="flex space-x-1">
+                                      {program.course_type !== 'physical-course' && (
+                                        <Button variant="ghost" size="sm" onClick={() => handleEditModules(program)}><Settings className="h-4 w-4" /></Button>
+                                      )}
+                                      <Button variant="ghost" size="sm" onClick={() => handleEdit(program)}><Edit2 className="h-4 w-4" /></Button>
+                                      <Button variant="ghost" size="sm" onClick={() => handleDelete(program.id)} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </div>
-                        </div>
-
-                        <div className="flex space-x-1">
-                          {program.course_type === 'physical-course' ? (
-                            <span className="text-xs text-gray-500 dark:text-gray-400" title="Fysisk kurs - ingen moduler">
-                              Fysisk kurs
-                            </span>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditModules(program)}
-                              title="Rediger moduler"
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(program)}
-                            title="Rediger kurs"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(program.id)}
-                            className="text-red-600 hover:text-red-700 dark:hover:text-red-400"
-                            title="Slett kurs"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        )}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </details>
-        )}
+                    </details>
+                  )
+                })}
 
-        {programs.length === 0 && (
+                {/* Courses without program */}
+                {programsByTheme['no-theme'] && programsByTheme['no-theme'].length > 0 && (
+                  <details className="group/theme rounded-lg border border-dashed border-gray-300 bg-gray-50 dark:bg-gray-900/50 dark:border-gray-700">
+                    <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-400 list-none [&::-webkit-details-marker]:hidden">
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className="h-4 w-4 text-gray-400 transition-transform duration-200 group-open/theme:rotate-90" />
+                        <BookOpen className="h-4 w-4 text-gray-400" />
+                        <span className="text-base font-medium">Kurs uten program</span>
+                        <span className="text-sm text-gray-400">({programsByTheme['no-theme'].length} kurs)</span>
+                      </div>
+                    </summary>
+                    <div className="border-t border-gray-300 dark:border-gray-700 px-4 py-4">
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {programsByTheme['no-theme'].map((program) => (
+                          <Card key={program.id}>
+                            <CardContent className="p-4 space-y-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 space-y-2">
+                                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{program.title}</h3>
+                                  {program.description && <p className="text-sm text-gray-600 dark:text-gray-300">{program.description}</p>}
+                                </div>
+                                <div className="flex space-x-1">
+                                  {program.course_type !== 'physical-course' && (
+                                    <Button variant="ghost" size="sm" onClick={() => handleEditModules(program)}><Settings className="h-4 w-4" /></Button>
+                                  )}
+                                  <Button variant="ghost" size="sm" onClick={() => handleEdit(program)}><Edit2 className="h-4 w-4" /></Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDelete(program.id)} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </details>
+                )}
+              </div>
+            </details>
+          )
+        })()}
+
+        {/* Empty state */}
+        {topics.length === 0 && themes.length === 0 && programs.length === 0 && (
           <Card>
             <CardContent className="p-12 text-center">
-              <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <Folder className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                Ingen kurs ennå
+                Kom i gang med kursopplæring
               </h3>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Opprett ditt første kurs for å komme i gang
+                Start med å opprette et tema, deretter programmer og kurs.
               </p>
-              {themes.length === 0 && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  Tip: <a href="/admin/themes" className="text-primary-600 hover:text-primary-700">
-                    Opprett programmer først
-                  </a> for bedre organisering
-                </p>
-              )}
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Opprett kurs
-              </Button>
+              <div className="flex justify-center gap-2">
+                <Button variant="secondary" onClick={() => setShowTopicForm(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Opprett tema
+                </Button>
+                <Button onClick={() => setShowForm(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Opprett kurs
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
