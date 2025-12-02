@@ -98,14 +98,14 @@ export default async function MyLearningPage({
     .in('id', (assignmentsData || []).map(a => a.program_id))
 
   // Get themes with topic info
-  const themeIds = [...new Set((programsData || []).map(p => p.theme_id).filter(Boolean))]
+  const themeIds = Array.from(new Set((programsData || []).map(p => p.theme_id).filter(Boolean)))
   const { data: themesData } = await supabase
     .from('themes')
     .select('id, name, topic_id')
     .in('id', themeIds)
 
   // Get topics
-  const topicIds = [...new Set((themesData || []).map(t => t.topic_id).filter(Boolean))]
+  const topicIds = Array.from(new Set((themesData || []).map(t => t.topic_id).filter(Boolean)))
   const { data: topicsData } = await supabase
     .from('topics')
     .select('id, name, order_index')
