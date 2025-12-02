@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 export type CookieConsentValue = 'all' | 'necessary' | null
 
@@ -61,6 +62,7 @@ export function CookieConsent({ onConsentChange }: CookieConsentProps) {
             <p className="text-sm text-neutral-600 dark:text-neutral-300">
               Vi bruker informasjonskapsler for å analysere trafikk og forbedre brukeropplevelsen. 
               Du kan velge å kun godta nødvendige cookies, eller godta alle for å hjelpe oss med å forbedre tjenesten.
+              {' '}<Link href="/privacy" className="text-blue-600 hover:underline">Les mer om personvern</Link>
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">

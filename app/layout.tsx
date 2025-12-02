@@ -30,6 +30,7 @@ export default function RootLayout({
   return (
     <html lang="no" suppressHydrationWarning>
       <head>
+        <meta name="google-site-verification" content="OGcNH7KmwBlPU9gGPHqosf6TFKANkiZelAR2O05rNuw" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={inter.className}>
