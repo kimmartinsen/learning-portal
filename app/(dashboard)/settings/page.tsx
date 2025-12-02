@@ -23,6 +23,8 @@ interface Company {
   name: string
   org_number?: string | null
   address?: string | null
+  postal_code?: string | null
+  city?: string | null
   phone?: string | null
   contact_email?: string | null
 }
@@ -52,6 +54,8 @@ export default function SettingsPage() {
   const [companyName, setCompanyName] = useState('')
   const [orgNumber, setOrgNumber] = useState('')
   const [companyAddress, setCompanyAddress] = useState('')
+  const [postalCode, setPostalCode] = useState('')
+  const [city, setCity] = useState('')
   const [companyPhone, setCompanyPhone] = useState('')
   const [companyEmail, setCompanyEmail] = useState('')
 
@@ -93,6 +97,8 @@ export default function SettingsPage() {
           setCompanyName(companyData.name || '')
           setOrgNumber((companyData as any).org_number || '')
           setCompanyAddress((companyData as any).address || '')
+          setPostalCode((companyData as any).postal_code || '')
+          setCity((companyData as any).city || '')
           setCompanyPhone((companyData as any).phone || '')
           setCompanyEmail((companyData as any).contact_email || '')
         }
@@ -193,6 +199,8 @@ export default function SettingsPage() {
       // Add optional fields if columns exist in DB
       if (orgNumber.trim()) updateData.org_number = orgNumber.trim()
       if (companyAddress.trim()) updateData.address = companyAddress.trim()
+      if (postalCode.trim()) updateData.postal_code = postalCode.trim()
+      if (city.trim()) updateData.city = city.trim()
       if (companyPhone.trim()) updateData.phone = companyPhone.trim()
       if (companyEmail.trim()) updateData.contact_email = companyEmail.trim()
 
@@ -388,8 +396,34 @@ export default function SettingsPage() {
                   type="text"
                   value={companyAddress}
                   onChange={(e) => setCompanyAddress(e.target.value)}
-                  placeholder="Gateveien 1, 0000 Oslo"
+                  placeholder="Gateveien 1"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Postnummer
+                  </label>
+                  <Input
+                    type="text"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    placeholder="0000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Sted
+                  </label>
+                  <Input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="Oslo"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
