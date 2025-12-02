@@ -15,7 +15,8 @@ import {
   Tag,
   ChevronRight,
   Lock,
-  PauseCircle
+  PauseCircle,
+  Folder
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -36,6 +37,9 @@ interface UserAssignment {
   program_description: string | null
   deadline_days: number
   theme_name: string | null
+  theme_id?: string | null
+  topic_id?: string | null
+  topic_name?: string | null
   days_remaining: number
   calculated_status: 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'locked' | 'pending'
   progress_percentage: number
@@ -87,11 +91,26 @@ export default async function MyLearningPage({
     console.error('Error fetching assignments:', error)
   }
 
-  // Get sort_order, course_type, and instructor_id for programs to sort them correctly within themes
+  // Get sort_order, course_type, instructor_id, and theme info for programs
   const { data: programsData } = await supabase
     .from('training_programs')
-    .select('id, sort_order, course_type, instructor_id')
+    .select('id, sort_order, course_type, instructor_id, theme_id')
     .in('id', (assignmentsData || []).map(a => a.program_id))
+
+  // Get themes with topic info
+  const themeIds = [...new Set((programsData || []).map(p => p.theme_id).filter(Boolean))]
+  const { data: themesData } = await supabase
+    .from('themes')
+    .select('id, name, topic_id')
+    .in('id', themeIds)
+
+  // Get topics
+  const topicIds = [...new Set((themesData || []).map(t => t.topic_id).filter(Boolean))]
+  const { data: topicsData } = await supabase
+    .from('topics')
+    .select('id, name, order_index')
+    .in('id', topicIds)
+    .order('order_index', { ascending: true })
 
   const sortOrderMap = new Map(
     (programsData || []).map(p => [p.id, p.sort_order || 0])
@@ -105,19 +124,38 @@ export default async function MyLearningPage({
     (programsData || []).map(p => [p.id, p.instructor_id === profile.id])
   )
 
-  // Process assignments to include proper status and sort order
+  const themeIdMap = new Map(
+    (programsData || []).map(p => [p.id, p.theme_id])
+  )
+
+  const themeTopicMap = new Map(
+    (themesData || []).map(t => [t.id, t.topic_id])
+  )
+
+  const topicNameMap = new Map(
+    (topicsData || []).map(t => [t.id, t.name])
+  )
+
+  // Process assignments to include proper status, sort order, and topic info
   const assignments: UserAssignment[] = (assignmentsData || []).map((a: any) => {
     // Override calculated_status if the raw status is locked or pending
     let status = a.calculated_status
     if (a.status === 'locked') status = 'locked'
     if (a.status === 'pending') status = 'pending'
 
+    const themeId = themeIdMap.get(a.program_id)
+    const topicId = themeId ? themeTopicMap.get(themeId) : null
+    const topicName = topicId ? topicNameMap.get(topicId) : null
+
     return {
       ...a,
       calculated_status: status,
       sort_order: sortOrderMap.get(a.program_id) || 0,
       course_type: courseTypeMap.get(a.program_id) || 'e-course',
-      is_instructor: instructorMap.get(a.program_id) || false
+      is_instructor: instructorMap.get(a.program_id) || false,
+      theme_id: themeId,
+      topic_id: topicId,
+      topic_name: topicName
     }
   })
 
@@ -136,29 +174,49 @@ export default async function MyLearningPage({
   const completed = assignments.filter(a => a.calculated_status === 'completed')
   const overdue = assignments.filter(a => a.calculated_status === 'overdue')
 
-  // Group by theme for better organization
-  const assignmentsByTheme = assignments.reduce((acc, assignment) => {
-    const theme = assignment.theme_name || 'Uten program'
-    if (!acc[theme]) {
-      acc[theme] = []
+  // Group by topic first, then by theme
+  const assignmentsByTopicAndTheme = assignments.reduce((acc, assignment) => {
+    const topicName = assignment.topic_name || 'Uten tema'
+    const themeName = assignment.theme_name || 'Uten program'
+    
+    if (!acc[topicName]) {
+      acc[topicName] = {}
     }
-    acc[theme].push(assignment)
+    if (!acc[topicName][themeName]) {
+      acc[topicName][themeName] = []
+    }
+    acc[topicName][themeName].push(assignment)
     return acc
-  }, {} as Record<string, UserAssignment[]>) || {}
+  }, {} as Record<string, Record<string, UserAssignment[]>>)
 
   // Sort assignments within themes by sort_order
-  Object.keys(assignmentsByTheme).forEach(theme => {
-    assignmentsByTheme[theme].sort((a, b) => {
-      // If same sort order (or 0), sort by created/deadline
-      if ((a.sort_order || 0) !== (b.sort_order || 0)) {
-        return (a.sort_order || 0) - (b.sort_order || 0)
-      }
-      return a.days_remaining - b.days_remaining
+  Object.keys(assignmentsByTopicAndTheme).forEach(topicName => {
+    Object.keys(assignmentsByTopicAndTheme[topicName]).forEach(themeName => {
+      assignmentsByTopicAndTheme[topicName][themeName].sort((a, b) => {
+        if ((a.sort_order || 0) !== (b.sort_order || 0)) {
+          return (a.sort_order || 0) - (b.sort_order || 0)
+        }
+        return a.days_remaining - b.days_remaining
+      })
     })
   })
 
-  const getThemeAssignments = (themeName: string): UserAssignment[] => {
-    return assignmentsByTheme[themeName] || []
+  // Get topic order for sorting
+  const topicOrder = new Map(
+    (topicsData || []).map((t, index) => [t.name, index])
+  )
+
+  // Sort topics by their order_index
+  const sortedTopics = Object.keys(assignmentsByTopicAndTheme).sort((a, b) => {
+    if (a === 'Uten tema') return 1
+    if (b === 'Uten tema') return -1
+    const orderA = topicOrder.get(a) ?? 999
+    const orderB = topicOrder.get(b) ?? 999
+    return orderA - orderB
+  })
+
+  const getThemeAssignments = (topicName: string, themeName: string): UserAssignment[] => {
+    return assignmentsByTopicAndTheme[topicName]?.[themeName] || []
   }
 
   const getStatusColor = (status: string) => {
@@ -248,30 +306,51 @@ export default async function MyLearningPage({
         </Card>
       )}
 
-      {/* Assignments List - Grouped by Theme */}
+      {/* Assignments List - Grouped by Topic then Theme */}
       <div className="space-y-4">
-        {Object.entries(assignmentsByTheme).map(([themeName]) => {
-          const themeAssignments = getThemeAssignments(themeName)
+        {sortedTopics.map((topicName) => {
+          const themesInTopic = assignmentsByTopicAndTheme[topicName]
+          const themeNames = Object.keys(themesInTopic)
+          const totalCoursesInTopic = themeNames.reduce((sum, t) => sum + themesInTopic[t].length, 0)
+
           return (
             <details
-              key={themeName}
-              className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800 transition-colors duration-200"
+              key={topicName}
+              className="group/topic rounded-lg border-2 border-primary-200 bg-primary-50/30 shadow-sm dark:bg-primary-900/10 dark:border-primary-800 transition-colors duration-200"
+              open
             >
               <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-2">
-                  <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
-                  <Tag className="h-4 w-4 text-primary-600" />
-                  <span className="text-base font-semibold">{themeName}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">({themeAssignments.length} kurs)</span>
+                  <ChevronRight className="h-5 w-5 text-primary-600 transition-transform duration-200 group-open/topic:rotate-90" />
+                  <Folder className="h-5 w-5 text-primary-600" />
+                  <span className="text-lg font-bold text-primary-700 dark:text-primary-400">{topicName}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">({themeNames.length} programmer, {totalCoursesInTopic} kurs)</span>
                 </div>
               </summary>
 
-              <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
-                {themeAssignments.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette programmet.</p>
-                ) : (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {themeAssignments.map((assignment, index) => {
+              <div className="border-t border-primary-200 dark:border-primary-800 px-4 py-4 space-y-3">
+                {themeNames.map((themeName) => {
+                  const themeAssignments = getThemeAssignments(topicName, themeName)
+                  return (
+                    <details
+                      key={`${topicName}-${themeName}`}
+                      className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800 transition-colors duration-200"
+                    >
+                      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                        <div className="flex items-center gap-2">
+                          <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
+                          <Tag className="h-4 w-4 text-primary-600" />
+                          <span className="text-base font-semibold">{themeName}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">({themeAssignments.length} kurs)</span>
+                        </div>
+                      </summary>
+
+                      <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                        {themeAssignments.length === 0 ? (
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette programmet.</p>
+                        ) : (
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {themeAssignments.map((assignment, index) => {
                       const status = assignment.calculated_status
                       const isLocked = status === 'locked' || status === 'pending'
                       const isPhysicalCourse = assignment.course_type === 'physical-course'
@@ -423,9 +502,13 @@ export default async function MyLearningPage({
                           </CardContent>
                         </Card>
                       )
-                    })}
-                  </div>
-                )}
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  )
+                })}
               </div>
             </details>
           )
