@@ -1016,7 +1016,20 @@ export default function AdminProgramsPage() {
         // Assign to departments
         if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
           for (const deptId of assignSelection.departmentIds) {
-             // 1. Get users in dept
+             // 1. Sjekk om avdelingstildeling allerede eksisterer
+             const { data: existingDeptAssignment } = await supabase
+                .from('program_assignments')
+                .select('id')
+                .eq('program_id', programId)
+                .eq('assigned_to_department_id', deptId)
+                .single()
+             
+             if (existingDeptAssignment) {
+               // Hopp over - allerede tildelt
+               continue
+             }
+
+             // 2. Get users in dept
              const { data: deptUsers } = await supabase
                 .from('user_departments')
                 .select('user_id')
@@ -1026,7 +1039,18 @@ export default function AdminProgramsPage() {
                allAssignedUserIds.push(...deptUsers.map(u => u.user_id))
              }
 
-             // 2. Create dept assignment - DIREKTE INSERT
+             // 3. Hent eksisterende brukertildelinger for å unngå duplikater
+             const { data: existingUserAssignments } = await supabase
+                .from('program_assignments')
+                .select('assigned_to_user_id')
+                .eq('program_id', programId)
+                .in('assigned_to_user_id', (deptUsers || []).map(u => u.user_id))
+
+             const alreadyAssignedUserIds = new Set(
+               (existingUserAssignments || []).map(a => a.assigned_to_user_id)
+             )
+
+             // 4. Create dept assignment - DIREKTE INSERT
              const { data: program } = await supabase
                 .from('training_programs')
                 .select('deadline_days')
@@ -1050,21 +1074,25 @@ export default function AdminProgramsPage() {
              if (!deptError) {
                successCount++
 
-               // 3. Create individual user assignments
+               // 5. Create individual user assignments (kun for brukere som ikke allerede er tildelt)
                if (deptUsers && deptUsers.length > 0) {
-                 const userAssignments = deptUsers.map(u => ({
-                   program_id: programId,
-                   assigned_to_user_id: u.user_id,
-                   assigned_by: user.id,
-                   due_date: dueDate.toISOString(),
-                   notes: 'Del av program-tildeling: ' + assigningTheme.name,
-                   status: 'assigned',
-                   is_auto_assigned: true
-                 }))
+                 const userAssignments = deptUsers
+                   .filter(u => !alreadyAssignedUserIds.has(u.user_id))
+                   .map(u => ({
+                     program_id: programId,
+                     assigned_to_user_id: u.user_id,
+                     assigned_by: user.id,
+                     due_date: dueDate.toISOString(),
+                     notes: 'Del av program-tildeling: ' + assigningTheme.name,
+                     status: 'assigned',
+                     is_auto_assigned: true
+                   }))
 
-                 await supabase
-                   .from('program_assignments')
-                   .insert(userAssignments)
+                 if (userAssignments.length > 0) {
+                   await supabase
+                     .from('program_assignments')
+                     .insert(userAssignments)
+                 }
                }
              }
           }
@@ -1072,8 +1100,6 @@ export default function AdminProgramsPage() {
         
         // Assign to individuals
         if (assignSelection.type === 'individual' && assignSelection.userIds.length > 0) {
-          allAssignedUserIds.push(...assignSelection.userIds)
-
           // Get program deadline
           const { data: program } = await supabase
             .from('training_programs')
@@ -1085,6 +1111,21 @@ export default function AdminProgramsPage() {
           dueDate.setDate(dueDate.getDate() + (program?.deadline_days || 14))
 
           for (const userId of assignSelection.userIds) {
+             // Sjekk om brukeren allerede har denne tildelingen
+             const { data: existingAssignment } = await supabase
+                .from('program_assignments')
+                .select('id')
+                .eq('program_id', programId)
+                .eq('assigned_to_user_id', userId)
+                .single()
+             
+             if (existingAssignment) {
+               // Hopp over - allerede tildelt
+               continue
+             }
+
+             allAssignedUserIds.push(userId)
+
              const { error } = await supabase
                 .from('program_assignments')
                 .insert({
