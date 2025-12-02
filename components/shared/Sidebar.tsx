@@ -68,15 +68,32 @@ export function Sidebar({ user, isInstructor = false }: SidebarProps) {
   }
 
   const handleSignOut = async () => {
+    // Bevar brukerpreferanser som ikke er session-relaterte
+    const preserveKeys = ['cookieConsent', 'theme']
+    const preserved: Record<string, string | null> = {}
+    
+    if (typeof window !== 'undefined') {
+      preserveKeys.forEach(key => {
+        preserved[key] = localStorage.getItem(key)
+      })
+    }
+    
     try {
       // Clear all Supabase session data
       const { error } = await supabase.auth.signOut({ scope: 'global' })
       if (error) throw error
       
-      // Clear any local storage/cache
+      // Clear local storage/cache but restore preserved values
       if (typeof window !== 'undefined') {
         localStorage.clear()
         sessionStorage.clear()
+        
+        // Restore preserved preferences
+        preserveKeys.forEach(key => {
+          if (preserved[key]) {
+            localStorage.setItem(key, preserved[key]!)
+          }
+        })
       }
       
       // Wait to ensure cookies are cleared
@@ -91,6 +108,14 @@ export function Sidebar({ user, isInstructor = false }: SidebarProps) {
       if (typeof window !== 'undefined') {
         localStorage.clear()
         sessionStorage.clear()
+        
+        // Restore preserved preferences
+        preserveKeys.forEach(key => {
+          if (preserved[key]) {
+            localStorage.setItem(key, preserved[key]!)
+          }
+        })
+        
         window.location.href = `/login?logout=true&t=${Date.now()}&nocache=1`
       }
     }
