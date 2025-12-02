@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { toast } from 'sonner'
-import { User, Mail, Lock, Building2, Save, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Lock, Building2, Save, Eye, EyeOff, Cookie } from 'lucide-react'
+import { useCookieConsent, CookieConsentValue } from '@/components/cookies/CookieConsent'
 
 interface Profile {
   id: string
@@ -32,6 +33,9 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [company, setCompany] = useState<Company | null>(null)
+  
+  // Cookie consent
+  const { consent, isLoaded: cookieLoaded, updateConsent } = useCookieConsent()
   
   // Profile form
   const [fullName, setFullName] = useState('')
@@ -422,6 +426,70 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Cookie Settings */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Cookie className="h-5 w-5 text-primary-600" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Personvern og cookies</h2>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                Vi bruker informasjonskapsler for å analysere trafikk og forbedre brukeropplevelsen. 
+                Du kan når som helst endre dine preferanser.
+              </p>
+              
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Gjeldende valg:</span>
+                {cookieLoaded ? (
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    consent === 'all' 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                      : consent === 'necessary'
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                  }`}>
+                    {consent === 'all' ? 'Alle cookies godtatt' : consent === 'necessary' ? 'Kun nødvendige' : 'Ikke valgt'}
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-500">Laster...</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant={consent === 'necessary' ? 'primary' : 'secondary'}
+                onClick={() => {
+                  updateConsent('necessary')
+                  window.dispatchEvent(new Event('cookieConsentChanged'))
+                  toast.success('Cookie-innstillinger oppdatert')
+                }}
+              >
+                Kun nødvendige
+              </Button>
+              <Button
+                variant={consent === 'all' ? 'primary' : 'secondary'}
+                onClick={() => {
+                  updateConsent('all')
+                  window.dispatchEvent(new Event('cookieConsentChanged'))
+                  toast.success('Cookie-innstillinger oppdatert')
+                }}
+              >
+                Godta alle
+              </Button>
+            </div>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              Ved å godta alle cookies hjelper du oss med å forbedre tjenesten gjennom anonym bruksstatistikk.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
