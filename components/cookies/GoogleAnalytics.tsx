@@ -5,27 +5,30 @@ import Script from 'next/script'
 
 const GA_MEASUREMENT_ID = 'G-S5G7VT1N0R'
 
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+  return match ? match[2] : null
+}
+
 export function GoogleAnalytics() {
   const [hasConsent, setHasConsent] = useState(false)
 
   useEffect(() => {
-    const consent = localStorage.getItem('cookieConsent')
+    const consent = getCookie('cookieConsent')
     setHasConsent(consent === 'all')
 
     // Lytt etter endringer i samtykke
-    const handleStorageChange = () => {
-      const newConsent = localStorage.getItem('cookieConsent')
+    const handleConsentChange = () => {
+      const newConsent = getCookie('cookieConsent')
       setHasConsent(newConsent === 'all')
     }
-
-    window.addEventListener('storage', handleStorageChange)
     
-    // Custom event for når samtykke endres i samme vindu
-    window.addEventListener('cookieConsentChanged', handleStorageChange)
+    // Custom event for når samtykke endres
+    window.addEventListener('cookieConsentChanged', handleConsentChange)
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('cookieConsentChanged', handleStorageChange)
+      window.removeEventListener('cookieConsentChanged', handleConsentChange)
     }
   }, [])
 
