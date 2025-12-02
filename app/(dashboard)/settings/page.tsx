@@ -20,10 +20,10 @@ interface Profile {
 interface Company {
   id: string
   name: string
-  org_number: string | null
-  address: string | null
-  phone: string | null
-  contact_email: string | null
+  org_number?: string | null
+  address?: string | null
+  phone?: string | null
+  contact_email?: string | null
 }
 
 export default function SettingsPage() {
@@ -80,17 +80,17 @@ export default function SettingsPage() {
       if (profileData.role === 'admin') {
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
-          .select('id, name, org_number, address, phone, contact_email')
+          .select('*')
           .eq('id', profileData.company_id)
           .single()
 
         if (!companyError && companyData) {
-          setCompany(companyData)
+          setCompany(companyData as Company)
           setCompanyName(companyData.name || '')
-          setOrgNumber(companyData.org_number || '')
-          setCompanyAddress(companyData.address || '')
-          setCompanyPhone(companyData.phone || '')
-          setCompanyEmail(companyData.contact_email || '')
+          setOrgNumber((companyData as any).org_number || '')
+          setCompanyAddress((companyData as any).address || '')
+          setCompanyPhone((companyData as any).phone || '')
+          setCompanyEmail((companyData as any).contact_email || '')
         }
       }
     } catch (error: any) {
@@ -181,15 +181,20 @@ export default function SettingsPage() {
 
     setSaving(true)
     try {
+      // Build update object with only the fields we want to update
+      const updateData: Record<string, any> = {
+        name: companyName.trim()
+      }
+      
+      // Add optional fields if columns exist in DB
+      if (orgNumber.trim()) updateData.org_number = orgNumber.trim()
+      if (companyAddress.trim()) updateData.address = companyAddress.trim()
+      if (companyPhone.trim()) updateData.phone = companyPhone.trim()
+      if (companyEmail.trim()) updateData.contact_email = companyEmail.trim()
+
       const { error } = await supabase
         .from('companies')
-        .update({
-          name: companyName.trim(),
-          org_number: orgNumber.trim() || null,
-          address: companyAddress.trim() || null,
-          phone: companyPhone.trim() || null,
-          contact_email: companyEmail.trim() || null
-        })
+        .update(updateData)
         .eq('id', company.id)
 
       if (error) throw error
