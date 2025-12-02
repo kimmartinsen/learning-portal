@@ -20,6 +20,9 @@ const themeScript = `
 export const metadata = {
   title: 'Kompetanseportalen',
   description: 'Komplett opplæringsverktøy for bedrifter. Opprett kurs, sjekklister og følg opp kompetansen til dine ansatte.',
+  verification: {
+    google: 'OGcNH7KmwBlPU9gGPHqosf6TFKANkiZelAR2O05rNuw',
+  },
 }
 
 export default function RootLayout({
@@ -30,7 +33,6 @@ export default function RootLayout({
   return (
     <html lang="no" suppressHydrationWarning>
       <head>
-        <meta name="google-site-verification" content="OGcNH7KmwBlPU9gGPHqosf6TFKANkiZelAR2O05rNuw" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={inter.className}>
