@@ -1017,14 +1017,14 @@ export default function AdminProgramsPage() {
         if (assignSelection.type === 'department' && assignSelection.departmentIds.length > 0) {
           for (const deptId of assignSelection.departmentIds) {
              // 1. Sjekk om avdelingstildeling allerede eksisterer
-             const { data: existingDeptAssignment } = await supabase
+             const { data: existingDeptAssignments } = await supabase
                 .from('program_assignments')
                 .select('id')
                 .eq('program_id', programId)
                 .eq('assigned_to_department_id', deptId)
-                .single()
+                .limit(1)
              
-             if (existingDeptAssignment) {
+             if (existingDeptAssignments && existingDeptAssignments.length > 0) {
                // Hopp over - allerede tildelt
                continue
              }
@@ -1112,14 +1112,14 @@ export default function AdminProgramsPage() {
 
           for (const userId of assignSelection.userIds) {
              // Sjekk om brukeren allerede har denne tildelingen
-             const { data: existingAssignment } = await supabase
+             const { data: existingAssignments } = await supabase
                 .from('program_assignments')
                 .select('id')
                 .eq('program_id', programId)
                 .eq('assigned_to_user_id', userId)
-                .single()
+                .limit(1)
              
-             if (existingAssignment) {
+             if (existingAssignments && existingAssignments.length > 0) {
                // Hopp over - allerede tildelt
                continue
              }
