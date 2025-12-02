@@ -14,6 +14,10 @@ interface User {
   full_name: string
   avatar_url: string | null
   role: string
+  companies?: {
+    name: string
+    logo_url: string | null
+  } | null
 }
 
 interface TopbarProps {
@@ -61,10 +65,18 @@ export function Topbar({ user, className }: TopbarProps) {
       )}
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center">
+        <div className="flex items-center gap-3">
           <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Kompetanseportalen
           </span>
+          {user?.companies?.name && (
+            <>
+              <span className="text-gray-300 dark:text-gray-600">|</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                {user.companies.name}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Right side */}
