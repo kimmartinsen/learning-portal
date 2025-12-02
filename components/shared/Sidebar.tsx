@@ -41,15 +41,18 @@ const adminMenuItems = [
   { href: '/admin/programs', label: 'Kurs', icon: GraduationCap },
   { href: '/admin/checklists', label: 'Sjekklister', icon: ClipboardCheck },
   { href: '/admin/reports', label: 'Rapporter', icon: BarChart3 },
+  { href: '/settings', label: 'Innstillinger', icon: Settings },
 ]
 
 const instructorMenuItems = [
   { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
   { href: '/instructor/programs', label: 'Mine kurs', icon: GraduationCap },
+  { href: '/settings', label: 'Innstillinger', icon: Settings },
 ]
 
 const userMenuItems = [
   { href: '/my-learning', label: 'Min opplæring', icon: BookOpen },
+  { href: '/settings', label: 'Innstillinger', icon: Settings },
 ]
 
 export function Sidebar({ user, isInstructor = false }: SidebarProps) {
