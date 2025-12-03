@@ -1267,7 +1267,7 @@ export default function ThemesPage() {
                                                       if (isPhysicalCourse) {
                                                         const handleStatusChange = async (newStatus: string) => {
                                                           try {
-                                                            const updateData: any = { status: newStatus === 'completed' ? 'completed' : newStatus === 'in_progress' ? 'started' : 'assigned' }
+                                                            const updateData: any = { status: newStatus === 'completed' ? 'completed' : 'assigned' }
                                                             if (newStatus === 'completed') updateData.completed_at = new Date().toISOString()
                                                             else updateData.completed_at = null
                                                             const { error } = await supabase.from('program_assignments').update(updateData).eq('id', status.assignmentId)
@@ -1277,12 +1277,11 @@ export default function ThemesPage() {
                                                             router.refresh()
                                                           } catch (error: any) { toast.error('Kunne ikke oppdatere status: ' + error.message) }
                                                         }
-                                                        const currentStatus = status.status === 'completed' ? 'completed' : status.status === 'in_progress' ? 'in_progress' : 'not_started'
+                                                        const currentStatus = status.status === 'completed' ? 'completed' : 'not_started'
                                                         return (
                                                           <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-center align-middle min-w-[130px]">
                                                             <select value={currentStatus} onChange={(e) => handleStatusChange(e.target.value)} className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                                                              <option value="not_started">Ikke startet</option>
-                                                              <option value="in_progress">I gang</option>
+                                                              <option value="not_started">Ikke fullført</option>
                                                               <option value="completed">Fullført</option>
                                                             </select>
                                                           </td>
@@ -1448,7 +1447,7 @@ export default function ThemesPage() {
                                                     if (isPhysicalCourse) {
                                                       const handleStatusChange = async (newStatus: string) => {
                                                         try {
-                                                          const updateData: any = { status: newStatus === 'completed' ? 'completed' : newStatus === 'in_progress' ? 'started' : 'assigned' }
+                                                          const updateData: any = { status: newStatus === 'completed' ? 'completed' : 'assigned' }
                                                           if (newStatus === 'completed') updateData.completed_at = new Date().toISOString()
                                                           else updateData.completed_at = null
                                                           const { error } = await supabase.from('program_assignments').update(updateData).eq('id', status.assignmentId)
@@ -1458,12 +1457,11 @@ export default function ThemesPage() {
                                                           router.refresh()
                                                         } catch (error: any) { toast.error('Kunne ikke oppdatere status: ' + error.message) }
                                                       }
-                                                      const currentStatus = status.status === 'completed' ? 'completed' : status.status === 'in_progress' ? 'in_progress' : 'not_started'
+                                                      const currentStatus = status.status === 'completed' ? 'completed' : 'not_started'
                                                       return (
                                                         <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-center align-middle min-w-[130px]">
                                                           <select value={currentStatus} onChange={(e) => handleStatusChange(e.target.value)} className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                                                            <option value="not_started">Ikke startet</option>
-                                                            <option value="in_progress">I gang</option>
+                                                            <option value="not_started">Ikke fullført</option>
                                                             <option value="completed">Fullført</option>
                                                           </select>
                                                         </td>
