@@ -296,6 +296,9 @@ export default function ModuleViewer({
           .upsert([updateData], {
             onConflict: 'user_id,module_id'
           })
+
+        // Oppdater progress i ProgramViewer slik at fremdriften inne i kurset matcher Min opplæring
+        onComplete(updateData)
       } catch (error) {
         console.error('Error saving failed quiz attempt:', error)
       }
