@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Edit2, Trash2, ClipboardCheck, CheckCircle, Clock, XCircle, ChevronRight, Tag, UserPlus } from 'lucide-react'
+import { Plus, Edit2, Trash2, ClipboardCheck, CheckCircle, Clock, XCircle, ChevronRight, Tag, UserPlus, ChevronUp, ChevronDown } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -539,6 +539,49 @@ export default function ChecklistsPage() {
     }
   }
 
+  const handleMoveItem = async (itemId: string, checklistId: string, direction: 'up' | 'down') => {
+    if (!user) return
+
+    try {
+      const items = checklistItems[checklistId] || []
+      const currentItem = items.find(item => item.id === itemId)
+      if (!currentItem) return
+
+      const currentIndex = items.findIndex(item => item.id === itemId)
+      if (currentIndex === -1) return
+
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+      if (newIndex < 0 || newIndex >= items.length) return
+
+      const targetItem = items[newIndex]
+
+      // Swap order_index values
+      const tempOrder = currentItem.order_index ?? currentIndex
+      const targetOrder = targetItem.order_index ?? newIndex
+
+      // Update both items
+      const { error: error1 } = await supabase
+        .from('checklist_items')
+        .update({ order_index: targetOrder })
+        .eq('id', itemId)
+
+      if (error1) throw error1
+
+      const { error: error2 } = await supabase
+        .from('checklist_items')
+        .update({ order_index: tempOrder })
+        .eq('id', targetItem.id)
+
+      if (error2) throw error2
+
+      toast.success('Rekkefølge oppdatert!')
+      await fetchChecklists(user.company_id)
+      router.refresh()
+    } catch (error: any) {
+      toast.error('Kunne ikke endre rekkefølge: ' + error.message)
+    }
+  }
+
   const resetForm = () => {
     setShowForm(false)
     setEditingChecklist(null)
@@ -716,6 +759,26 @@ export default function ChecklistsPage() {
                               </div>
 
                               <div className="flex space-x-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleMoveItem(item.id, item.checklist_id, 'up')}
+                                  disabled={index === 0}
+                                  title="Flytt opp"
+                                  className="h-7 w-7 p-0"
+                                >
+                                  <ChevronUp className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleMoveItem(item.id, item.checklist_id, 'down')}
+                                  disabled={index === items.length - 1}
+                                  title="Flytt ned"
+                                  className="h-7 w-7 p-0"
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Plus, Edit2, Trash2, Users, CheckCircle, Clock, XCircle, ClipboardCheck } from 'lucide-react'
+import { ArrowLeft, Plus, Edit2, Trash2, Users, CheckCircle, Clock, XCircle, ClipboardCheck, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -174,6 +174,48 @@ export default function ChecklistDetailPage() {
       router.refresh()
     } catch (error: any) {
       toast.error('Kunne ikke slette punkt: ' + error.message)
+    }
+  }
+
+  const handleMoveItem = async (itemId: string, direction: 'up' | 'down') => {
+    if (!user || !checklistId) return
+
+    try {
+      const currentItem = items.find(item => item.id === itemId)
+      if (!currentItem) return
+
+      const currentIndex = items.findIndex(item => item.id === itemId)
+      if (currentIndex === -1) return
+
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+      if (newIndex < 0 || newIndex >= items.length) return
+
+      const targetItem = items[newIndex]
+
+      // Swap order_index values
+      const tempOrder = currentItem.order_index ?? currentIndex
+      const targetOrder = targetItem.order_index ?? newIndex
+
+      // Update both items
+      const { error: error1 } = await supabase
+        .from('checklist_items')
+        .update({ order_index: targetOrder })
+        .eq('id', itemId)
+
+      if (error1) throw error1
+
+      const { error: error2 } = await supabase
+        .from('checklist_items')
+        .update({ order_index: tempOrder })
+        .eq('id', targetItem.id)
+
+      if (error2) throw error2
+
+      toast.success('Rekkefølge oppdatert!')
+      await fetchData(user.company_id)
+      router.refresh()
+    } catch (error: any) {
+      toast.error('Kunne ikke endre rekkefølge: ' + error.message)
     }
   }
 
@@ -440,6 +482,26 @@ export default function ChecklistDetailPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleMoveItem(item.id, 'up')}
+                          disabled={index === 0}
+                          title="Flytt opp"
+                          className="h-7 w-7 p-0"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleMoveItem(item.id, 'down')}
+                          disabled={index === items.length - 1}
+                          title="Flytt ned"
+                          className="h-7 w-7 p-0"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"
