@@ -312,6 +312,12 @@ export default async function MyLearningPage({
           const themesInTopic = assignmentsByTopicAndTheme[topicName]
           const themeNames = Object.keys(themesInTopic)
           const totalCoursesInTopic = themeNames.reduce((sum, t) => sum + themesInTopic[t].length, 0)
+          const completedInTopic = themeNames.reduce(
+            (sum, t) =>
+              sum + themesInTopic[t].filter(a => a.calculated_status === 'completed').length,
+            0
+          )
+          const notCompletedInTopic = totalCoursesInTopic - completedInTopic
 
           return (
             <details
@@ -324,13 +330,20 @@ export default async function MyLearningPage({
                   <ChevronRight className="h-5 w-5 text-primary-600 transition-transform duration-200 group-open/topic:rotate-90" />
                   <Folder className="h-5 w-5 text-primary-600" />
                   <span className="text-lg font-bold text-primary-700 dark:text-primary-400">{topicName}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">({themeNames.length} programmer, {totalCoursesInTopic} kurs)</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    ({themeNames.length} programmer, {totalCoursesInTopic} kurs – {completedInTopic}{' '}
+                    fullført, {notCompletedInTopic} ikke fullført)
+                  </span>
                 </div>
               </summary>
 
               <div className="border-t border-primary-200 dark:border-primary-800 px-4 py-4 space-y-3">
                 {themeNames.map((themeName) => {
                   const themeAssignments = getThemeAssignments(topicName, themeName)
+                  const completedInTheme = themeAssignments.filter(
+                    a => a.calculated_status === 'completed'
+                  ).length
+                  const notCompletedInTheme = themeAssignments.length - completedInTheme
                   return (
                     <details
                       key={`${topicName}-${themeName}`}
@@ -341,7 +354,10 @@ export default async function MyLearningPage({
                           <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
                           <Tag className="h-4 w-4 text-primary-600" />
                           <span className="text-base font-semibold">{themeName}</span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">({themeAssignments.length} kurs)</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            ({themeAssignments.length} kurs – {completedInTheme} fullført,{' '}
+                            {notCompletedInTheme} ikke fullført)
+                          </span>
                         </div>
                       </summary>
 
