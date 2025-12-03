@@ -1555,7 +1555,6 @@ export default function AdminProgramsPage() {
             <details
               key={topic.id}
               className="group rounded-lg border-2 border-primary-200 bg-primary-50/30 shadow-sm dark:bg-primary-900/10 dark:border-primary-800"
-              open
             >
               <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-2">
@@ -1722,7 +1721,7 @@ export default function AdminProgramsPage() {
           if (themesWithoutTopic.length === 0 && !programsByTheme['no-theme']?.length) return null
 
           return (
-            <details className="group rounded-lg border border-gray-300 bg-gray-50 shadow-sm dark:bg-gray-900/50 dark:border-gray-700" open>
+            <details className="group rounded-lg border border-gray-300 bg-gray-50 shadow-sm dark:bg-gray-900/50 dark:border-gray-700">
               <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 list-none [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-2">
                   <ChevronRight className="h-5 w-5 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
