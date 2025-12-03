@@ -1252,13 +1252,17 @@ export default function ThemesPage() {
                                                         <span className="text-xs text-gray-500 font-normal">{row.departmentName}</span>
                                                       </div>
                                                     </td>
-                                                    {data.programs.map((program) => {
+                                                     {data.programs.map((program) => {
                                                       const status = row.programs[program.id]
                                                       const isPhysicalCourse = program.course_type === 'physical-course'
                                                       if (!status) {
                                                         return (
                                                           <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
-                                                            <span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">Ikke tildelt</span>
+                                                            <div className="flex items-center justify-center">
+                                                              <span className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">
+                                                                Ikke tildelt
+                                                              </span>
+                                                            </div>
                                                           </td>
                                                         )
                                                       }
@@ -1433,7 +1437,15 @@ export default function ThemesPage() {
                                                     const status = row.programs[program.id]
                                                     const isPhysicalCourse = program.course_type === 'physical-course'
                                                     if (!status) {
-                                                      return <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]"><span className="inline-flex items-center justify-start rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">Ikke tildelt</span></td>
+                                                      return (
+                                                        <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-left align-middle min-w-[130px]">
+                                                          <div className="flex items-center justify-center">
+                                                            <span className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">
+                                                              Ikke tildelt
+                                                            </span>
+                                                          </div>
+                                                        </td>
+                                                      )
                                                     }
                                                     const config = statusConfig[status.status]
                                                     const isPending = status.status === 'pending'
