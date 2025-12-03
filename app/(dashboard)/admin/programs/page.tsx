@@ -784,6 +784,27 @@ export default function AdminProgramsPage() {
     setShowThemeForm(true)
   }
 
+  const openCourseFormForTheme = (themeId: string) => {
+    setEditingProgram(null)
+    setFormData({
+      title: '',
+      description: '',
+      themeId: themeId,
+      instructorId: '',
+      courseType: 'e-course',
+      deadlineDays: 14,
+      repetitionEnabled: false,
+      repetitionInterval: 12,
+      sortOrder: 0,
+      assignment: {
+        type: 'department',
+        departmentIds: [],
+        userIds: []
+      }
+    })
+    setShowForm(true)
+  }
+
   const resetForm = () => {
     setShowForm(false)
     setEditingProgram(null)
@@ -1625,6 +1646,12 @@ export default function AdminProgramsPage() {
                         </summary>
 
                         <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                          <div className="mb-3 flex justify-end">
+                            <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 text-xs">
+                              <Plus className="h-3 w-3 mr-1" />
+                              Kurs
+                            </Button>
+                          </div>
                           {themePrograms.length === 0 ? (
                             <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                               Ingen kurs i dette programmet.
@@ -1745,6 +1772,12 @@ export default function AdminProgramsPage() {
                         </div>
                       </summary>
                       <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                        <div className="mb-3 flex justify-end">
+                          <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 text-xs">
+                            <Plus className="h-3 w-3 mr-1" />
+                            Kurs
+                          </Button>
+                        </div>
                         {themePrograms.length === 0 ? (
                           <div className="py-4 text-center text-sm text-gray-500">Ingen kurs i dette programmet.</div>
                         ) : (
