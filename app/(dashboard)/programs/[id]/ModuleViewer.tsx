@@ -673,6 +673,11 @@ function QuestionCard({
   const isCorrect = selectedAnswer === question.correctIndex
   const hasAnswered = selectedAnswer !== undefined
 
+  // Skjul tomme svaralternativer, men behold originalindeksen slik at correctIndex fortsatt stemmer
+  const visibleOptions = question.options
+    .map((option, index) => ({ option, index }))
+    .filter(({ option }) => typeof option === 'string' && option.trim().length > 0)
+
   return (
     <Card className="border-l-4 border-l-blue-500">
       <CardContent className="p-6">
@@ -688,7 +693,7 @@ function QuestionCard({
               </h3>
 
               <div className="space-y-2">
-                {question.options.map((option, index) => (
+                {visibleOptions.map(({ option, index }) => (
                   <label
                     key={index}
                     className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
