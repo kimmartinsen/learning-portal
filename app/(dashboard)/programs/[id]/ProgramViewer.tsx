@@ -253,9 +253,8 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
             }
           }
           
-          // Gå tilbake til oversikt i dette kurset når alle moduler er fullført
-          setCurrentModuleIndex(null)
-          toast.success('🎉 Alle deler fullført!')
+          // IKKE gå automatisk tilbake til oversikt - la brukeren se resultatene først
+          // Brukeren kan selv klikke "Tilbake til program" når de er klar
           return
         }
 
