@@ -263,9 +263,9 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
         const currentModule = sortedModules.find(m => m.id === moduleId)
         const currentProgress = newMap.get(moduleId)
         
-        // Don't auto-navigate if it's a failed final quiz
-        if (currentModule?.is_final_quiz && currentProgress?.passed === false) {
-          // Stay on the quiz page to allow retry
+        // Don't auto-navigate if it's a final quiz (passed or failed) - let user see results
+        if (currentModule?.is_final_quiz) {
+          // Stay on the quiz page to see results
           return
         }
         
