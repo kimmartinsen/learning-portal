@@ -73,7 +73,7 @@ export function Sidebar({ user, isInstructor = false }: SidebarProps) {
       const { error } = await supabase.auth.signOut({ scope: 'global' })
       if (error) throw error
       
-      // Clear any local storage/cache
+      // Clear local storage/cache (cookieConsent er nå lagret som cookie, ikke localStorage)
       if (typeof window !== 'undefined') {
         localStorage.clear()
         sessionStorage.clear()

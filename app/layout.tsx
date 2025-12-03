@@ -2,6 +2,7 @@ import './globals.css'
 import { Inter } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
+import { CookieBanner } from '@/components/cookies/CookieBanner'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,6 +20,9 @@ const themeScript = `
 export const metadata = {
   title: 'Kompetanseportalen',
   description: 'Komplett opplæringsverktøy for bedrifter. Opprett kurs, sjekklister og følg opp kompetansen til dine ansatte.',
+  verification: {
+    google: 'OGcNH7KmwBlPU9gGPHqosf6TFKANkiZelAR2O05rNuw',
+  },
 }
 
 export default function RootLayout({
@@ -34,6 +38,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           {children}
+          <CookieBanner />
           <Toaster 
             position="top-right" 
             richColors 
