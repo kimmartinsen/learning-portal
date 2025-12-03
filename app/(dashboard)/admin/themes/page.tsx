@@ -1087,8 +1087,6 @@ export default function ThemesPage() {
                                             }
                                           }
 
-                                          const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_started
-
                                           return (
                                             <td key={`${row.userId}-${item.id}`} className="px-3 py-2 text-center align-middle min-w-[130px]">
                                               <select
@@ -1097,10 +1095,8 @@ export default function ThemesPage() {
                                                 className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer"
                                                 onClick={(e) => e.stopPropagation()}
                                               >
-                                                <option value="not_started">Ikke startet</option>
-                                                <option value="in_progress">I gang</option>
+                                                <option value="not_started">Ikke fullført</option>
                                                 <option value="completed">Fullført</option>
-                                                <option value="cancelled">Avbrutt</option>
                                               </select>
                                             </td>
                                           )
