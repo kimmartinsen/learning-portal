@@ -237,7 +237,7 @@ export default function ModuleViewer({
     }
   }
 
-  const handleQuizComplete = () => {
+  const handleQuizComplete = async () => {
     const correctAnswers = questions.filter(q => 
       questionAnswers.get(q.id) === q.correctIndex
     ).length
@@ -266,13 +266,40 @@ export default function ModuleViewer({
     console.log('Quiz completed:', quizData) // Debug log
     setQuizResults(quizData)
 
-    markModuleCompleted({
-      questions_answered: quizData.answers,
-      questions_correct: correctAnswers,
-      questions_total: questions.length,
-      score: score,
-      passed: passed
-    })
+    // Hvis quizen er bestått, marker modulen som fullført.
+    // Hvis den ikke er bestått, lagre forsøket men IKKE sett status til completed.
+    if (passed) {
+      markModuleCompleted({
+        questions_answered: quizData.answers,
+        questions_correct: correctAnswers,
+        questions_total: questions.length,
+        score: score,
+        passed: passed
+      })
+    } else if (!isInstructor) {
+      try {
+        const updateData = {
+          user_id: userId,
+          program_id: program.id,
+          module_id: module.id,
+          status: 'in_progress',
+          completed_at: null,
+          questions_answered: quizData.answers,
+          questions_correct: correctAnswers,
+          questions_total: questions.length,
+          score: score,
+          passed: passed
+        }
+
+        await supabase
+          .from('user_progress')
+          .upsert([updateData], {
+            onConflict: 'user_id,module_id'
+          })
+      } catch (error) {
+        console.error('Error saving failed quiz attempt:', error)
+      }
+    }
   }
 
   const getModuleTypeIcon = () => {
