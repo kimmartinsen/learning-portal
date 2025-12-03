@@ -218,12 +218,8 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
             console.error('Error creating completion notification:', notifError)
           }
           
-          // Redirect to My Learning to show updated status
+          // Vis bare en suksessmelding og la brukeren bli i kurset
           toast.success(`🎉 Gratulerer! Du har fullført "${program.title}"`)
-          setTimeout(() => {
-            router.push('/my-learning?completed=true')
-            router.refresh()
-          }, 1500)
           
           // Send notification to instructor if assigned
           if (program.instructor_id) {
@@ -257,7 +253,7 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
             }
           }
           
-          // Go back to overview when program is complete
+          // Gå tilbake til oversikt i dette kurset når alle moduler er fullført
           setCurrentModuleIndex(null)
           toast.success('🎉 Alle deler fullført!')
           return
