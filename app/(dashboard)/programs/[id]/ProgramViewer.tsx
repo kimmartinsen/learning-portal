@@ -99,6 +99,16 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
     return null // All completed
   }
 
+  const firstNotStartedIndex = sortedModules.findIndex(module => {
+    const progress = progressMap.get(module.id)
+    return !progress || progress.status !== 'completed'
+  })
+
+  const hasStartedAnyModule = sortedModules.some(module => {
+    const progress = progressMap.get(module.id)
+    return progress && (progress.status === 'in_progress' || progress.status === 'completed')
+  })
+
   const getModuleStatus = (module: Module, index: number) => {
     const progress = progressMap.get(module.id)
     
@@ -408,24 +418,26 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Continue Button */}
+        {/* Continue / Start Button */}
         {getNextModule() !== null && (
           <Card className="mb-6 bg-primary-50 border-primary-200 dark:bg-primary-950/30 dark:border-primary-900/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-100 mb-1">
-                    Fortsett der du slapp
+                    {hasStartedAnyModule ? 'Fortsett der du slapp' : 'Klar til å starte?'}
                   </h3>
                   <p className="text-primary-700 dark:text-primary-300">
-                    Neste: {sortedModules[getNextModule()!].title}
+                    {hasStartedAnyModule
+                      ? `Neste: ${sortedModules[getNextModule()!].title}`
+                      : `Start med: ${sortedModules[firstNotStartedIndex !== -1 ? firstNotStartedIndex : 0].title}`}
                   </p>
                 </div>
                 <Button
                   onClick={handleContinue}
                   className="bg-primary-600 hover:bg-primary-700 text-white dark:bg-primary-500 dark:hover:bg-primary-400"
                 >
-                  Fortsett
+                  {hasStartedAnyModule ? 'Fortsett' : 'Start kurs'}
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
