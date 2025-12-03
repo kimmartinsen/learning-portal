@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="no" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.svg" />
+        <link rel="icon" href="/favicon.png" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={inter.className}>
