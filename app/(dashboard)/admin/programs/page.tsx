@@ -1628,6 +1628,10 @@ export default function AdminProgramsPage() {
                           </div>
                           
                           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 text-xs" title="Legg til kurs i program">
+                              <Plus className="h-3 w-3 mr-1" />
+                              Kurs
+                            </Button>
                             <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/programs/${theme.id}/structure`)} className="h-7 text-xs" title="Rediger programstruktur">
                               <Network className="h-3 w-3 mr-1" />
                               Struktur
@@ -1646,12 +1650,6 @@ export default function AdminProgramsPage() {
                         </summary>
 
                         <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
-                          <div className="mb-3 flex justify-end">
-                            <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 text-xs">
-                              <Plus className="h-3 w-3 mr-1" />
-                              Kurs
-                            </Button>
-                          </div>
                           {themePrograms.length === 0 ? (
                             <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                               Ingen kurs i dette programmet.
@@ -1755,6 +1753,10 @@ export default function AdminProgramsPage() {
                           <span className="text-sm text-gray-500 dark:text-gray-400">({themePrograms.length} kurs)</span>
                         </div>
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 text-xs" title="Legg til kurs i program">
+                            <Plus className="h-3 w-3 mr-1" />
+                            Kurs
+                          </Button>
                           <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/programs/${theme.id}/structure`)} className="h-7 text-xs">
                             <Network className="h-3 w-3 mr-1" />
                             Struktur
@@ -1772,12 +1774,6 @@ export default function AdminProgramsPage() {
                         </div>
                       </summary>
                       <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
-                        <div className="mb-3 flex justify-end">
-                          <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 text-xs">
-                            <Plus className="h-3 w-3 mr-1" />
-                            Kurs
-                          </Button>
-                        </div>
                         {themePrograms.length === 0 ? (
                           <div className="py-4 text-center text-sm text-gray-500">Ingen kurs i dette programmet.</div>
                         ) : (
