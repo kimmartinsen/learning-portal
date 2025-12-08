@@ -233,7 +233,6 @@ export default function UsersPage() {
     setFormData({
       email: profile.email,
       fullName: profile.full_name,
-      password: '', // Passord ikke nødvendig ved redigering
       role: profile.role as 'admin' | 'user',
       departmentIds: departmentIds,
     })
