@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+// DELETE /api/admin/delete-user - Sletter bruker og autentisering
 export async function DELETE(request: NextRequest) {
   try {
     const { userId } = await request.json()
