@@ -1,9 +1,8 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   try {
     const { userId } = await request.json()
 
@@ -12,18 +11,18 @@ export async function DELETE(request: Request) {
     }
 
     // Regular client for checking permissions
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createServerSupabaseClient()
 
     // Verify the requesting user is an admin
-    const { data: { user: adminUser } } = await supabase.auth.getUser()
-    if (!adminUser) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
       return NextResponse.json({ error: 'Ikke autorisert' }, { status: 401 })
     }
 
     const { data: adminProfile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', adminUser.id)
+      .eq('id', session.user.id)
       .single()
 
     if (adminProfile?.role !== 'admin') {
@@ -31,7 +30,7 @@ export async function DELETE(request: Request) {
     }
 
     // Prevent admin from deleting themselves
-    if (userId === adminUser.id) {
+    if (userId === session.user.id) {
       return NextResponse.json({ error: 'Du kan ikke slette din egen konto' }, { status: 400 })
     }
 
