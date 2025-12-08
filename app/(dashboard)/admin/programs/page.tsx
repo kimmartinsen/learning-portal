@@ -69,6 +69,7 @@ export default function AdminProgramsPage() {
   // State for assigning theme to users/departments
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [assigningTheme, setAssigningTheme] = useState<Theme | null>(null)
+  const [assigningTopic, setAssigningTopic] = useState<Topic | null>(null)
   const [assignSelection, setAssignSelection] = useState<{
     type: 'department' | 'individual'
     departmentIds: string[]
@@ -958,20 +959,122 @@ export default function AdminProgramsPage() {
     }
   }
 
+  const handleOpenAssignTopic = async (topic: Topic) => {
+    setAssigningTopic(topic)
+    setAssigningTheme(null) // Clear theme assignment
+    // Reset selection first
+    setAssignSelection({
+      type: 'department',
+      departmentIds: [],
+      userIds: []
+    })
+    setInitialAssignSelection({ departmentIds: [], userIds: [] })
+    setShowAssignModal(true)
+
+    // Fetch existing assignments - find all themes in this topic and their programs
+    try {
+      // 1. Get all themes in this topic
+      const { data: topicThemes } = await supabase
+        .from('themes')
+        .select('id')
+        .eq('topic_id', topic.id)
+
+      if (!topicThemes || topicThemes.length === 0) return
+
+      // 2. Get the first program in the first theme to check existing assignments
+      const { data: firstProgram } = await supabase
+        .from('training_programs')
+        .select('id')
+        .in('theme_id', topicThemes.map(t => t.id))
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single()
+
+      if (firstProgram) {
+        // 3. Get assignments for this program
+        const [deptResponse, userResponse] = await Promise.all([
+          supabase
+            .from('program_assignments')
+            .select('assigned_to_department_id')
+            .eq('program_id', firstProgram.id)
+            .not('assigned_to_department_id', 'is', null),
+          supabase
+            .from('program_assignments')
+            .select('assigned_to_user_id')
+            .eq('program_id', firstProgram.id)
+            .not('assigned_to_user_id', 'is', null)
+            .eq('is_auto_assigned', false)
+        ])
+
+        if (deptResponse.data || userResponse.data) {
+          const currentDeptIds = Array.from(new Set(
+            (deptResponse.data || []).map(a => a.assigned_to_department_id).filter(Boolean) as string[]
+          ))
+          const currentUserIds = Array.from(new Set(
+            (userResponse.data || []).map(a => a.assigned_to_user_id).filter(Boolean) as string[]
+          ))
+
+          setAssignSelection(prev => ({
+            ...prev,
+            departmentIds: currentDeptIds,
+            userIds: currentUserIds
+          }))
+
+          setInitialAssignSelection({
+            departmentIds: currentDeptIds,
+            userIds: currentUserIds
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching existing topic assignments:', error)
+    }
+  }
+
   const handleAssignSubmit = async () => {
-    if (!assigningTheme || !user) return
+    if ((!assigningTheme && !assigningTopic) || !user) return
     
     setAssigning(true)
     try {
-      // 1. Get all programs in this theme
-      const { data: programs } = await supabase
-        .from('training_programs')
-        .select('id, sort_order')
-        .eq('theme_id', assigningTheme.id)
-        .order('sort_order', { ascending: true })
+      let programs: { id: string; sort_order: number | null }[] = []
+      let assignmentNotes = ''
+
+      if (assigningTopic) {
+        // Get all themes in this topic
+        const { data: topicThemes } = await supabase
+          .from('themes')
+          .select('id, name')
+          .eq('topic_id', assigningTopic.id)
+
+        if (!topicThemes || topicThemes.length === 0) {
+          toast.error('Ingen programmer i dette temaet å tildele')
+          return
+        }
+
+        // Get all programs from all themes in topic
+        const { data: topicPrograms } = await supabase
+          .from('training_programs')
+          .select('id, sort_order, theme_id')
+          .in('theme_id', topicThemes.map(t => t.id))
+          .order('sort_order', { ascending: true })
+
+        programs = topicPrograms || []
+        assignmentNotes = 'Del av tema-tildeling: ' + assigningTopic.name
+      } else if (assigningTheme) {
+        // Get all programs in this theme
+        const { data: themePrograms } = await supabase
+          .from('training_programs')
+          .select('id, sort_order')
+          .eq('theme_id', assigningTheme.id)
+          .order('sort_order', { ascending: true })
+
+        programs = themePrograms || []
+        assignmentNotes = 'Del av program-tildeling: ' + assigningTheme.name
+      }
       
       if (!programs || programs.length === 0) {
-        toast.error('Ingen kurs i dette programmet å tildele')
+        toast.error('Ingen kurs å tildele')
         return
       }
 
@@ -984,7 +1087,7 @@ export default function AdminProgramsPage() {
       const removedUserIds = initialAssignSelection.userIds.filter(id => !assignSelection.userIds.includes(id))
 
       // 2. Loop through programs and assign/remove
-      const isSequential = assigningTheme.progression_type === 'sequential_auto' || assigningTheme.progression_type === 'sequential_manual'
+      const isSequential = assigningTheme ? (assigningTheme.progression_type === 'sequential_auto' || assigningTheme.progression_type === 'sequential_manual') : false
       
       for (let i = 0; i < programs.length; i++) {
         const program = programs[i]
@@ -1088,7 +1191,7 @@ export default function AdminProgramsPage() {
                   assigned_to_department_id: deptId,
                   assigned_by: user.id,
                   due_date: dueDate.toISOString(),
-                  notes: 'Del av program-tildeling: ' + assigningTheme.name,
+                  notes: assignmentNotes,
                   status: 'assigned'
                 })
 
@@ -1104,7 +1207,7 @@ export default function AdminProgramsPage() {
                      assigned_to_user_id: u.user_id,
                      assigned_by: user.id,
                      due_date: dueDate.toISOString(),
-                     notes: 'Del av program-tildeling: ' + assigningTheme.name,
+                     notes: assignmentNotes,
                      status: 'assigned',
                      is_auto_assigned: true
                    }))
@@ -1154,7 +1257,7 @@ export default function AdminProgramsPage() {
                   assigned_to_user_id: userId,
                   assigned_by: user.id,
                   due_date: dueDate.toISOString(),
-                  notes: 'Del av program-tildeling: ' + assigningTheme.name,
+                  notes: assignmentNotes,
                   status: 'assigned',
                   is_auto_assigned: false
                 })
@@ -1190,6 +1293,7 @@ export default function AdminProgramsPage() {
       
       setShowAssignModal(false)
       setAssigningTheme(null)
+      setAssigningTopic(null)
     } catch (error: any) {
       console.error('Error assigning program:', error)
       toast.error('Feil under tildeling: ' + error.message)
@@ -1326,12 +1430,17 @@ export default function AdminProgramsPage() {
       </Modal>
 
       {/* Assign Modal */}
-      <Modal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)}>
+      <Modal isOpen={showAssignModal} onClose={() => { setShowAssignModal(false); setAssigningTheme(null); setAssigningTopic(null); }}>
         <Card className="w-full max-w-lg bg-white dark:bg-gray-900 dark:border-gray-700">
           <CardHeader>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Tildel program: {assigningTheme?.name}
+              {assigningTopic ? `Tildel tema: ${assigningTopic.name}` : `Tildel program: ${assigningTheme?.name}`}
             </h3>
+            {assigningTopic && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Tildelingen gjelder alle programmer og kurs under dette temaet.
+              </p>
+            )}
             <p className="text-sm text-gray-500">
               Dette vil tildele alle kursene i programmet til de valgte mottakerne.
             </p>
@@ -1353,7 +1462,7 @@ export default function AdminProgramsPage() {
               </Button>
               <Button 
                 variant="secondary" 
-                onClick={() => setShowAssignModal(false)} 
+                onClick={() => { setShowAssignModal(false); setAssigningTheme(null); setAssigningTopic(null); }} 
                 disabled={assigning}
               >
                 Avbryt
@@ -1576,6 +1685,16 @@ export default function AdminProgramsPage() {
                   >
                     <Plus className="h-3 w-3 mr-1" />
                     Program
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleOpenAssignTopic(topic)}
+                    className="h-7 text-xs"
+                    title="Tildel alle programmer i tema"
+                  >
+                    <UserPlus className="h-3 w-3 mr-1" />
+                    Tildel
                   </Button>
                   <Button
                     variant="ghost"
