@@ -240,16 +240,27 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (profileId: string) => {
-    if (!confirm('Er du sikker på at du vil slette denne brukeren?')) return
+    if (!confirm('Er du sikker på at du vil slette denne brukeren? Dette vil også slette brukerens innlogging.')) return
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', profileId)
+      const response = await fetch('/api/admin/delete-user', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: profileId })
+      })
 
-      if (error) throw error
-      toast.success('Bruker slettet!')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Kunne ikke slette bruker')
+      }
+
+      if (data.warning) {
+        toast.warning(data.message)
+      } else {
+        toast.success('Bruker slettet fullstendig!')
+      }
+      
       fetchUserAndProfiles()
     } catch (error: any) {
       toast.error('Kunne ikke slette bruker: ' + error.message)
