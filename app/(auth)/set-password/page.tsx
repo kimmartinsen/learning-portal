@@ -143,9 +143,11 @@ export default function SetPasswordPage() {
   if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-950 dark:to-gray-900 p-4">
-        <div className="w-full max-w-md text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Verifiserer invitasjon...</p>
+        <div className="w-full max-w-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">Verifiserer invitasjon...</p>
+          </div>
         </div>
       </div>
     )
@@ -154,20 +156,20 @@ export default function SetPasswordPage() {
   if (!userEmail || error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-950 dark:to-gray-900 p-4">
-        <div className="w-full max-w-md">
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-xl dark:border-gray-800 dark:bg-gray-900 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-              <KeyRound className="h-6 w-6 text-red-600 dark:text-red-400" />
+        <div className="w-full max-w-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900 text-center">
+            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+              <KeyRound className="h-5 w-5 text-red-600 dark:text-red-400" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">
               Ugyldig eller utløpt lenke
             </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               {error || 'Invitasjonslenken er ugyldig eller har utløpt. Kontakt din administrator for å få en ny invitasjon.'}
             </p>
             <Button 
               onClick={() => router.push('/login')} 
-              className="mt-6 w-full"
+              className="mt-4 w-full"
               variant="secondary"
             >
               Gå til innlogging
@@ -180,24 +182,24 @@ export default function SetPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-950 dark:to-gray-900 p-4">
-      <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-xl dark:border-gray-800 dark:bg-gray-900">
-          <div className="text-center mb-6">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+      <div className="w-full max-w-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+          <div className="text-center mb-5">
+            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
               Velkommen!
             </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               Sett et passord for kontoen din
             </p>
-            <p className="mt-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
+            <p className="mt-0.5 text-sm text-primary-600 dark:text-primary-400 font-medium">
               {userEmail}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <Input
               label="Nytt passord"
               type="password"
@@ -219,7 +221,7 @@ export default function SetPasswordPage() {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full mt-4"
               disabled={loading}
             >
               {loading ? 'Setter passord...' : 'Sett passord og fortsett'}
