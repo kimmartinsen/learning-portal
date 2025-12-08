@@ -15,37 +15,95 @@ export default function SetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check if user is authenticated via invite link
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (session?.user) {
-        setUserEmail(session.user.email || null)
-        setChecking(false)
-      } else {
-        // Listen for auth state changes (in case the token is being processed)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          if (event === 'SIGNED_IN' && session?.user) {
-            setUserEmail(session.user.email || null)
+    const handleAuth = async () => {
+      try {
+        // Check for hash fragment tokens (Supabase invite/recovery flow)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
+
+        // Also check query parameters (alternative flow)
+        const urlParams = new URLSearchParams(window.location.search)
+        const tokenHash = urlParams.get('token_hash')
+        const type = urlParams.get('type')
+
+        if (accessToken && refreshToken) {
+          // Set the session from hash tokens
+          const { data, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+
+          if (sessionError) {
+            console.error('Session error:', sessionError)
+            setError('Kunne ikke verifisere invitasjonen')
             setChecking(false)
-          } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+            return
+          }
+
+          if (data.session?.user) {
+            setUserEmail(data.session.user.email || null)
+            setChecking(false)
+            window.history.replaceState({}, document.title, window.location.pathname)
+            return
+          }
+        } else if (tokenHash && type) {
+          // Verify OTP token
+          const { data, error: otpError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: type as any,
+          })
+
+          if (otpError) {
+            console.error('OTP error:', otpError)
+            setError('Invitasjonslenken er ugyldig eller har utløpt')
+            setChecking(false)
+            return
+          }
+
+          if (data.session?.user) {
+            setUserEmail(data.session.user.email || null)
+            setChecking(false)
+            window.history.replaceState({}, document.title, window.location.pathname)
+            return
+          }
+        }
+
+        // Check for existing session
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user) {
+          setUserEmail(session.user.email || null)
+          setChecking(false)
+          return
+        }
+
+        // Listen for auth state changes (in case Supabase handles it automatically)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log('Auth event:', event)
+          if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION' || event === 'PASSWORD_RECOVERY') && session?.user) {
             setUserEmail(session.user.email || null)
             setChecking(false)
           }
         })
 
-        // Give it a moment to process the invite token
+        // Give it time to process
         setTimeout(() => {
           setChecking(false)
-        }, 2000)
+        }, 3000)
 
         return () => subscription.unsubscribe()
+      } catch (err) {
+        console.error('Auth handling error:', err)
+        setError('En feil oppstod ved verifisering')
+        setChecking(false)
       }
     }
 
-    checkSession()
+    handleAuth()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +151,7 @@ export default function SetPasswordPage() {
     )
   }
 
-  if (!userEmail) {
+  if (!userEmail || error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-950 dark:to-gray-900 p-4">
         <div className="w-full max-w-md">
@@ -105,7 +163,7 @@ export default function SetPasswordPage() {
               Ugyldig eller utløpt lenke
             </h1>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Invitasjonslenken er ugyldig eller har utløpt. Kontakt din administrator for å få en ny invitasjon.
+              {error || 'Invitasjonslenken er ugyldig eller har utløpt. Kontakt din administrator for å få en ny invitasjon.'}
             </p>
             <Button 
               onClick={() => router.push('/login')} 

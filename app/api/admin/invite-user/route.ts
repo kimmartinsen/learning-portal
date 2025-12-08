@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
     // Invite user - they will receive an email to set their password
+    // Use set-password directly since Supabase will append tokens to the URL
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: {
         full_name: fullName,
@@ -50,6 +51,8 @@ export async function POST(request: NextRequest) {
       },
       redirectTo: `${origin}/set-password`,
     })
+
+    console.log('Invite sent to:', email, 'redirectTo:', `${origin}/set-password`)
 
     if (inviteError) {
       console.error('Invite error:', inviteError)
