@@ -48,10 +48,10 @@ export default function UsersPage() {
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
-    password: '',
     role: 'user' as 'admin' | 'user',
     departmentIds: [] as string[], // Flere avdelinger
   })
+  const [inviting, setInviting] = useState(false)
 
   useEffect(() => {
     fetchUserAndProfiles()
@@ -186,99 +186,41 @@ export default function UsersPage() {
 
         toast.success('Bruker oppdatert!')
       } else {
-        // Opprett bruker direkte
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          email_confirm: true,
-          user_metadata: {
-            full_name: formData.fullName,
-          }
+        // Send invitasjon til bruker (de setter eget passord)
+        setInviting(true)
+        
+        // Use Edge Function to invite user
+        const response = await fetch('/api/admin/invite-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            fullName: formData.fullName,
+            role: formData.role,
+            companyId: user.company_id,
+            departmentIds: formData.departmentIds,
+          }),
         })
 
-        if (authError) {
-          // Fallback til client-side signup hvis admin method feiler
-          const { data: signupData, error: signupError } = await supabase.auth.signUp({
-            email: formData.email,
-            password: formData.password,
-            options: {
-              data: {
-                full_name: formData.fullName,
-              }
-            }
-          })
-
-          if (signupError) throw signupError
-          if (!signupData.user) throw new Error('Kunne ikke opprette bruker')
-
-          const userId = signupData.user.id
-
-          // Opprett profil
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([{
-              id: userId,
-              email: formData.email,
-              full_name: formData.fullName,
-              role: formData.role,
-              company_id: user.company_id,
-            }])
-
-          if (profileError) throw profileError
-
-          // Legg til avdelinger
-          if (formData.departmentIds.length > 0) {
-            const deptInserts = formData.departmentIds.map(deptId => ({
-              user_id: userId,
-              department_id: deptId,
-            }))
-            
-            const { error: deptError } = await supabase
-              .from('user_departments')
-              .insert(deptInserts)
-            
-            if (deptError) throw deptError
-          }
-
-          toast.success('Bruker opprettet!')
-        } else {
-          // Opprett profil
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([{
-              id: authData.user.id,
-              email: formData.email,
-              full_name: formData.fullName,
-              role: formData.role,
-              company_id: user.company_id,
-            }])
-
-          if (profileError) throw profileError
-
-          // Legg til avdelinger
-          if (formData.departmentIds.length > 0) {
-            const deptInserts = formData.departmentIds.map(deptId => ({
-              user_id: authData.user.id,
-              department_id: deptId,
-            }))
-            
-            const { error: deptError } = await supabase
-              .from('user_departments')
-              .insert(deptInserts)
-            
-            if (deptError) throw deptError
-          }
-
-          toast.success('Bruker opprettet!')
+        const result = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Kunne ikke invitere bruker')
         }
+
+        toast.success('Invitasjon sendt! Brukeren vil motta en e-post med lenke for å sette passord.')
+        setInviting(false)
       }
 
       setShowForm(false)
       setEditingProfile(null)
-      setFormData({ email: '', fullName: '', password: '', role: 'user', departmentIds: [] })
+      setFormData({ email: '', fullName: '', role: 'user', departmentIds: [] })
       fetchUserAndProfiles()
     } catch (error: any) {
       toast.error(error.message)
+      setInviting(false)
     }
   }
 
@@ -318,7 +260,8 @@ export default function UsersPage() {
   const resetForm = () => {
     setShowForm(false)
     setEditingProfile(null)
-    setFormData({ email: '', fullName: '', password: '', role: 'user', departmentIds: [] })
+    setFormData({ email: '', fullName: '', role: 'user', departmentIds: [] })
+    setInviting(false)
   }
 
   const getRoleText = (role: string) => {
@@ -399,16 +342,11 @@ export default function UsersPage() {
                 />
               )}
 
-              {/* Passord for ny bruker */}
+              {/* Info om invitasjon */}
               {!editingProfile && (
-                <Input
-                  label="Passord"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  required
-                  placeholder="Minst 6 tegn"
-                />
+                <p className="text-sm text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  💡 Brukeren vil motta en e-post med lenke for å sette sitt eget passord.
+                </p>
               )}
 
               <div>
@@ -479,10 +417,10 @@ export default function UsersPage() {
               </div>
 
               <div className="flex space-x-3 pt-4">
-                <Button type="submit" className="flex-1">
-                  {editingProfile ? 'Oppdater' : 'Opprett'}
+                <Button type="submit" className="flex-1" disabled={inviting}>
+                  {inviting ? 'Sender invitasjon...' : editingProfile ? 'Oppdater' : 'Send invitasjon'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={resetForm}>
+                <Button type="button" variant="secondary" onClick={resetForm} disabled={inviting}>
                   Avbryt
                 </Button>
               </div>
