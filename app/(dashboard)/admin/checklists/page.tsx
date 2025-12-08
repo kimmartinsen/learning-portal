@@ -87,11 +87,24 @@ export default function ChecklistsPage() {
 
   const fetchChecklists = async (companyId: string) => {
     try {
-      const { data, error } = await supabase
+      // Try ordering by order_index first, fallback to created_at if column doesn't exist
+      let { data, error } = await supabase
         .from('checklists')
         .select('*')
         .eq('company_id', companyId)
         .order('order_index', { ascending: true })
+
+      // If order_index doesn't exist, fallback to created_at
+      if (error && error.message?.includes('order_index')) {
+        const fallbackResult = await supabase
+          .from('checklists')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: true })
+        
+        data = fallbackResult.data
+        error = fallbackResult.error
+      }
 
       if (error) throw error
       setChecklists(data || [])
@@ -607,7 +620,14 @@ export default function ChecklistsPage() {
         .update({ order_index: targetOrder })
         .eq('id', checklistId)
 
-      if (error1) throw error1
+      if (error1) {
+        // If order_index column doesn't exist, show a message
+        if (error1.message?.includes('order_index')) {
+          toast.error('Kjør migrasjonen for å aktivere rekkefølge-endring')
+          return
+        }
+        throw error1
+      }
 
       const { error: error2 } = await supabase
         .from('checklists')
