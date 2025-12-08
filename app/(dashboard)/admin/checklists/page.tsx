@@ -91,7 +91,7 @@ export default function ChecklistsPage() {
         .from('checklists')
         .select('*')
         .eq('company_id', companyId)
-        .order('created_at', { ascending: false })
+        .order('order_index', { ascending: true })
 
       if (error) throw error
       setChecklists(data || [])
@@ -582,6 +582,48 @@ export default function ChecklistsPage() {
     }
   }
 
+  const handleMoveChecklist = async (checklistId: string, direction: 'up' | 'down') => {
+    if (!user) return
+
+    try {
+      const currentChecklist = checklists.find(c => c.id === checklistId)
+      if (!currentChecklist) return
+
+      const currentIndex = checklists.findIndex(c => c.id === checklistId)
+      if (currentIndex === -1) return
+
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+      if (newIndex < 0 || newIndex >= checklists.length) return
+
+      const targetChecklist = checklists[newIndex]
+
+      // Swap order_index values
+      const tempOrder = currentChecklist.order_index ?? currentIndex
+      const targetOrder = targetChecklist.order_index ?? newIndex
+
+      // Update both checklists
+      const { error: error1 } = await supabase
+        .from('checklists')
+        .update({ order_index: targetOrder })
+        .eq('id', checklistId)
+
+      if (error1) throw error1
+
+      const { error: error2 } = await supabase
+        .from('checklists')
+        .update({ order_index: tempOrder })
+        .eq('id', targetChecklist.id)
+
+      if (error2) throw error2
+
+      toast.success('Rekkefølge oppdatert!')
+      await fetchChecklists(user.company_id)
+      router.refresh()
+    } catch (error: any) {
+      toast.error('Kunne ikke endre rekkefølge: ' + error.message)
+    }
+  }
+
   const resetForm = () => {
     setShowForm(false)
     setEditingChecklist(null)
@@ -671,7 +713,7 @@ export default function ChecklistsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {checklists.map((checklist) => {
+          {checklists.map((checklist, checklistIndex) => {
             const items = checklistItems[checklist.id] || []
             
             return (
@@ -690,6 +732,26 @@ export default function ChecklistsPage() {
                   </div>
                   
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleMoveChecklist(checklist.id, 'up')}
+                      disabled={checklistIndex === 0}
+                      className="h-7 w-7 p-0"
+                      title="Flytt opp"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleMoveChecklist(checklist.id, 'down')}
+                      disabled={checklistIndex === checklists.length - 1}
+                      className="h-7 w-7 p-0"
+                      title="Flytt ned"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"

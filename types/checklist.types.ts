@@ -4,6 +4,7 @@ export interface Checklist {
   title: string
   description: string | null
   status: 'not_started' | 'in_progress' | 'completed' | 'cancelled'
+  order_index: number
   created_by: string | null
   created_at: string
   updated_at: string

@@ -12,6 +12,8 @@ import {
   Settings,
   Tag,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   ArrowUpDown,
   UserPlus,
   Network,
@@ -765,6 +767,94 @@ export default function AdminProgramsPage() {
       description: topic.description || ''
     })
     setShowTopicForm(true)
+  }
+
+  const handleMoveTopic = async (topicId: string, direction: 'up' | 'down') => {
+    if (!user) return
+
+    try {
+      const currentTopic = topics.find(t => t.id === topicId)
+      if (!currentTopic) return
+
+      const currentIndex = topics.findIndex(t => t.id === topicId)
+      if (currentIndex === -1) return
+
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+      if (newIndex < 0 || newIndex >= topics.length) return
+
+      const targetTopic = topics[newIndex]
+
+      // Swap order_index values
+      const tempOrder = currentTopic.order_index ?? currentIndex
+      const targetOrder = targetTopic.order_index ?? newIndex
+
+      // Update both topics
+      const { error: error1 } = await supabase
+        .from('topics')
+        .update({ order_index: targetOrder })
+        .eq('id', topicId)
+
+      if (error1) throw error1
+
+      const { error: error2 } = await supabase
+        .from('topics')
+        .update({ order_index: tempOrder })
+        .eq('id', targetTopic.id)
+
+      if (error2) throw error2
+
+      toast.success('Rekkefølge oppdatert!')
+      await fetchTopics(user.company_id)
+      router.refresh()
+    } catch (error: any) {
+      toast.error('Kunne ikke endre rekkefølge: ' + error.message)
+    }
+  }
+
+  const handleMoveTheme = async (themeId: string, topicId: string | null, direction: 'up' | 'down') => {
+    if (!user) return
+
+    try {
+      // Get themes in same topic/group
+      const themesInGroup = themes.filter(t => t.topic_id === topicId)
+        .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+
+      const currentTheme = themesInGroup.find(t => t.id === themeId)
+      if (!currentTheme) return
+
+      const currentIndex = themesInGroup.findIndex(t => t.id === themeId)
+      if (currentIndex === -1) return
+
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+      if (newIndex < 0 || newIndex >= themesInGroup.length) return
+
+      const targetTheme = themesInGroup[newIndex]
+
+      // Swap order_index values
+      const tempOrder = currentTheme.order_index ?? currentIndex
+      const targetOrder = targetTheme.order_index ?? newIndex
+
+      // Update both themes
+      const { error: error1 } = await supabase
+        .from('themes')
+        .update({ order_index: targetOrder })
+        .eq('id', themeId)
+
+      if (error1) throw error1
+
+      const { error: error2 } = await supabase
+        .from('themes')
+        .update({ order_index: tempOrder })
+        .eq('id', targetTheme.id)
+
+      if (error2) throw error2
+
+      toast.success('Rekkefølge oppdatert!')
+      await fetchThemes(user.company_id)
+      router.refresh()
+    } catch (error: any) {
+      toast.error('Kunne ikke endre rekkefølge: ' + error.message)
+    }
   }
 
   const openThemeFormForTopic = (topicId: string | null) => {
@@ -1656,8 +1746,9 @@ export default function AdminProgramsPage() {
       {/* Three-level hierarchy: Topics → Themes (Programs) → Courses */}
       <div className="space-y-4">
         {/* Topics (Tema) */}
-        {topics.map(topic => {
+        {topics.map((topic, topicIndex) => {
           const topicThemes = themes.filter(t => t.topic_id === topic.id)
+            .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
           const topicCourseCount = topicThemes.reduce((acc, t) => acc + (programsByTheme[t.id]?.length || 0), 0)
 
           return (
@@ -1676,6 +1767,26 @@ export default function AdminProgramsPage() {
                 </div>
                 
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleMoveTopic(topic.id, 'up')}
+                    disabled={topicIndex === 0}
+                    className="h-7 w-7 p-0"
+                    title="Flytt opp"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleMoveTopic(topic.id, 'down')}
+                    disabled={topicIndex === topics.length - 1}
+                    className="h-7 w-7 p-0"
+                    title="Flytt ned"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1726,7 +1837,7 @@ export default function AdminProgramsPage() {
                     </Button>
                   </div>
                 ) : (
-                  topicThemes.map(theme => {
+                  topicThemes.map((theme, themeIndex) => {
                     const themePrograms = programsByTheme[theme.id] || []
                     return (
                       <details
@@ -1746,6 +1857,12 @@ export default function AdminProgramsPage() {
                           </div>
                           
                           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm" onClick={() => handleMoveTheme(theme.id, topic.id, 'up')} disabled={themeIndex === 0} className="h-7 w-7 p-0" title="Flytt opp">
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleMoveTheme(theme.id, topic.id, 'down')} disabled={themeIndex === topicThemes.length - 1} className="h-7 w-7 p-0" title="Flytt ned">
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
                             <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 text-xs" title="Legg til kurs i program">
                               <Plus className="h-3 w-3 mr-1" />
                               Kurs
@@ -1837,6 +1954,7 @@ export default function AdminProgramsPage() {
         {/* Themes without topic (Uten tema) */}
         {(() => {
           const themesWithoutTopic = themes.filter(t => !t.topic_id)
+            .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
           if (themesWithoutTopic.length === 0 && !programsByTheme['no-theme']?.length) return null
 
           return (
@@ -1859,7 +1977,7 @@ export default function AdminProgramsPage() {
               </summary>
 
               <div className="border-t border-gray-300 dark:border-gray-700 px-4 py-4 space-y-3">
-                {themesWithoutTopic.map(theme => {
+                {themesWithoutTopic.map((theme, themeIndex) => {
                   const themePrograms = programsByTheme[theme.id] || []
                   return (
                     <details key={theme.id} className="group/theme rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800">
@@ -1871,6 +1989,12 @@ export default function AdminProgramsPage() {
                           <span className="text-sm text-gray-500 dark:text-gray-400">({themePrograms.length} kurs)</span>
                         </div>
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm" onClick={() => handleMoveTheme(theme.id, null, 'up')} disabled={themeIndex === 0} className="h-7 w-7 p-0" title="Flytt opp">
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleMoveTheme(theme.id, null, 'down')} disabled={themeIndex === themesWithoutTopic.length - 1} className="h-7 w-7 p-0" title="Flytt ned">
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 text-xs" title="Legg til kurs i program">
                             <Plus className="h-3 w-3 mr-1" />
                             Kurs
