@@ -1429,15 +1429,18 @@ export default function AdminProgramsPage() {
         <div className="page-header-actions">
           <Button variant="ghost" onClick={() => setShowTopicForm(true)} size="sm" className="text-xs sm:text-sm">
             <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="hidden xs:inline">Nytt </span>tema
+            <span className="hidden sm:inline">Nytt tema</span>
+            <span className="sm:hidden">Tema</span>
           </Button>
           <Button variant="secondary" onClick={() => setShowThemeForm(true)} size="sm" className="text-xs sm:text-sm">
             <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="hidden xs:inline">Nytt </span>program
+            <span className="hidden sm:inline">Nytt program</span>
+            <span className="sm:hidden">Program</span>
           </Button>
           <Button onClick={() => setShowForm(true)} size="sm" className="text-xs sm:text-sm">
             <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="hidden xs:inline">Nytt </span>kurs
+            <span className="hidden sm:inline">Nytt kurs</span>
+            <span className="sm:hidden">Kurs</span>
           </Button>
         </div>
       </div>
@@ -1852,7 +1855,7 @@ export default function AdminProgramsPage() {
                             <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 shrink-0">({themePrograms.length})</span>
                           </div>
                           
-                          <div className="flex items-center gap-1 flex-wrap pl-6 sm:pl-0" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1 sm:gap-2 flex-wrap pl-6 sm:pl-0" onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="sm" onClick={() => handleMoveTheme(theme.id, topic.id, 'up')} disabled={themeIndex === 0} className="h-7 w-7 p-0" title="Flytt opp">
                               <ChevronUp className="h-4 w-4" />
                             </Button>
@@ -1860,13 +1863,12 @@ export default function AdminProgramsPage() {
                               <ChevronDown className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Legg til kurs">
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/programs/${theme.id}/structure`)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Struktur">
-                              <Network className="h-3 w-3" />
+                              <Plus className="h-3 w-3 sm:mr-1" />
+                              <span className="hidden sm:inline">Program</span>
                             </Button>
                             <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Tildel">
-                              <UserPlus className="h-3 w-3" />
+                              <UserPlus className="h-3 w-3 sm:mr-1" />
+                              <span className="hidden sm:inline">Tildel</span>
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEditTheme(theme)} className="h-7 w-7 p-0" title="Rediger">
                               <Edit2 className="h-3 w-3" />
@@ -1961,9 +1963,10 @@ export default function AdminProgramsPage() {
                     ({themesWithoutTopic.length} prog, {themesWithoutTopic.reduce((acc, t) => acc + (programsByTheme[t.id]?.length || 0), 0) + (programsByTheme['no-theme']?.length || 0)} kurs)
                   </span>
                 </div>
-                <div className="flex items-center gap-1 pl-7 sm:pl-0" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1 sm:gap-2 pl-7 sm:pl-0" onClick={(e) => e.stopPropagation()}>
                   <Button variant="ghost" size="sm" onClick={() => openThemeFormForTopic(null)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Program">
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-3 w-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Program</span>
                   </Button>
                 </div>
               </summary>
@@ -1980,7 +1983,7 @@ export default function AdminProgramsPage() {
                           <span className="text-sm sm:text-base font-semibold truncate">{theme.name}</span>
                           <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 shrink-0">({themePrograms.length})</span>
                         </div>
-                        <div className="flex items-center gap-1 flex-wrap pl-6 sm:pl-0" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1 sm:gap-2 flex-wrap pl-6 sm:pl-0" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" onClick={() => handleMoveTheme(theme.id, null, 'up')} disabled={themeIndex === 0} className="h-7 w-7 p-0" title="Flytt opp">
                             <ChevronUp className="h-4 w-4" />
                           </Button>
@@ -1988,13 +1991,12 @@ export default function AdminProgramsPage() {
                             <ChevronDown className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Legg til kurs">
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/programs/${theme.id}/structure`)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Struktur">
-                            <Network className="h-3 w-3" />
+                            <Plus className="h-3 w-3 sm:mr-1" />
+                            <span className="hidden sm:inline">Program</span>
                           </Button>
                           <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Tildel">
-                            <UserPlus className="h-3 w-3" />
+                            <UserPlus className="h-3 w-3 sm:mr-1" />
+                            <span className="hidden sm:inline">Tildel</span>
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleEditTheme(theme)} className="h-7 w-7 p-0" title="Rediger">
                             <Edit2 className="h-3 w-3" />

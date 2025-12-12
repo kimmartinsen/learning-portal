@@ -784,16 +784,18 @@ export default function ChecklistsPage() {
                       className="h-7 w-7 p-0 sm:w-auto sm:px-2"
                       title="Legg til sjekkpunkt"
                     >
-                      <Plus className="h-3 w-3" />
+                      <Plus className="h-3 w-3 sm:mr-1" />
+                      <span className="hidden sm:inline">Legg til sjekkpunkt</span>
                     </Button>
                     <Button
                       variant="secondary"
                       size="sm"
                       onClick={() => handleOpenAssign(checklist)}
                       className="h-7 w-7 p-0 sm:w-auto sm:px-2"
-                      title="Tildel"
+                      title="Tildel sjekkliste"
                     >
-                      <UserPlus className="h-3 w-3" />
+                      <UserPlus className="h-3 w-3 sm:mr-1" />
+                      <span className="hidden sm:inline">Tildel sjekkliste</span>
                     </Button>
                     <Button
                       variant="ghost"
