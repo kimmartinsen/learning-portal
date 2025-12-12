@@ -977,7 +977,7 @@ export default function ThemesPage() {
 
               return (
                 <Card key={checklist.id}>
-                  <CardContent className="p-0">
+                  <CardContent className="p-0 overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3">
                       <button
                         type="button"
@@ -1162,7 +1162,7 @@ export default function ThemesPage() {
 
           return (
             <Card key={topic.id} className="border-2 border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/10">
-              <CardContent className="p-0">
+              <CardContent className="p-0 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3">
                   <button
                     type="button"
@@ -1193,7 +1193,7 @@ export default function ThemesPage() {
 
                         return (
                           <Card key={theme.id}>
-                            <CardContent className="p-0">
+                            <CardContent className="p-0 overflow-hidden">
                               <div className="flex items-center justify-between px-4 py-3">
                                 <button
                                   type="button"
@@ -1226,7 +1226,7 @@ export default function ThemesPage() {
                               </div>
 
                               {isExpanded && (
-                                <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                                <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4 overflow-hidden">
                                   {progress?.loading ? (
                                     <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">Laster progresjon...</div>
                                   ) : progress?.error ? (
@@ -1236,13 +1236,13 @@ export default function ThemesPage() {
                                     return data.programs.length === 0 ? (
                                       <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette programmet.</div>
                                     ) : (
-                                      <div className="space-y-6">
+                                      <div className="space-y-6 overflow-hidden">
                                         {/* Mobile scroll hint */}
                                         <p className="text-xs text-gray-500 dark:text-gray-400 sm:hidden flex items-center gap-1">
                                           <span>←</span> Sveip for å se alle kurs <span>→</span>
                                         </p>
-                                        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-                                          <table className="divide-y divide-gray-200 dark:divide-gray-700">
+                                        <div className="overflow-x-auto">
+                                          <table className="min-w-max divide-y divide-gray-200 dark:divide-gray-700">
                                             <thead className="bg-gray-50 dark:bg-gray-800/50">
                                               <tr>
                                                 <th className="w-32 sm:w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-800 z-10">Bruker</th>
@@ -1353,7 +1353,7 @@ export default function ThemesPage() {
 
           return (
             <Card className="border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-              <CardContent className="p-0">
+              <CardContent className="p-0 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3">
                   <button
                     type="button"
@@ -1381,7 +1381,7 @@ export default function ThemesPage() {
 
                       return (
                         <Card key={theme.id}>
-                          <CardContent className="p-0">
+                          <CardContent className="p-0 overflow-hidden">
                             <div className="flex items-center justify-between px-4 py-3">
                               <button
                                 type="button"
