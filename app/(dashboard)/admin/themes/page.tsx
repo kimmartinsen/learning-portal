@@ -1192,7 +1192,7 @@ export default function ThemesPage() {
                         const progress = progressState[theme.id]
 
                         return (
-                          <Card key={theme.id}>
+                          <Card key={theme.id} className="w-full overflow-hidden">
                             <CardContent className="p-0 overflow-hidden">
                               <div className="flex items-center justify-between px-4 py-3">
                                 <button
@@ -1236,12 +1236,12 @@ export default function ThemesPage() {
                                     return data.programs.length === 0 ? (
                                       <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette programmet.</div>
                                     ) : (
-                                      <div className="space-y-6 px-4">
+                                      <div className="space-y-4 overflow-hidden">
                                         {/* Mobile scroll hint */}
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 sm:hidden flex items-center gap-1">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 sm:hidden flex items-center gap-1 px-4">
                                           <span>←</span> Sveip for å se alle kurs <span>→</span>
                                         </p>
-                                        <div className="max-w-full overflow-x-auto scrollbar-hide">
+                                        <div className="overflow-x-auto overscroll-x-contain px-4">
                                           <table className="w-max divide-y divide-gray-200 dark:divide-gray-700">
                                             <thead className="bg-gray-50 dark:bg-gray-800/50">
                                               <tr>
