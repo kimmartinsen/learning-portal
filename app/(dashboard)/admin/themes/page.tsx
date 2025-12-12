@@ -923,7 +923,7 @@ export default function ThemesPage() {
   }
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
+    <div className="space-y-6">
       {/* Header */}
       <div className="page-header">
         <div className="page-header-title">
@@ -1236,13 +1236,14 @@ export default function ThemesPage() {
                                     return data.programs.length === 0 ? (
                                       <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette programmet.</div>
                                     ) : (
-                                      <div className="space-y-6 overflow-hidden">
+                                      <div className="space-y-6">
                                         {/* Mobile scroll hint */}
                                         <p className="text-xs text-gray-500 dark:text-gray-400 sm:hidden flex items-center gap-1">
                                           <span>←</span> Sveip for å se alle kurs <span>→</span>
                                         </p>
-                                        <div className="overflow-x-auto">
-                                          <table className="min-w-max divide-y divide-gray-200 dark:divide-gray-700">
+                                        <div className="-mx-4 sm:mx-0">
+                                          <div className="overflow-x-auto px-4 sm:px-0">
+                                            <table className="min-w-max divide-y divide-gray-200 dark:divide-gray-700">
                                             <thead className="bg-gray-50 dark:bg-gray-800/50">
                                               <tr>
                                                 <th className="w-32 sm:w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-800 z-10">Bruker</th>
@@ -1325,6 +1326,7 @@ export default function ThemesPage() {
                                               )}
                                             </tbody>
                                           </table>
+                                          </div>
                                         </div>
                                       </div>
                                     )
