@@ -354,7 +354,7 @@ export default function ModuleViewer({
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-6 py-8">
         <Card className="bg-white shadow-lg dark:bg-gray-900 dark:border-gray-800">
-          <CardContent className="p-8 bg-white dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-800">
+          <CardContent className="p-8">
             {/* Content Section */}
             {isContentSection && (
               <div className="space-y-6">

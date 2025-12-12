@@ -415,7 +415,7 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Continue / Start Button */}
         {getNextModule() !== null && (
-          <Card className="mb-6 bg-gradient-to-r from-primary-50 to-primary-100/50 border-primary-200 dark:from-primary-950/50 dark:to-primary-900/30 dark:border-primary-800/60">
+          <Card className="mb-6 border-2 border-primary-200 bg-primary-50/30 dark:bg-primary-900/20 dark:border-primary-800">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -531,11 +531,11 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
 
         {/* Program Stats */}
         {completedModules === totalModules && (
-          <Card className="mt-6 bg-green-50 border-green-200 dark:bg-green-950/40 dark:border-green-800/60">
+          <Card className="mt-6 border-green-200 bg-green-50 dark:border-green-500/40 dark:bg-green-900/20">
             <CardContent className="p-6 text-center">
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center dark:bg-green-500/20">
-                  <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-300" />
+                  <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
                 </div>
               </div>
               <h3 className="text-lg font-semibold text-green-900 dark:text-green-200 mb-2">
