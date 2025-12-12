@@ -1754,7 +1754,7 @@ export default function AdminProgramsPage() {
           return (
             <details
               key={topic.id}
-              className="group rounded-lg border-2 border-primary-200 bg-primary-50/30 shadow-sm dark:bg-primary-900/10 dark:border-primary-800"
+              className="group rounded-lg border-2 border-primary-200 bg-primary-50/30 shadow-sm dark:bg-primary-900/10 dark:border-primary-800 overflow-hidden"
             >
               <summary className="flex cursor-pointer flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-2 min-w-0">
@@ -1828,7 +1828,7 @@ export default function AdminProgramsPage() {
                 </div>
               </summary>
 
-              <div className="border-t border-primary-200 dark:border-primary-800 px-4 py-4 space-y-3">
+              <div className="border-t border-primary-200 dark:border-primary-800 px-3 sm:px-4 py-3 sm:py-4 space-y-3">
                 {topicThemes.length === 0 ? (
                   <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                     Ingen programmer i dette temaet ennå.
@@ -1842,55 +1842,48 @@ export default function AdminProgramsPage() {
                     return (
                       <details
                         key={theme.id}
-                        className="group/theme rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800"
+                        className="group/theme rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800 overflow-hidden"
                       >
-                        <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
-                          <div className="flex items-center gap-2">
-                            <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open/theme:rotate-90" />
-                            <Tag className="h-4 w-4 text-primary-600" />
-                            <span className="text-base font-semibold">{theme.name}</span>
-                            <span className="text-sm text-gray-500 dark:text-gray-400">({themePrograms.length} kurs)</span>
-                            <span className="text-xs text-gray-400">
-                              {theme.progression_type === 'sequential_auto' ? '(Sekvensiell Auto)' : 
-                               theme.progression_type === 'sequential_manual' ? '(Sekvensiell Manuell)' : ''}
-                            </span>
+                        <summary className="flex cursor-pointer flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open/theme:rotate-90 shrink-0" />
+                            <Tag className="h-4 w-4 text-primary-600 shrink-0" />
+                            <span className="text-sm sm:text-base font-semibold truncate">{theme.name}</span>
+                            <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 shrink-0">({themePrograms.length})</span>
                           </div>
                           
-                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1 flex-wrap pl-6 sm:pl-0" onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="sm" onClick={() => handleMoveTheme(theme.id, topic.id, 'up')} disabled={themeIndex === 0} className="h-7 w-7 p-0" title="Flytt opp">
                               <ChevronUp className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleMoveTheme(theme.id, topic.id, 'down')} disabled={themeIndex === topicThemes.length - 1} className="h-7 w-7 p-0" title="Flytt ned">
                               <ChevronDown className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 text-xs" title="Legg til kurs i program">
-                              <Plus className="h-3 w-3 mr-1" />
-                              Kurs
+                            <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Legg til kurs">
+                              <Plus className="h-3 w-3" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/programs/${theme.id}/structure`)} className="h-7 text-xs" title="Rediger programstruktur">
-                              <Network className="h-3 w-3 mr-1" />
-                              Struktur
+                            <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/programs/${theme.id}/structure`)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Struktur">
+                              <Network className="h-3 w-3" />
                             </Button>
-                            <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 text-xs">
-                              <UserPlus className="h-3 w-3 mr-1" />
-                              Tildel
+                            <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Tildel">
+                              <UserPlus className="h-3 w-3" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleEditTheme(theme)} className="h-7 text-xs" title="Rediger program">
+                            <Button variant="ghost" size="sm" onClick={() => handleEditTheme(theme)} className="h-7 w-7 p-0" title="Rediger">
                               <Edit2 className="h-3 w-3" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDeleteTheme(theme.id)} className="h-7 text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Slett program">
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteTheme(theme.id)} className="h-7 w-7 p-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" title="Slett">
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
                         </summary>
 
-                        <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                        <div className="border-t border-gray-200 dark:border-gray-800 px-3 sm:px-4 py-3 sm:py-4">
                           {themePrograms.length === 0 ? (
                             <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                               Ingen kurs i dette programmet.
                             </div>
                           ) : (
-                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                               {themePrograms.map((program, index) => (
                                 <Card key={program.id}>
                                   <CardContent className="p-4 space-y-3">
@@ -1958,68 +1951,64 @@ export default function AdminProgramsPage() {
           if (themesWithoutTopic.length === 0 && !programsByTheme['no-theme']?.length) return null
 
           return (
-            <details className="group rounded-lg border border-gray-300 bg-gray-50 shadow-sm dark:bg-gray-900/50 dark:border-gray-700">
-              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 list-none [&::-webkit-details-marker]:hidden">
-                <div className="flex items-center gap-2">
-                  <ChevronRight className="h-5 w-5 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
-                  <FolderOpen className="h-5 w-5 text-gray-500" />
-                  <span className="text-lg font-semibold">Uten tema</span>
-                  <span className="text-sm text-gray-500">
-                    ({themesWithoutTopic.length} program, {themesWithoutTopic.reduce((acc, t) => acc + (programsByTheme[t.id]?.length || 0), 0) + (programsByTheme['no-theme']?.length || 0)} kurs)
+            <details className="group rounded-lg border border-gray-300 bg-gray-50 shadow-sm dark:bg-gray-900/50 dark:border-gray-700 overflow-hidden">
+              <summary className="flex cursor-pointer flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 list-none [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ChevronRight className="h-5 w-5 text-gray-500 transition-transform duration-200 group-open:rotate-90 shrink-0" />
+                  <FolderOpen className="h-5 w-5 text-gray-500 shrink-0" />
+                  <span className="text-base sm:text-lg font-semibold truncate">Uten tema</span>
+                  <span className="text-xs sm:text-sm text-gray-500 shrink-0">
+                    ({themesWithoutTopic.length} prog, {themesWithoutTopic.reduce((acc, t) => acc + (programsByTheme[t.id]?.length || 0), 0) + (programsByTheme['no-theme']?.length || 0)} kurs)
                   </span>
                 </div>
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="sm" onClick={() => openThemeFormForTopic(null)} className="h-7 text-xs">
-                    <Plus className="h-3 w-3 mr-1" />
-                    Program
+                <div className="flex items-center gap-1 pl-7 sm:pl-0" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="sm" onClick={() => openThemeFormForTopic(null)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Program">
+                    <Plus className="h-3 w-3" />
                   </Button>
                 </div>
               </summary>
 
-              <div className="border-t border-gray-300 dark:border-gray-700 px-4 py-4 space-y-3">
+              <div className="border-t border-gray-300 dark:border-gray-700 px-3 sm:px-4 py-3 sm:py-4 space-y-3">
                 {themesWithoutTopic.map((theme, themeIndex) => {
                   const themePrograms = programsByTheme[theme.id] || []
                   return (
-                    <details key={theme.id} className="group/theme rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800">
-                      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
-                        <div className="flex items-center gap-2">
-                          <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open/theme:rotate-90" />
-                          <Tag className="h-4 w-4 text-gray-500" />
-                          <span className="text-base font-semibold">{theme.name}</span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">({themePrograms.length} kurs)</span>
+                    <details key={theme.id} className="group/theme rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800 overflow-hidden">
+                      <summary className="flex cursor-pointer flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open/theme:rotate-90 shrink-0" />
+                          <Tag className="h-4 w-4 text-gray-500 shrink-0" />
+                          <span className="text-sm sm:text-base font-semibold truncate">{theme.name}</span>
+                          <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 shrink-0">({themePrograms.length})</span>
                         </div>
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1 flex-wrap pl-6 sm:pl-0" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" onClick={() => handleMoveTheme(theme.id, null, 'up')} disabled={themeIndex === 0} className="h-7 w-7 p-0" title="Flytt opp">
                             <ChevronUp className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleMoveTheme(theme.id, null, 'down')} disabled={themeIndex === themesWithoutTopic.length - 1} className="h-7 w-7 p-0" title="Flytt ned">
                             <ChevronDown className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 text-xs" title="Legg til kurs i program">
-                            <Plus className="h-3 w-3 mr-1" />
-                            Kurs
+                          <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Legg til kurs">
+                            <Plus className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/programs/${theme.id}/structure`)} className="h-7 text-xs">
-                            <Network className="h-3 w-3 mr-1" />
-                            Struktur
+                          <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/programs/${theme.id}/structure`)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Struktur">
+                            <Network className="h-3 w-3" />
                           </Button>
-                          <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 text-xs">
-                            <UserPlus className="h-3 w-3 mr-1" />
-                            Tildel
+                          <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Tildel">
+                            <UserPlus className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEditTheme(theme)} className="h-7 text-xs" title="Rediger program">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditTheme(theme)} className="h-7 w-7 p-0" title="Rediger">
                             <Edit2 className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteTheme(theme.id)} className="h-7 text-xs text-red-600">
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteTheme(theme.id)} className="h-7 w-7 p-0 text-red-600" title="Slett">
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </summary>
-                      <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                      <div className="border-t border-gray-200 dark:border-gray-800 px-3 sm:px-4 py-3 sm:py-4">
                         {themePrograms.length === 0 ? (
                           <div className="py-4 text-center text-sm text-gray-500">Ingen kurs i dette programmet.</div>
                         ) : (
-                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                             {themePrograms.map((program, index) => (
                               <Card key={program.id}>
                                 <CardContent className="p-4 space-y-3">
@@ -2053,17 +2042,15 @@ export default function AdminProgramsPage() {
 
                 {/* Courses without program */}
                 {programsByTheme['no-theme'] && programsByTheme['no-theme'].length > 0 && (
-                  <details className="group/theme rounded-lg border border-dashed border-gray-300 bg-gray-50 dark:bg-gray-900/50 dark:border-gray-700">
-                    <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-400 list-none [&::-webkit-details-marker]:hidden">
-                      <div className="flex items-center gap-2">
-                        <ChevronRight className="h-4 w-4 text-gray-400 transition-transform duration-200 group-open/theme:rotate-90" />
-                        <BookOpen className="h-4 w-4 text-gray-400" />
-                        <span className="text-base font-medium">Kurs uten program</span>
-                        <span className="text-sm text-gray-400">({programsByTheme['no-theme'].length} kurs)</span>
-                      </div>
+                  <details className="group/theme rounded-lg border border-dashed border-gray-300 bg-gray-50 dark:bg-gray-900/50 dark:border-gray-700 overflow-hidden">
+                    <summary className="flex cursor-pointer items-center gap-2 px-3 sm:px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-400 list-none [&::-webkit-details-marker]:hidden">
+                      <ChevronRight className="h-4 w-4 text-gray-400 transition-transform duration-200 group-open/theme:rotate-90 shrink-0" />
+                      <BookOpen className="h-4 w-4 text-gray-400 shrink-0" />
+                      <span className="text-sm sm:text-base font-medium truncate">Kurs uten program</span>
+                      <span className="text-xs sm:text-sm text-gray-400 shrink-0">({programsByTheme['no-theme'].length})</span>
                     </summary>
-                    <div className="border-t border-gray-300 dark:border-gray-700 px-4 py-4">
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="border-t border-gray-300 dark:border-gray-700 px-3 sm:px-4 py-3 sm:py-4">
+                      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                         {programsByTheme['no-theme'].map((program) => (
                           <Card key={program.id}>
                             <CardContent className="p-4 space-y-3">
