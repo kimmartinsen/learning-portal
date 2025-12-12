@@ -1031,7 +1031,7 @@ export default function ThemesPage() {
                                       {data.items.map((item, index) => (
                                         <th
                                           key={item.id}
-                                          className="px-2 sm:px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[100px] sm:min-w-[130px]"
+                                          className="w-0 px-2 sm:px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[100px] sm:min-w-[130px]"
                                         >
                                           <div className="flex flex-col items-center gap-1">
                                             <span>{index + 1}. {item.title}</span>
@@ -1247,7 +1247,7 @@ export default function ThemesPage() {
                                               <tr>
                                                 <th className="w-32 sm:w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-800 z-10">Bruker</th>
                                                 {data.programs.map((program, index) => (
-                                                  <th key={program.id} className="px-2 sm:px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[100px] sm:min-w-[130px]">
+                                                  <th key={program.id} className="w-0 px-2 sm:px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[100px] sm:min-w-[130px]">
                                                     <div className="flex flex-col items-center gap-1">
                                                       <span className="truncate max-w-[80px] sm:max-w-none">{index + 1}. {program.title}</span>
                                                     </div>
@@ -1427,7 +1427,7 @@ export default function ThemesPage() {
                                             <tr>
                                               <th className="w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-900 z-10">Bruker</th>
                                               {data.programs.map((program, index) => (
-                                                <th key={program.id} className="px-2 sm:px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[100px] sm:min-w-[130px]">
+                                                <th key={program.id} className="w-0 px-2 sm:px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[100px] sm:min-w-[130px]">
                                                   <span>{index + 1}. {program.title}</span>
                                                 </th>
                                               ))}

@@ -1864,7 +1864,7 @@ export default function AdminProgramsPage() {
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => openCourseFormForTheme(theme.id)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Legg til kurs">
                               <Plus className="h-3 w-3 sm:mr-1" />
-                              <span className="hidden sm:inline">Program</span>
+                              <span className="hidden sm:inline">Kurs</span>
                             </Button>
                             <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Tildel">
                               <UserPlus className="h-3 w-3 sm:mr-1" />
