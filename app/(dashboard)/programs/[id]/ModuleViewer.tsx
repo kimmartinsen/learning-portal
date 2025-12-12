@@ -94,12 +94,17 @@ export default function ModuleViewer({
   const [quizStarted, setQuizStarted] = useState(false)
   const [quizResults, setQuizResults] = useState<any>(null)
   const [hasStartedProgress, setHasStartedProgress] = useState(false)
+  const [justCompleted, setJustCompleted] = useState(false)
 
   const content = module.content || {}
   const isContentSection = module.type === 'content_section'
   const isVideoSection = module.type === 'video_section'
   const isSingleQuestion = module.type === 'question'
   const isFinalQuiz = module.type === 'final_quiz'
+  
+  // Check if module is already completed
+  const isAlreadyCompleted = progress?.status === 'completed'
+  const isLastModule = moduleIndex === totalModules - 1
 
   const questions: Question[] = content.questions || []
 
@@ -179,6 +184,7 @@ export default function ModuleViewer({
         throw error
       }
       
+      setJustCompleted(true)
       toast.success('Del fullført!')
       onComplete(updateData)
     } catch (error: any) {
@@ -384,20 +390,33 @@ export default function ModuleViewer({
                 )}
 
                 {/* Standard navigation buttons */}
-                <div className="pt-6 border-t border-gray-200">
+                <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2 text-green-600">
-                      <CheckCircle className="w-5 h-5" />
-                      <span className="text-sm">Lest og forstått</span>
-                    </div>
+                    {/* Show checkmark only when completed */}
+                    {(isAlreadyCompleted || justCompleted) ? (
+                      <div className="flex items-center space-x-2 text-green-600 dark:text-green-400">
+                        <CheckCircle className="w-5 h-5" />
+                        <span className="text-sm">Lest og forstått</span>
+                      </div>
+                    ) : (
+                      <div /> 
+                    )}
                     
                     <div className="flex space-x-3">
                       <Button variant="secondary" onClick={onBack}>
                         Til oversikt
                       </Button>
-                      <Button onClick={handleModuleComplete}>
-                        Fullfør del
-                      </Button>
+                      {isAlreadyCompleted ? (
+                        !isLastModule && (
+                          <Button onClick={onComplete}>
+                            Neste del →
+                          </Button>
+                        )
+                      ) : (
+                        <Button onClick={handleModuleComplete}>
+                          Fullfør del
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -447,14 +466,34 @@ export default function ModuleViewer({
 {/* Removed estimated time display */}
 
                 {/* Standard navigation buttons */}
-                <div className="pt-6 border-t border-gray-200">
-                  <div className="flex space-x-3 justify-end">
-                    <Button variant="secondary" onClick={onBack}>
-                      Til oversikt
-                    </Button>
-                    <Button onClick={handleModuleComplete}>
-                      Marker som sett
-                    </Button>
+                <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    {/* Show checkmark only when completed */}
+                    {(isAlreadyCompleted || justCompleted) ? (
+                      <div className="flex items-center space-x-2 text-green-600 dark:text-green-400">
+                        <CheckCircle className="w-5 h-5" />
+                        <span className="text-sm">Video sett</span>
+                      </div>
+                    ) : (
+                      <div />
+                    )}
+                    
+                    <div className="flex space-x-3">
+                      <Button variant="secondary" onClick={onBack}>
+                        Til oversikt
+                      </Button>
+                      {isAlreadyCompleted ? (
+                        !isLastModule && (
+                          <Button onClick={onComplete}>
+                            Neste del →
+                          </Button>
+                        )
+                      ) : (
+                        <Button onClick={handleModuleComplete}>
+                          Marker som sett
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -472,16 +511,36 @@ export default function ModuleViewer({
                 />
                 
                 {/* Standard navigation buttons */}
-                <div className="pt-6 border-t border-gray-200">
-                  <div className="flex space-x-3 justify-end">
-                    <Button variant="secondary" onClick={onBack}>
-                      Til oversikt
-                    </Button>
-                    {questionAnswers.get(questions[0].id) !== undefined && !showQuestionFeedback.get(questions[0].id) && (
-                      <Button onClick={handleModuleComplete}>
-                        Fullfør spørsmål
-                      </Button>
+                <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    {/* Show checkmark only when completed */}
+                    {(isAlreadyCompleted || justCompleted) ? (
+                      <div className="flex items-center space-x-2 text-green-600 dark:text-green-400">
+                        <CheckCircle className="w-5 h-5" />
+                        <span className="text-sm">Spørsmål besvart</span>
+                      </div>
+                    ) : (
+                      <div />
                     )}
+                    
+                    <div className="flex space-x-3">
+                      <Button variant="secondary" onClick={onBack}>
+                        Til oversikt
+                      </Button>
+                      {isAlreadyCompleted ? (
+                        !isLastModule && (
+                          <Button onClick={onComplete}>
+                            Neste del →
+                          </Button>
+                        )
+                      ) : (
+                        questionAnswers.get(questions[0].id) !== undefined && !showQuestionFeedback.get(questions[0].id) && (
+                          <Button onClick={handleModuleComplete}>
+                            Fullfør spørsmål
+                          </Button>
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
