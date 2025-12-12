@@ -923,7 +923,7 @@ export default function ThemesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="page-header">
         <div className="page-header-title">
