@@ -299,15 +299,17 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Brukere</h1>
-          <p className="text-gray-600 dark:text-gray-300">Administrer bedriftens brukere</p>
+      <div className="page-header">
+        <div className="page-header-title">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Brukere</h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Administrer bedriftens brukere</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Ny bruker
-        </Button>
+        <div className="page-header-actions">
+          <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
+            <Plus className="w-4 h-4 mr-2" />
+            Ny bruker
+          </Button>
+        </div>
       </div>
 
       {/* Form Modal */}
@@ -440,37 +442,53 @@ export default function UsersPage() {
       </Modal>
 
       {/* Users List */}
-      <div className="grid gap-4">
+      <div className="grid gap-3 sm:gap-4">
         {profiles.length > 0 ? (
           profiles.map((profile) => (
             <Card key={profile.id}>
-              <CardContent className="px-4 py-3">
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                  <div className="flex min-w-[220px] items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-100">
+              <CardContent className="p-3 sm:px-4 sm:py-3">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-x-6 sm:gap-y-2">
+                  {/* User info */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1 sm:flex-initial sm:min-w-[220px]">
+                    <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-primary-100 shrink-0">
                       {profile.avatar_url ? (
                         <img
                           src={profile.avatar_url}
                           alt={profile.full_name}
-                          className="h-11 w-11 rounded-full object-cover"
+                          className="h-10 w-10 sm:h-11 sm:w-11 rounded-full object-cover"
                         />
                       ) : (
-                        <span className="text-primary-700 font-medium">
+                        <span className="text-primary-700 font-medium text-sm">
                           {generateInitials(profile.full_name)}
                         </span>
                       )}
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    <div className="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                         {profile.full_name || 'Ukjent bruker'}
                       </h3>
                       <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
-                        <Mail className="h-3.5 w-3.5 text-gray-400" />
+                        <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                         <span className="truncate">{profile.email}</span>
                       </div>
                     </div>
+                    {/* Actions on mobile - inline with user info */}
+                    <div className="flex items-center gap-1 sm:hidden shrink-0">
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)} className="h-8 w-8 p-0">
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(profile.id)}
+                        className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
 
+                  {/* Tags */}
                   <div className="flex items-center gap-2 text-xs font-medium flex-wrap">
                     <span className={`inline-flex items-center rounded-full px-2 py-1 ${getRoleColor(profile.role)}`}>
                       {getRoleText(profile.role)}
@@ -486,11 +504,13 @@ export default function UsersPage() {
                     )}
                   </div>
 
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {/* Date - hidden on mobile */}
+                  <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400">
                     Opprettet {new Date(profile.created_at).toLocaleDateString('no-NO')}
                   </p>
 
-                  <div className="ml-auto flex items-center gap-1">
+                  {/* Actions on desktop */}
+                  <div className="hidden sm:flex ml-auto items-center gap-1">
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)}>
                       <Edit2 className="h-4 w-4" />
                     </Button>

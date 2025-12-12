@@ -106,12 +106,12 @@ export function Sidebar({ user, isInstructor = false }: SidebarProps) {
   return (
     <>
       {/* Mobile menu button */}
-      <div className="fixed top-4 left-4 z-50 lg:hidden">
+      <div className="fixed top-3 left-3 z-50 lg:hidden">
         <Button
           variant="ghost"
           size="sm"
           onClick={toggleSidebar}
-          className="bg-white shadow-sm"
+          className="bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-700 h-9 w-9 p-0"
           aria-label={isOpen ? 'Lukk meny' : 'Åpne meny'}
           aria-expanded={isOpen}
         >
@@ -122,7 +122,7 @@ export function Sidebar({ user, isInstructor = false }: SidebarProps) {
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
           aria-label="Lukk meny"
           role="button"
@@ -134,14 +134,21 @@ export function Sidebar({ user, isInstructor = false }: SidebarProps) {
       {/* Sidebar */}
       <div
         className={cn(
-          'fixed left-0 top-0 h-full w-56 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-900 transform transition-transform duration-300 ease-in-out z-40',
-          'lg:translate-x-0 lg:static lg:z-0',
+          'fixed left-0 top-0 h-full w-64 sm:w-56 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-900 transform transition-transform duration-300 ease-in-out z-40',
+          'lg:translate-x-0 lg:z-0',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         <div className="flex flex-col h-full">
+          {/* Header/Logo area - mobile only */}
+          <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-800 lg:hidden">
+            <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Kompetanseportalen
+            </span>
+          </div>
+          
           {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1">
+          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {getMenuItems().map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href

@@ -56,11 +56,11 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <div className="page-header-title">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
           Hei {profile?.full_name ? profile.full_name : 'administrator'} 👋
         </h1>
-        <p className="text-gray-600 dark:text-gray-300">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
           Velg ett av områdene under for å komme i gang med administrasjonen av opplæringsportalen.
         </p>
       </div>

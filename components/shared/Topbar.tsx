@@ -60,19 +60,20 @@ export function Topbar({ user, className }: TopbarProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-900 px-4 py-4 transition-colors duration-200 lg:px-8',
+        'fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-900 px-4 py-3 transition-colors duration-200 lg:static lg:px-8 lg:py-4',
         className
       )}
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <div className="flex items-center justify-between gap-2">
+        {/* Logo and company - hidden on mobile to make room for hamburger menu */}
+        <div className="flex items-center gap-3 pl-12 lg:pl-0">
+          <span className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
             Kompetanseportalen
           </span>
           {user?.companies?.name && (
             <>
-              <span className="text-gray-300 dark:text-gray-600">|</span>
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">|</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 hidden sm:inline truncate max-w-[150px] lg:max-w-none">
                 {user.companies.name}
               </span>
             </>
@@ -80,16 +81,16 @@ export function Topbar({ user, className }: TopbarProps) {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center space-x-3 md:space-x-4">
+        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0">
           <ThemeToggle />
 
           {/* Notifications */}
           {user && <NotificationDropdown userId={user.id} />}
 
           {/* User info & logout */}
-          <div className="flex items-center space-x-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="text-right hidden md:block">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[120px] lg:max-w-none">
                 {user?.full_name}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
@@ -97,7 +98,7 @@ export function Topbar({ user, className }: TopbarProps) {
               </p>
             </div>
             
-            <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center shrink-0">
               {user?.avatar_url ? (
                 <img
                   src={user.avatar_url}
@@ -111,12 +112,12 @@ export function Topbar({ user, className }: TopbarProps) {
               )}
             </div>
 
-            {/* Logout Button */}
+            {/* Logout Button - hidden on mobile, shown in sidebar */}
             <Button
               variant="ghost"
               size="sm"
               onClick={handleSignOut}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10"
+              className="hidden sm:flex text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10"
               title="Logg ut"
             >
               <LogOut className="w-4 h-4" />

@@ -46,6 +46,34 @@
   .label {
     @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
   }
+
+  /* Responsive page header - stacks on mobile, row on desktop */
+  .page-header {
+    @apply flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between;
+  }
+  
+  .page-header-title {
+    @apply space-y-1;
+  }
+  
+  .page-header-actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  /* Responsive button group - wraps on mobile */
+  .btn-group {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  /* Hide scrollbar but allow scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .content-html {

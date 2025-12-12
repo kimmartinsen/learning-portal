@@ -273,9 +273,9 @@ export default async function MyLearningPage({
       <UserChangeDetector />
       <FocusRefresher />
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Min opplæring</h1>
-        <p className="text-gray-600 dark:text-gray-300">Oversikt over dine personlige kursoppdrag</p>
+      <div className="page-header-title">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Min opplæring</h1>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Oversikt over dine personlige kursoppdrag</p>
       </div>
 
       {/* Locked Course Alert */}
@@ -325,16 +325,15 @@ export default async function MyLearningPage({
               className="group/topic rounded-lg border-2 border-primary-200 bg-primary-50/30 shadow-sm dark:bg-primary-900/10 dark:border-primary-800 transition-colors duration-200"
               open
             >
-              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
-                <div className="flex items-center gap-2">
-                  <ChevronRight className="h-5 w-5 text-primary-600 transition-transform duration-200 group-open/topic:rotate-90" />
-                  <Folder className="h-5 w-5 text-primary-600" />
-                  <span className="text-lg font-bold text-primary-700 dark:text-primary-400">{topicName}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    ({themeNames.length} programmer, {totalCoursesInTopic} kurs – {completedInTopic}{' '}
-                    fullført, {notCompletedInTopic} ikke fullført)
-                  </span>
+              <summary className="flex cursor-pointer flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 px-3 sm:px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ChevronRight className="h-5 w-5 text-primary-600 transition-transform duration-200 group-open/topic:rotate-90 shrink-0" />
+                  <Folder className="h-5 w-5 text-primary-600 shrink-0" />
+                  <span className="text-base sm:text-lg font-bold text-primary-700 dark:text-primary-400 truncate">{topicName}</span>
                 </div>
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 pl-7 sm:pl-0">
+                  {themeNames.length} prog, {totalCoursesInTopic} kurs – {completedInTopic} fullført
+                </span>
               </summary>
 
               <div className="border-t border-primary-200 dark:border-primary-800 px-4 py-4 space-y-3">
@@ -349,23 +348,22 @@ export default async function MyLearningPage({
                       key={`${topicName}-${themeName}`}
                       className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800 transition-colors duration-200"
                     >
-                      <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
-                        <div className="flex items-center gap-2">
-                          <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
-                          <Tag className="h-4 w-4 text-primary-600" />
-                          <span className="text-base font-semibold">{themeName}</span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            ({themeAssignments.length} kurs – {completedInTheme} fullført,{' '}
-                            {notCompletedInTheme} ikke fullført)
-                          </span>
+                      <summary className="flex cursor-pointer flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 px-3 sm:px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90 shrink-0" />
+                          <Tag className="h-4 w-4 text-primary-600 shrink-0" />
+                          <span className="text-sm sm:text-base font-semibold truncate">{themeName}</span>
                         </div>
+                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 pl-6 sm:pl-0">
+                          {themeAssignments.length} kurs – {completedInTheme} fullført
+                        </span>
                       </summary>
 
-                      <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                      <div className="border-t border-gray-200 dark:border-gray-800 px-3 sm:px-4 py-3 sm:py-4">
                         {themeAssignments.length === 0 ? (
                           <p className="text-sm text-gray-500 dark:text-gray-400">Ingen kurs i dette programmet.</p>
                         ) : (
-                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {themeAssignments.map((assignment, index) => {
                       const status = assignment.calculated_status
                       const isLocked = status === 'locked' || status === 'pending'

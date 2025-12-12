@@ -8,6 +8,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '480px', // Extra small breakpoint for very small phones
+      },
       colors: {
         primary: {
           50: '#eff6ff',

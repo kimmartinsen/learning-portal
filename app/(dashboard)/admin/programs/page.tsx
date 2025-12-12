@@ -1421,23 +1421,23 @@ export default function AdminProgramsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Kursadministrasjon</h1>
-          <p className="text-gray-600 dark:text-gray-300">Administrer tema, programmer og kurs for bedriften</p>
+      <div className="page-header">
+        <div className="page-header-title">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Kursadministrasjon</h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Administrer tema, programmer og kurs for bedriften</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" onClick={() => setShowTopicForm(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nytt tema
+        <div className="page-header-actions">
+          <Button variant="ghost" onClick={() => setShowTopicForm(true)} size="sm" className="text-xs sm:text-sm">
+            <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Nytt </span>tema
           </Button>
-          <Button variant="secondary" onClick={() => setShowThemeForm(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nytt program
+          <Button variant="secondary" onClick={() => setShowThemeForm(true)} size="sm" className="text-xs sm:text-sm">
+            <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Nytt </span>program
           </Button>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nytt kurs
+          <Button onClick={() => setShowForm(true)} size="sm" className="text-xs sm:text-sm">
+            <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Nytt </span>kurs
           </Button>
         </div>
       </div>
@@ -1756,17 +1756,17 @@ export default function AdminProgramsPage() {
               key={topic.id}
               className="group rounded-lg border-2 border-primary-200 bg-primary-50/30 shadow-sm dark:bg-primary-900/10 dark:border-primary-800"
             >
-              <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
-                <div className="flex items-center gap-2">
-                  <ChevronRight className="h-5 w-5 text-primary-600 transition-transform duration-200 group-open:rotate-90" />
-                  <Folder className="h-5 w-5 text-primary-600" />
-                  <span className="text-lg font-bold text-primary-700 dark:text-primary-400">{topic.name}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    ({topicThemes.length} program, {topicCourseCount} kurs)
+              <summary className="flex cursor-pointer flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ChevronRight className="h-5 w-5 text-primary-600 transition-transform duration-200 group-open:rotate-90 shrink-0" />
+                  <Folder className="h-5 w-5 text-primary-600 shrink-0" />
+                  <span className="text-base sm:text-lg font-bold text-primary-700 dark:text-primary-400 truncate">{topic.name}</span>
+                  <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 shrink-0">
+                    ({topicThemes.length} prog, {topicCourseCount} kurs)
                   </span>
                 </div>
                 
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1 sm:gap-2 flex-wrap pl-7 sm:pl-0" onClick={(e) => e.stopPropagation()}>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1794,8 +1794,8 @@ export default function AdminProgramsPage() {
                     className="h-7 text-xs"
                     title="Legg til program i tema"
                   >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Program
+                    <Plus className="h-3 w-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Program</span>
                   </Button>
                   <Button
                     variant="secondary"
@@ -1804,14 +1804,14 @@ export default function AdminProgramsPage() {
                     className="h-7 text-xs"
                     title="Tildel alle programmer i tema"
                   >
-                    <UserPlus className="h-3 w-3 mr-1" />
-                    Tildel
+                    <UserPlus className="h-3 w-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Tildel</span>
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleEditTopic(topic)}
-                    className="h-7 text-xs"
+                    className="h-7 w-7 p-0 sm:w-auto sm:px-2"
                     title="Rediger tema"
                   >
                     <Edit2 className="h-3 w-3" />
@@ -1820,7 +1820,7 @@ export default function AdminProgramsPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteTopic(topic.id)}
-                    className="h-7 text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                    className="h-7 w-7 p-0 sm:w-auto sm:px-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                     title="Slett tema"
                   >
                     <Trash2 className="h-3 w-3" />

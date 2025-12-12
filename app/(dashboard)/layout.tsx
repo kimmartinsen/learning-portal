@@ -77,10 +77,10 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
-      <Topbar user={profile} className="border-b border-gray-200 dark:border-gray-900 lg:pl-[14rem]" />
+      <Topbar user={profile} className="border-b border-gray-200 dark:border-gray-900 lg:pl-56" />
       <div className="flex">
         <Sidebar user={profile} isInstructor={isInstructor} />
-        <main className="flex-1 px-6 py-6 lg:px-8 lg:py-8">
+        <main className="flex-1 pt-16 lg:pt-0 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 lg:ml-56 min-w-0">
           {children}
         </main>
       </div>
