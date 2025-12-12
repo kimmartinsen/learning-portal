@@ -1242,7 +1242,7 @@ export default function ThemesPage() {
                                           <span>←</span> Sveip for å se alle kurs <span>→</span>
                                         </p>
                                         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-                                          <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                          <table className="divide-y divide-gray-200 dark:divide-gray-700">
                                             <thead className="bg-gray-50 dark:bg-gray-800/50">
                                               <tr>
                                                 <th className="w-32 sm:w-40 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-800 z-10">Bruker</th>
@@ -1295,7 +1295,7 @@ export default function ThemesPage() {
                                                         const currentStatus = status.status === 'completed' ? 'completed' : 'not_started'
                                                         return (
                                                           <td key={`${row.userId}-${program.id}`} className="px-3 py-2 text-center align-middle whitespace-nowrap">
-                                                            <select value={currentStatus} onChange={(e) => handleStatusChange(e.target.value)} className="rounded-lg border border-gray-300 bg-white px-1 sm:px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer w-full" onClick={(e) => e.stopPropagation()}>
+                                                            <select value={currentStatus} onChange={(e) => handleStatusChange(e.target.value)} className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 cursor-pointer" onClick={(e) => e.stopPropagation()}>
                                                               <option value="not_started">Ikke fullført</option>
                                                               <option value="completed">Fullført</option>
                                                             </select>
