@@ -415,7 +415,7 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Continue / Start Button */}
         {getNextModule() !== null && (
-          <Card className="mb-6 bg-primary-50 border-primary-200 dark:bg-primary-950/30 dark:border-primary-900/60">
+          <Card className="mb-6 bg-gradient-to-r from-primary-50 to-primary-100/50 border-primary-200 dark:from-primary-950/50 dark:to-primary-900/30 dark:border-primary-800/60">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>

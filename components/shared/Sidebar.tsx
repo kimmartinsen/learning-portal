@@ -147,6 +147,9 @@ export function Sidebar({ user, isInstructor = false }: SidebarProps) {
             </span>
           </div>
           
+          {/* Spacer for topbar on desktop */}
+          <div className="hidden lg:block h-[61px] border-b border-gray-200 dark:border-gray-800" />
+          
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {getMenuItems().map((item) => {

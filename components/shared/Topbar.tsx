@@ -60,7 +60,7 @@ export function Topbar({ user, className }: TopbarProps) {
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-900 px-4 py-3 transition-colors duration-200 lg:static lg:px-8 lg:py-4',
+        'fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-900 px-4 py-3 transition-colors duration-200 lg:sticky lg:px-8 lg:py-4',
         className
       )}
     >
