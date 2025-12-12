@@ -703,15 +703,17 @@ export default function ChecklistsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Sjekklister</h1>
-          <p className="text-gray-600 dark:text-gray-300">Administrer sjekklister for bedriften</p>
+      <div className="page-header">
+        <div className="page-header-title">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Sjekklister</h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Administrer sjekklister for bedriften</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Ny sjekkliste
-        </Button>
+        <div className="page-header-actions">
+          <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
+            Ny sjekkliste
+          </Button>
+        </div>
       </div>
 
       {/* Checklists List - Similar to Programs page */}
@@ -739,19 +741,19 @@ export default function ChecklistsPage() {
             return (
               <details
                 key={checklist.id}
-                className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800"
+                className="group rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-900 dark:border-gray-800 overflow-hidden"
               >
-                <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
-                  <div className="flex items-center gap-2">
-                    <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90" />
-                    <Tag className="h-4 w-4 text-primary-600" />
-                    <span className="text-base font-semibold">{checklist.title}</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      ({items.length} punkter)
+                <summary className="flex cursor-pointer flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-gray-100 list-none [&::-webkit-details-marker]:hidden">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ChevronRight className="h-4 w-4 text-gray-500 transition-transform duration-200 group-open:rotate-90 shrink-0" />
+                    <Tag className="h-4 w-4 text-primary-600 shrink-0" />
+                    <span className="text-sm sm:text-base font-semibold truncate">{checklist.title}</span>
+                    <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 shrink-0">
+                      ({items.length})
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1 flex-wrap pl-6 sm:pl-0" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -779,26 +781,26 @@ export default function ChecklistsPage() {
                         setCurrentChecklistId(checklist.id)
                         setShowItemForm(true)
                       }}
-                      className="h-7 text-xs"
+                      className="h-7 w-7 p-0 sm:w-auto sm:px-2"
                       title="Legg til sjekkpunkt"
                     >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Legg til sjekkpunkt
+                      <Plus className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="secondary"
                       size="sm"
                       onClick={() => handleOpenAssign(checklist)}
-                      className="h-7 text-xs"
+                      className="h-7 w-7 p-0 sm:w-auto sm:px-2"
+                      title="Tildel"
                     >
-                      <UserPlus className="h-3 w-3 mr-1" />
-                      Tildel sjekkliste
+                      <UserPlus className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEdit(checklist)}
-                      title="Rediger sjekkliste"
+                      className="h-7 w-7 p-0"
+                      title="Rediger"
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
@@ -806,21 +808,21 @@ export default function ChecklistsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDelete(checklist.id)}
-                      className="text-red-600 hover:text-red-700 dark:hover:text-red-400"
-                      title="Slett sjekkliste"
+                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 dark:hover:text-red-400"
+                      title="Slett"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </summary>
 
-                <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                <div className="border-t border-gray-200 dark:border-gray-800 px-3 sm:px-4 py-3 sm:py-4">
                   {items.length === 0 ? (
                     <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                       Ingen punkter i denne sjekklisten ennå.
                     </div>
                   ) : (
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                       {items.map((item, index) => (
                         <Card key={item.id}>
                           <CardContent className="p-4 space-y-3">
