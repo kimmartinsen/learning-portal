@@ -28,6 +28,7 @@ import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { EnhancedTrainingProgram, Theme, Topic } from '@/types/enhanced-database.types'
 import { ThemeForm, type ThemeFormData } from '@/components/admin/programs/ThemeForm'
+import Link from 'next/link'
 import { AssignmentSelector } from '@/components/admin/AssignmentSelector'
 
 interface User {
@@ -816,12 +817,17 @@ export default function AdminProgramsPage() {
     if (!user) return
 
     try {
-      // Get themes in same topic/group
+      // Get themes in same topic/group, sorted by order_index (with null last) then created_at
       const themesInGroup = themes.filter(t => t.topic_id === topicId)
-        .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
-
-      const currentTheme = themesInGroup.find(t => t.id === themeId)
-      if (!currentTheme) return
+        .sort((a, b) => {
+          // Null order_index comes last
+          if (a.order_index === null && b.order_index === null) {
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          }
+          if (a.order_index === null) return 1
+          if (b.order_index === null) return -1
+          return a.order_index - b.order_index
+        })
 
       const currentIndex = themesInGroup.findIndex(t => t.id === themeId)
       if (currentIndex === -1) return
@@ -829,26 +835,20 @@ export default function AdminProgramsPage() {
       const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
       if (newIndex < 0 || newIndex >= themesInGroup.length) return
 
-      const targetTheme = themesInGroup[newIndex]
+      // Reorder the array
+      const reorderedThemes = [...themesInGroup]
+      const [movedTheme] = reorderedThemes.splice(currentIndex, 1)
+      reorderedThemes.splice(newIndex, 0, movedTheme)
 
-      // Swap order_index values
-      const tempOrder = currentTheme.order_index ?? currentIndex
-      const targetOrder = targetTheme.order_index ?? newIndex
+      // Update order_index for all themes in this group to ensure consistency
+      for (let i = 0; i < reorderedThemes.length; i++) {
+        const { error } = await supabase
+          .from('themes')
+          .update({ order_index: i })
+          .eq('id', reorderedThemes[i].id)
 
-      // Update both themes
-      const { error: error1 } = await supabase
-        .from('themes')
-        .update({ order_index: targetOrder })
-        .eq('id', themeId)
-
-      if (error1) throw error1
-
-      const { error: error2 } = await supabase
-        .from('themes')
-        .update({ order_index: tempOrder })
-        .eq('id', targetTheme.id)
-
-      if (error2) throw error2
+        if (error) throw error
+      }
 
       toast.success('Rekkefølge oppdatert!')
       await fetchThemes(user.company_id)
@@ -1752,7 +1752,15 @@ export default function AdminProgramsPage() {
         {/* Topics (Tema) */}
         {topics.map((topic, topicIndex) => {
           const topicThemes = themes.filter(t => t.topic_id === topic.id)
-            .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+            .sort((a, b) => {
+              // Null order_index comes last
+              if (a.order_index === null && b.order_index === null) {
+                return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+              }
+              if (a.order_index === null) return 1
+              if (b.order_index === null) return -1
+              return a.order_index - b.order_index
+            })
           const topicCourseCount = topicThemes.reduce((acc, t) => acc + (programsByTheme[t.id]?.length || 0), 0)
 
           return (
@@ -1867,6 +1875,12 @@ export default function AdminProgramsPage() {
                               <Plus className="h-3 w-3 sm:mr-1" />
                               <span className="hidden sm:inline">Kurs</span>
                             </Button>
+                            <Link href={`/admin/programs/${theme.id}/structure`}>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Struktur">
+                                <ArrowUpDown className="h-3 w-3 sm:mr-1" />
+                                <span className="hidden sm:inline">Struktur</span>
+                              </Button>
+                            </Link>
                             <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Tildel">
                               <UserPlus className="h-3 w-3 sm:mr-1" />
                               <span className="hidden sm:inline">Tildel</span>
@@ -1950,7 +1964,15 @@ export default function AdminProgramsPage() {
         {/* Themes without topic (Uten tema) */}
         {(() => {
           const themesWithoutTopic = themes.filter(t => !t.topic_id)
-            .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+            .sort((a, b) => {
+              // Null order_index comes last
+              if (a.order_index === null && b.order_index === null) {
+                return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+              }
+              if (a.order_index === null) return 1
+              if (b.order_index === null) return -1
+              return a.order_index - b.order_index
+            })
           if (themesWithoutTopic.length === 0 && !programsByTheme['no-theme']?.length) return null
 
           return (
@@ -1995,6 +2017,12 @@ export default function AdminProgramsPage() {
                             <Plus className="h-3 w-3 sm:mr-1" />
                             <span className="hidden sm:inline">Program</span>
                           </Button>
+                          <Link href={`/admin/programs/${theme.id}/structure`}>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Struktur">
+                              <ArrowUpDown className="h-3 w-3 sm:mr-1" />
+                              <span className="hidden sm:inline">Struktur</span>
+                            </Button>
+                          </Link>
                           <Button variant="secondary" size="sm" onClick={() => handleOpenAssign(theme)} className="h-7 w-7 p-0 sm:w-auto sm:px-2" title="Tildel">
                             <UserPlus className="h-3 w-3 sm:mr-1" />
                             <span className="hidden sm:inline">Tildel</span>
