@@ -194,6 +194,7 @@ export default function InstructorProgramsPage() {
           .select('*')
           .in('id', themeIds)
           .eq('company_id', companyId)
+          .order('order_index', { ascending: true })
           .order('created_at', { ascending: true })
 
         if (themesError) throw themesError

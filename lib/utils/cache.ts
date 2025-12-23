@@ -12,6 +12,7 @@ export const getThemes = cache(async (companyId: string) => {
     .from('themes')
     .select('*')
     .eq('company_id', companyId)
+    .order('order_index', { ascending: true })
     .order('created_at', { ascending: true })
 
   if (error) throw error

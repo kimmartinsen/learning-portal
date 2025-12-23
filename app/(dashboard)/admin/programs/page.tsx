@@ -188,6 +188,7 @@ export default function AdminProgramsPage() {
       .from('themes')
       .select('*, topic:topics(id, name)')
       .eq('company_id', companyId)
+      .order('order_index', { ascending: true })
       .order('created_at', { ascending: true })
 
     if (error) throw error
