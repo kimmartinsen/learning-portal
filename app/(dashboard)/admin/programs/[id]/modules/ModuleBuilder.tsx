@@ -862,7 +862,7 @@ export default function ModuleBuilder({ program, companyId }: Props) {
           <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Programstruktur ({modules.length} komponenter)
+                Kursstruktur ({modules.length} {modules.length === 1 ? 'del' : 'deler'})
               </h2>
             </CardHeader>
             <CardContent>
