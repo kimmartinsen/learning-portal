@@ -112,6 +112,9 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
   })
 
   const getModuleStatus = (module: Module, index: number) => {
+    // In preview mode, all modules are available
+    if (isPreview) return 'available'
+    
     const progress = progressMap.get(module.id)
     
     if (progress?.status === 'completed') return 'completed'
@@ -161,6 +164,30 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
   }
 
   const handleModuleComplete = async (moduleId: string, data?: any) => {
+    // In preview mode, just navigate to next module without saving anything
+    if (isPreview) {
+      const currentModule = sortedModules.find(m => m.id === moduleId)
+      
+      // Don't auto-navigate if it's a final quiz - let admin see results
+      if (currentModule?.is_final_quiz) {
+        return
+      }
+      
+      const currentIndex = sortedModules.findIndex(m => m.id === moduleId)
+      const nextIndex = currentIndex + 1
+      
+      if (nextIndex < sortedModules.length) {
+        setTimeout(() => {
+          setCurrentModuleIndex(nextIndex)
+        }, 300)
+      } else {
+        setTimeout(() => {
+          setCurrentModuleIndex(null)
+        }, 300)
+      }
+      return
+    }
+
     // Refresh progress data
     try {
       const { data: newProgress, error } = await supabase

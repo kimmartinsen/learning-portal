@@ -155,12 +155,13 @@ export default function ModuleViewer({
   }
 
   const markModuleCompleted = async (additionalData: any = {}) => {
-    // Don't allow instructors or preview mode to change status
+    // Don't allow instructors or preview mode to save to database
     if (skipProgressSave) {
-      toast.info(isPreview 
-        ? 'Forhåndsvisningsmodus – fremdriften lagres ikke.' 
-        : 'Du er instruktør for dette kurset. Statusen kan ikke endres.'
-      )
+      if (!isPreview) {
+        toast.info('Du er instruktør for dette kurset. Statusen kan ikke endres.')
+      }
+      // Still call onComplete to allow navigation to next module in preview mode
+      onComplete(additionalData)
       return
     }
     
