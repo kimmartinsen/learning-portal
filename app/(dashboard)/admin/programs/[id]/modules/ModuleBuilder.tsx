@@ -60,6 +60,10 @@ export default function ModuleBuilder({ program, companyId }: Props) {
   const [editingModule, setEditingModule] = useState<Module | null>(null)
   const [formType, setFormType] = useState<ComponentType>('content_section')
   const [loading, setLoading] = useState(false)
+  
+  // Drag and drop state
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -91,6 +95,74 @@ export default function ModuleBuilder({ program, companyId }: Props) {
     })
     setEditingModule(null)
     setShowForm(false)
+  }
+
+  // Drag and drop handlers
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index)
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    if (draggedIndex === null || draggedIndex === index) return
+    setDragOverIndex(index)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null)
+  }
+
+  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault()
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+
+    // Reorder modules locally
+    const newModules = [...modules]
+    const [draggedModule] = newModules.splice(draggedIndex, 1)
+    newModules.splice(dropIndex, 0, draggedModule)
+
+    // Update order_index for each module
+    const updatedModules = newModules.map((module, index) => ({
+      ...module,
+      order_index: index
+    }))
+
+    setModules(updatedModules)
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+
+    // Save new order to database
+    try {
+      const updates = updatedModules.map(module => ({
+        id: module.id,
+        order_index: module.order_index
+      }))
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('modules')
+          .update({ order_index: update.order_index })
+          .eq('id', update.id)
+
+        if (error) throw error
+      }
+
+      toast.success('Rekkefølge oppdatert')
+    } catch (error: any) {
+      console.error('Error updating order:', error)
+      toast.error('Kunne ikke oppdatere rekkefølgen')
+      // Revert on error
+      setModules(program.modules.sort((a, b) => a.order_index - b.order_index))
+    }
+  }
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null)
+    setDragOverIndex(null)
   }
 
   const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -809,10 +881,22 @@ export default function ModuleBuilder({ program, companyId }: Props) {
                   {modules.map((module, index) => (
                     <div
                       key={module.id}
-                      className="flex items-center space-x-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-sm transition-shadow bg-white dark:bg-gray-900/60"
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`flex items-center space-x-4 p-4 border rounded-lg transition-all bg-white dark:bg-gray-900/60 ${
+                        draggedIndex === index 
+                          ? 'opacity-50 border-primary-500 shadow-lg' 
+                          : dragOverIndex === index
+                          ? 'border-primary-500 border-2 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:shadow-sm'
+                      }`}
                     >
-                      <div className="flex-shrink-0">
-                        <GripVertical className="w-5 h-5 text-gray-400" />
+                      <div className="flex-shrink-0 cursor-grab active:cursor-grabbing">
+                        <GripVertical className="w-5 h-5 text-gray-400 hover:text-gray-600" />
                       </div>
 
                       <div className="flex-shrink-0">
