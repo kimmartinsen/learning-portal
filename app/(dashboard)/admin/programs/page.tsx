@@ -1169,12 +1169,30 @@ export default function AdminProgramsPage() {
       }
 
       let successCount = 0
-      let removedCount = 0
+      let removedDepartmentsCount = 0
+      let removedUsersCount = 0
       let allAssignedUserIds: string[] = []
 
       // Calculate removals
       const removedDepartmentIds = initialAssignSelection.departmentIds.filter(id => !assignSelection.departmentIds.includes(id))
       const removedUserIds = initialAssignSelection.userIds.filter(id => !assignSelection.userIds.includes(id))
+      
+      // Count unique users to be removed (for accurate message)
+      let uniqueRemovedUserIds = new Set<string>()
+      
+      // Pre-calculate users in removed departments
+      for (const deptId of removedDepartmentIds) {
+        const { data: deptUsers } = await supabase
+          .from('user_departments')
+          .select('user_id')
+          .eq('department_id', deptId)
+        
+        if (deptUsers) {
+          deptUsers.forEach(u => uniqueRemovedUserIds.add(u.user_id))
+        }
+      }
+      // Add individually removed users
+      removedUserIds.forEach(id => uniqueRemovedUserIds.add(id))
 
       // 2. Loop through programs and assign/remove
       const isSequential = assigningTheme ? (assigningTheme.progression_type === 'sequential_auto' || assigningTheme.progression_type === 'sequential_manual') : false
@@ -1185,7 +1203,7 @@ export default function AdminProgramsPage() {
         
         // --- REMOVALS ---
         
-        // Remove department assignments
+        // Remove department assignments (only count once, not per program)
         for (const deptId of removedDepartmentIds) {
           // 1. Get users in this department
           const { data: deptUsers } = await supabase
@@ -1200,16 +1218,25 @@ export default function AdminProgramsPage() {
             .eq('program_id', programId)
             .eq('assigned_to_department_id', deptId)
           
-          if (!deptDelError) removedCount++
+          if (deptDelError) {
+            console.error('Error deleting department assignment:', deptDelError)
+          } else if (i === 0) {
+            // Only count once (on first program iteration)
+            removedDepartmentsCount++
+          }
 
           // 3. Delete auto-assigned user assignments
           if (deptUsers && deptUsers.length > 0) {
-            await supabase
+            const { error: userDelError } = await supabase
               .from('program_assignments')
               .delete()
               .eq('program_id', programId)
               .in('assigned_to_user_id', deptUsers.map(u => u.user_id))
               .eq('is_auto_assigned', true)
+            
+            if (userDelError) {
+              console.error('Error deleting auto-assigned user assignments:', userDelError)
+            }
           }
         }
         
@@ -1222,7 +1249,12 @@ export default function AdminProgramsPage() {
              .in('assigned_to_user_id', removedUserIds)
              .eq('is_auto_assigned', false)
            
-           if (!userDelError) removedCount++
+           if (userDelError) {
+             console.error('Error deleting individual user assignments:', userDelError)
+           } else if (i === 0) {
+             // Only count once (on first program iteration)
+             removedUsersCount++
+           }
         }
 
         // --- ADDITIONS ---
@@ -1370,9 +1402,12 @@ export default function AdminProgramsPage() {
         }
       }
 
-      if (successCount > 0 || removedCount > 0) {
+      const totalRemovedUsers = uniqueRemovedUserIds.size
+      if (successCount > 0 || removedDepartmentsCount > 0 || removedUsersCount > 0 || totalRemovedUsers > 0) {
         let msg = 'Program oppdatert.'
-        if (removedCount > 0) msg += ` Fjernet tilgang for ${removedCount} mottakere.`
+        if (totalRemovedUsers > 0) {
+          msg += ` Fjernet tilgang for ${totalRemovedUsers} bruker${totalRemovedUsers !== 1 ? 'e' : ''}.`
+        }
         toast.success(msg)
         
         // Trigger refresh for all pages (including My Learning)
