@@ -52,6 +52,7 @@ interface Props {
   moduleIndex: number
   totalModules: number
   isInstructor?: boolean
+  isPreview?: boolean
 }
 
 interface Question {
@@ -87,7 +88,8 @@ export default function ModuleViewer({
   onComplete,
   moduleIndex,
   totalModules,
-  isInstructor = false
+  isInstructor = false,
+  isPreview = false
 }: Props) {
   const [questionAnswers, setQuestionAnswers] = useState<Map<string, number>>(new Map())
   const [showQuestionFeedback, setShowQuestionFeedback] = useState<Map<string, boolean>>(new Map())
@@ -108,17 +110,20 @@ export default function ModuleViewer({
 
   const questions: Question[] = content.questions || []
 
+  // Don't save progress if in preview mode or instructor mode
+  const skipProgressSave = isInstructor || isPreview
+
   useEffect(() => {
-    // Mark module as started when first loaded (but not for instructors)
-    if (!isInstructor && !hasStartedProgress && !progress) {
+    // Mark module as started when first loaded (but not for instructors or preview)
+    if (!skipProgressSave && !hasStartedProgress && !progress) {
       markModuleStarted()
       setHasStartedProgress(true)
     }
-  }, [isInstructor])
+  }, [skipProgressSave])
 
   const markModuleStarted = async () => {
-    // Don't allow instructors to change status
-    if (isInstructor) {
+    // Don't allow instructors or preview mode to change status
+    if (skipProgressSave) {
       return
     }
     
@@ -150,9 +155,12 @@ export default function ModuleViewer({
   }
 
   const markModuleCompleted = async (additionalData: any = {}) => {
-    // Don't allow instructors to change status
-    if (isInstructor) {
-      toast.info('Du er instruktør for dette kurset. Statusen kan ikke endres.')
+    // Don't allow instructors or preview mode to change status
+    if (skipProgressSave) {
+      toast.info(isPreview 
+        ? 'Forhåndsvisningsmodus – fremdriften lagres ikke.' 
+        : 'Du er instruktør for dette kurset. Statusen kan ikke endres.'
+      )
       return
     }
     
@@ -282,7 +290,7 @@ export default function ModuleViewer({
         score: score,
         passed: passed
       })
-    } else if (!isInstructor) {
+    } else if (!skipProgressSave) {
       try {
         const updateData = {
           user_id: userId,

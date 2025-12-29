@@ -10,7 +10,8 @@ import {
   Lock,
   Calendar,
   User,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -60,9 +61,10 @@ interface Props {
   userProgress: UserProgress[]
   userId: string
   isInstructor?: boolean
+  isPreview?: boolean
 }
 
-export default function ProgramViewer({ program, userProgress, userId, isInstructor = false }: Props) {
+export default function ProgramViewer({ program, userProgress, userId, isInstructor = false, isPreview = false }: Props) {
   const router = useRouter()
   const [currentModuleIndex, setCurrentModuleIndex] = useState<number | null>(null)
   const [progressMap, setProgressMap] = useState<Map<string, UserProgress>>(new Map())
@@ -327,6 +329,7 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
         moduleIndex={currentModuleIndex}
         totalModules={totalModules}
         isInstructor={isInstructor}
+        isPreview={isPreview}
       />
     )
   }
@@ -335,17 +338,40 @@ export default function ProgramViewer({ program, userProgress, userId, isInstruc
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Preview Banner for Admin */}
+      {isPreview && (
+        <div className="bg-amber-500 text-white px-4 py-2">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Forhåndsvisningsmodus – Du ser kurset slik brukerne vil se det
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push(`/admin/programs/${program.id}/modules`)}
+              className="text-white hover:bg-amber-600"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Tilbake til redigering
+            </Button>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="bg-white border-b border-gray-200 dark:bg-gray-900/80 dark:border-gray-800">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center space-x-4 mb-4">
             <Button
               variant="ghost"
-              onClick={() => router.push('/my-learning')}
+              onClick={() => router.push(isPreview ? `/admin/programs/${program.id}/modules` : '/my-learning')}
               className="text-gray-600 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Mine opplæringer
+              {isPreview ? 'Tilbake til redigering' : 'Mine opplæringer'}
             </Button>
           </div>
 

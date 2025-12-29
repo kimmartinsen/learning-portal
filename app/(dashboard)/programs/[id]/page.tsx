@@ -28,6 +28,9 @@ export default async function ProgramPage({ params }: PageProps) {
     redirect('/login')
   }
 
+  // Check if user is admin (for preview access)
+  const isAdmin = profile.role === 'admin'
+  
   // Check if user has access to this program (via program_assignments)
   const { data: assignment } = await supabase
     .from('program_assignments')
@@ -36,8 +39,10 @@ export default async function ProgramPage({ params }: PageProps) {
     .eq('assigned_to_user_id', profile.id)
     .single()
 
-  // If no assignment or status is locked/pending, deny access
-  if (!assignment || assignment.status === 'locked' || assignment.status === 'pending') {
+  // If no assignment or status is locked/pending, deny access (unless admin previewing)
+  const isPreview = isAdmin && (!assignment || assignment.status === 'locked' || assignment.status === 'pending')
+  
+  if (!isAdmin && (!assignment || assignment.status === 'locked' || assignment.status === 'pending')) {
     redirect('/my-learning?error=locked')
   }
 
@@ -83,6 +88,7 @@ export default async function ProgramPage({ params }: PageProps) {
       userProgress={userProgress || []}
       userId={profile.id}
       isInstructor={isInstructor}
+      isPreview={isPreview}
     />
   )
 }
