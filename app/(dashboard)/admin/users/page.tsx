@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Users, Mail, UserCheck } from 'lucide-react'
+import { Plus, Edit2, Trash2, Users, Mail, UserCheck, Filter, Building2 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -44,6 +44,7 @@ export default function UsersPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string>('all')
   
   const [formData, setFormData] = useState({
     email: '',
@@ -52,6 +53,15 @@ export default function UsersPage() {
     departmentIds: [] as string[], // Flere avdelinger
   })
   const [inviting, setInviting] = useState(false)
+
+  // Filter profiles based on selected department
+  const filteredProfiles = profiles.filter(profile => {
+    if (selectedDepartmentFilter === 'all') return true
+    if (selectedDepartmentFilter === 'no-department') {
+      return !profile.user_departments || profile.user_departments.length === 0
+    }
+    return profile.user_departments?.some(ud => ud.departments?.id === selectedDepartmentFilter)
+  })
 
   useEffect(() => {
     fetchUserAndProfiles()
@@ -312,6 +322,29 @@ export default function UsersPage() {
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-gray-500" />
+          <select
+            value={selectedDepartmentFilter}
+            onChange={(e) => setSelectedDepartmentFilter(e.target.value)}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 min-w-[180px]"
+          >
+            <option value="all">Alle avdelinger</option>
+            <option value="no-department">Uten avdeling</option>
+            {departments.map(dept => (
+              <option key={dept.id} value={dept.id}>{dept.name}</option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Results count */}
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          Viser {filteredProfiles.length} av {profiles.length} brukere
+        </span>
+      </div>
+
       {/* Form Modal */}
       <Modal isOpen={showForm} onClose={resetForm}>
         <Card className="w-full max-w-md bg-white dark:bg-gray-900 dark:border-gray-700">
@@ -443,8 +476,8 @@ export default function UsersPage() {
 
       {/* Users List */}
       <div className="grid gap-3 sm:gap-4">
-        {profiles.length > 0 ? (
-          profiles.map((profile) => (
+        {filteredProfiles.length > 0 ? (
+          filteredProfiles.map((profile) => (
             <Card key={profile.id}>
               <CardContent className="p-3 sm:px-4 sm:py-3">
                 <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-x-6 sm:gap-y-2">
@@ -532,15 +565,26 @@ export default function UsersPage() {
             <CardContent className="p-12 text-center">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                Ingen brukere ennå
+                {selectedDepartmentFilter !== 'all' ? 'Ingen brukere funnet' : 'Ingen brukere ennå'}
               </h3>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Opprett din første bruker for å komme i gang
+                {selectedDepartmentFilter !== 'all' 
+                  ? selectedDepartmentFilter === 'no-department'
+                    ? 'Det er ingen brukere uten avdeling'
+                    : `Det er ingen brukere i denne avdelingen`
+                  : 'Opprett din første bruker for å komme i gang'
+                }
               </p>
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Opprett bruker
-              </Button>
+              {selectedDepartmentFilter !== 'all' ? (
+                <Button variant="secondary" onClick={() => setSelectedDepartmentFilter('all')}>
+                  Vis alle brukere
+                </Button>
+              ) : (
+                <Button onClick={() => setShowForm(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Opprett bruker
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
