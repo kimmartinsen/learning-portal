@@ -553,27 +553,11 @@ export default function AdminProgramsPage() {
   const handleEdit = async (program: EnhancedTrainingProgram) => {
     setEditingProgram(program)
     
-    // Init form with basic data
-    setFormData({
-      title: program.title,
-      description: program.description || '',
-      themeId: program.theme_id || '',
-      instructorId: program.instructor_id || '',
-      courseType: (program.course_type as 'e-course' | 'physical-course') || 'e-course',
-      deadlineDays: program.deadline_days || 14,
-      repetitionEnabled: program.repetition_enabled || false,
-      repetitionInterval: program.repetition_interval_months || 12,
-      sortOrder: program.sort_order || 0,
-      assignment: {
-        type: 'department',
-        departmentIds: [],
-        userIds: []
-      }
-    })
+    // Fetch existing assignments FIRST before showing the form
+    let fetchedDeptIds: string[] = []
+    let fetchedUserIds: string[] = []
+    let assignmentType: 'department' | 'individual' = 'department'
     
-    setShowForm(true)
-
-    // Fetch existing assignments
     try {
       // 1. Get department assignments
       const { data: deptAssignments } = await supabase
@@ -590,19 +574,34 @@ export default function AdminProgramsPage() {
         .not('assigned_to_user_id', 'is', null)
         .eq('is_auto_assigned', false)
 
-      // Update form with fetched assignments
-      setFormData(prev => ({
-        ...prev,
-        assignment: {
-          type: (deptAssignments && deptAssignments.length > 0) ? 'department' : 'individual',
-          departmentIds: deptAssignments?.map(a => a.assigned_to_department_id).filter(id => id !== null) as string[] || [],
-          userIds: userAssignments?.map(a => a.assigned_to_user_id).filter(id => id !== null) as string[] || []
-        }
-      }))
+      fetchedDeptIds = deptAssignments?.map(a => a.assigned_to_department_id).filter(id => id !== null) as string[] || []
+      fetchedUserIds = userAssignments?.map(a => a.assigned_to_user_id).filter(id => id !== null) as string[] || []
+      assignmentType = (fetchedDeptIds.length > 0) ? 'department' : 'individual'
     } catch (error) {
       console.error('Error fetching assignments:', error)
       toast.error('Kunne ikke hente eksisterende tildelinger')
     }
+    
+    // Now set form data WITH the fetched assignments
+    setFormData({
+      title: program.title,
+      description: program.description || '',
+      themeId: program.theme_id || '',
+      instructorId: program.instructor_id || '',
+      courseType: (program.course_type as 'e-course' | 'physical-course') || 'e-course',
+      deadlineDays: program.deadline_days || 14,
+      repetitionEnabled: program.repetition_enabled || false,
+      repetitionInterval: program.repetition_interval_months || 12,
+      sortOrder: program.sort_order || 0,
+      assignment: {
+        type: assignmentType,
+        departmentIds: fetchedDeptIds,
+        userIds: fetchedUserIds
+      }
+    })
+    
+    // Show form AFTER data is loaded
+    setShowForm(true)
   }
 
   const handleDelete = async (programId: string) => {
