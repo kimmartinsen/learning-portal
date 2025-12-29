@@ -1641,11 +1641,30 @@ export default function AdminProgramsPage() {
                   className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                 >
                   <option value="">Velg program (valgfritt)</option>
-                  {themes.map(theme => (
-                    <option key={theme.id} value={theme.id}>
-                      {theme.name}
-                    </option>
-                  ))}
+                  {/* Grupper programmer under sine temaer */}
+                  {topics.map(topic => {
+                    const topicThemes = themes.filter(t => t.topic_id === topic.id)
+                    if (topicThemes.length === 0) return null
+                    return (
+                      <optgroup key={topic.id} label={`📁 ${topic.name}`}>
+                        {topicThemes.map(theme => (
+                          <option key={theme.id} value={theme.id}>
+                            {theme.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )
+                  })}
+                  {/* Programmer uten tema */}
+                  {themes.filter(t => !t.topic_id).length > 0 && (
+                    <optgroup label="📂 Uten tema">
+                      {themes.filter(t => !t.topic_id).map(theme => (
+                        <option key={theme.id} value={theme.id}>
+                          {theme.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
                 {themes.length === 0 && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
